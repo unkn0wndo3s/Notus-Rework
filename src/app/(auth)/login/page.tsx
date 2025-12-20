@@ -1,5 +1,7 @@
 "use client";
 
+import { checkDeletedAccountAction, reactivateAccountAction } from "@/actions/userActions";
+
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import GoogleSignInButton from "@/components/auth/GoogleSignInButton";
@@ -117,29 +119,22 @@ function LoginPageClient({ serverSession }: Readonly<LoginPageClientProps>) {
 
                 // 1) Check if account is deleted but restorable
                 try {
-                  const checkRes = await fetch("/api/check-deleted-account", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email }),
-                  });
-                  if (checkRes.ok) {
-                    const data = await checkRes.json();
-                    if (data?.success && data.found) {
-                      if (data.expired) {
-                        setErrorMessage(
-                          "This account has been deleted and the restoration period has expired."
-                        );
-                        setIsPending(false);
-                        return;
-                      }
-                      // Prompt to reactivate
-                      setReactivateEmail(email);
-                      setReactivateExpiresAt(data.expiresAt || null);
-                      setReactivateError("");
-                      setReactivateOpen(true);
+                  const data = await checkDeletedAccountAction(email);
+                  if (data.success && data.found) {
+                    if (data.expired) {
+                      setErrorMessage(
+                        "This account has been deleted and the restoration period has expired."
+                      );
                       setIsPending(false);
                       return;
                     }
+                    // Prompt to reactivate
+                    setReactivateEmail(email);
+                    setReactivateExpiresAt(data.expiresAt || null);
+                    setReactivateError("");
+                    setReactivateOpen(true);
+                    setIsPending(false);
+                    return;
                   }
                 } catch (_) {}
 
@@ -264,14 +259,9 @@ function LoginPageClient({ serverSession }: Readonly<LoginPageClientProps>) {
               onClick={async () => {
                 setReactivateError("");
                 try {
-                  const res = await fetch("/api/reactivate-account", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email: reactivateEmail, password }),
-                  });
-                  const data = await res.json().catch(() => ({}));
-                  if (!res.ok || !data?.success) {
-                    setReactivateError(data?.error || "Unable to reactivate account.");
+                  const data = await reactivateAccountAction(reactivateEmail, password);
+                  if (!data.success) {
+                    setReactivateError(data.error || "Unable to reactivate account.");
                     return;
                   }
                   // After restore, sign-in directly

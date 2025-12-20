@@ -1,5 +1,7 @@
 "use client";
 
+import { getSynthesesAction, generateSynthesisAction, getSynthesisStatusAction, getTokenUsageAction } from "@/actions/aiActions";
+
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button, ScrollArea } from "@/components/ui";
@@ -230,15 +232,8 @@ export default function SynthesisSidebar({ documentId, isOpen, onClose, document
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/syntheses?documentId=${documentId}`, {
-        method: "GET",
-        headers: {
-          "Accept": "application/json",
-        },
-        cache: "no-store",
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
+      const data = await getSynthesesAction(documentId);
+      if (!data.success) {
         setError(data.error || "Unable to load syntheses");
         setSyntheses([]);
         return;
@@ -262,17 +257,15 @@ export default function SynthesisSidebar({ documentId, isOpen, onClose, document
   useEffect(() => {
     const checkStatus = async () => {
       try {
-        const [statusRes, tokensRes] = await Promise.all([
-          fetch("/api/syntheses/status"),
-          fetch("/api/syntheses/tokens"),
+        const [statusData, tokensData] = await Promise.all([
+          getSynthesisStatusAction(),
+          getTokenUsageAction(),
         ]);
         
-        const statusData = await statusRes.json();
         if (statusData.success) {
           setAiSynthesisEnabled(statusData.enabled ?? true);
         }
         
-        const tokensData = await tokensRes.json();
         if (tokensData.success) {
           setTokenUsage({
             limit: tokensData.limit,
@@ -296,8 +289,7 @@ export default function SynthesisSidebar({ documentId, isOpen, onClose, document
     if (!generating && isOpen) {
       const reloadTokens = async () => {
         try {
-          const res = await fetch("/api/syntheses/tokens");
-          const data = await res.json();
+          const data = await getTokenUsageAction();
           if (data.success) {
             setTokenUsage({
               limit: data.limit,
@@ -341,19 +333,8 @@ export default function SynthesisSidebar({ documentId, isOpen, onClose, document
     setGenerating(true);
     setError(null);
     try {
-      const res = await fetch("/api/syntheses/generate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-        },
-        body: JSON.stringify({
-          documentId,
-          content: documentContent,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
+      const data = await generateSynthesisAction(documentId, documentContent);
+      if (!data.success) {
         setError(data.error || "Unable to generate synthesis");
         return;
       }

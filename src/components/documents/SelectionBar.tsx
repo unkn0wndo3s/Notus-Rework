@@ -17,6 +17,8 @@ interface SelectionBarProps {
   currentUserId?: string | number | null;
 }
 
+import { getFolders } from "@/actions/folderActions";
+
 export default function SelectionBar({
   selectedCount,
   totalCount,
@@ -40,10 +42,9 @@ export default function SelectionBar({
     if (!onAddToFolder) return;
     setIsLoadingFolders(true);
     try {
-      const response = await fetch("/api/folders");
-      if (response.ok) {
-        const data = await response.json();
-        setFolders(data.folders || []);
+      const result = await getFolders();
+      if (result.success) {
+        setFolders(result.folders || []);
         setShowFolderModal(true);
       }
     } catch (error) {

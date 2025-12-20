@@ -6,6 +6,7 @@ import Icon from "@/components/Icon";
 import { cn } from "@/lib/utils";
 import ColorPicker from "@/components/common/ColorPicker";
 import { useState, useEffect } from "react";
+import { getAdminSettingsAction, updateAdminSettingsAction } from "@/actions/adminActions";
 
 export default function AdminSettingsPage() {
   const { isDark, toggleTheme, primaryColor, setPrimaryColor } = useTheme();
@@ -26,19 +27,20 @@ export default function AdminSettingsPage() {
     const loadSettings = async () => {
       try {
         setLoading(true);
-        const res = await fetch("/api/admin/settings");
-        const data = await res.json();
-        if (data.success && data.settings) {
-          const enabled = data.settings["ai_synthesis_enabled"] === "true";
+        const result = await getAdminSettingsAction();
+        if (result.success && result.settings) {
+          const enabled = result.settings["ai_synthesis_enabled"] === "true";
           setAiSynthesisEnabled(enabled);
-          const limit = data.settings["ai_token_limit_per_day"] || "10000";
+          const limit = result.settings["ai_token_limit_per_day"] || "10000";
           setTokenLimit(limit);
-          const url = data.settings["ollama_url"] || "http://localhost:11434";
+          const url = result.settings["ollama_url"] || "http://localhost:11434";
           setOllamaUrl(url);
-          const model = data.settings["ollama_model"] || "llama3.2";
+          const model = result.settings["ollama_model"] || "llama3.2";
           setOllamaModel(model);
           // Token is never sent back for security reasons
           // Field is left empty and user can modify if wanted
+        } else {
+             setError(result.error ?? "Failed to load settings");
         }
       } catch (e) {
         console.error("Error loading settings:", e);
@@ -55,22 +57,16 @@ export default function AdminSettingsPage() {
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch("/api/admin/settings", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          key: "ai_synthesis_enabled",
-          value: String(newValue),
-          description: "Enables or disables the AI synthesis feature",
-        }),
-      });
-      const data = await res.json();
-      if (data.success) {
+      const result = await updateAdminSettingsAction(
+        "ai_synthesis_enabled",
+        String(newValue),
+        "Enables or disables the AI synthesis feature"
+      );
+      
+      if (result.success) {
         setAiSynthesisEnabled(newValue);
       } else {
-        setError(data.error || "Error during update");
+        setError(result.error || "Error during update");
       }
     } catch (e) {
       setError("Error during update");
@@ -80,28 +76,22 @@ export default function AdminSettingsPage() {
   };
 
   const handleSaveTokenLimit = async () => {
-    const limit = parseInt(tokenLimit, 10);
-    if (isNaN(limit) || limit < 0) {
+    const limit = Number.parseInt(tokenLimit, 10);
+    if (Number.isNaN(limit) || limit < 0) {
       setError("Limit must be a positive number");
       return;
     }
     setSavingTokenLimit(true);
     setError(null);
     try {
-      const res = await fetch("/api/admin/settings", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          key: "ai_token_limit_per_day",
-          value: String(limit),
-          description: "Token limit per user per day for AI synthesis",
-        }),
-      });
-      const data = await res.json();
-      if (!data.success) {
-        setError(data.error || "Error during update");
+        const result = await updateAdminSettingsAction(
+          "ai_token_limit_per_day",
+          String(limit),
+          "Token limit per user per day for AI synthesis"
+        );
+
+      if (!result.success) {
+        setError(result.error || "Error during update");
       }
     } catch (e) {
       setError("Error during update");
@@ -146,17 +136,11 @@ export default function AdminSettingsPage() {
 
       const results = await Promise.all(
         updates.map((update) =>
-          fetch("/api/admin/settings", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(update),
-          }).then((res) => res.json())
+          updateAdminSettingsAction(update.key, update.value, update.description)
         )
       );
 
-      const allSuccess = results.every((data) => data.success);
+      const allSuccess = results.every((res: { success: boolean }) => res.success);
 
       if (!allSuccess) {
         setError("Error during update of Ollama configuration");

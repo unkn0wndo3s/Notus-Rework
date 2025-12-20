@@ -1,9 +1,6 @@
-import { NextResponse } from "next/server";
-import { UserService } from "@/lib/services/UserService";
-import { BaseRepository } from "@/lib/repositories/BaseRepository";
-import { requireAdmin } from "@/lib/security/routeGuards";
+import { BaseRepository } from "./BaseRepository";
 
-class StatsRepository extends BaseRepository {
+export class StatsRepository extends BaseRepository {
   async initializeTables(): Promise<void> {
     // No initialization needed for stats
   }
@@ -24,21 +21,24 @@ class StatsRepository extends BaseRepository {
     const result = await this.query<{ count: string }>(
       "SELECT COUNT(*) as count FROM users"
     );
-    return parseInt(result.rows[0]?.count || "0", 10);
+    return Number.parseInt(result.rows[0]?.count || "0", 10);
+
   }
 
   async getTotalDocuments(): Promise<number> {
     const result = await this.query<{ count: string }>(
       "SELECT COUNT(*) as count FROM documents"
     );
-    return parseInt(result.rows[0]?.count || "0", 10);
+    return Number.parseInt(result.rows[0]?.count || "0", 10);
+
   }
 
   async getTotalShares(): Promise<number> {
     const result = await this.query<{ count: string }>(
       "SELECT COUNT(*) as count FROM shares"
     );
-    return parseInt(result.rows[0]?.count || "0", 10);
+    return Number.parseInt(result.rows[0]?.count || "0", 10);
+
   }
 
   async getUsersCreatedSince(days: number): Promise<number> {
@@ -46,7 +46,8 @@ class StatsRepository extends BaseRepository {
       "SELECT COUNT(*) as count FROM users WHERE created_at >= NOW() - INTERVAL '1 day' * $1",
       [days]
     );
-    return parseInt(result.rows[0]?.count || "0", 10);
+    return Number.parseInt(result.rows[0]?.count || "0", 10);
+
   }
 
   async getDocumentsCreatedSince(days: number): Promise<number> {
@@ -54,7 +55,8 @@ class StatsRepository extends BaseRepository {
       "SELECT COUNT(*) as count FROM documents WHERE created_at >= NOW() - INTERVAL '1 day' * $1",
       [days]
     );
-    return parseInt(result.rows[0]?.count || "0", 10);
+    return Number.parseInt(result.rows[0]?.count || "0", 10);
+
   }
 
   async getSharesCreatedSince(days: number): Promise<number> {
@@ -70,7 +72,8 @@ class StatsRepository extends BaseRepository {
          WHERE COALESCE(s.share_at, d.created_at) >= NOW() - INTERVAL '1 day' * $1`,
         [days]
       );
-      return parseInt(result.rows[0]?.count || "0", 10);
+      return Number.parseInt(result.rows[0]?.count || "0", 10);
+
     } catch (error) {
       // If the column still doesn't exist, return the total
       console.warn("⚠️ share_at column not available for shares, using total");
@@ -82,21 +85,24 @@ class StatsRepository extends BaseRepository {
     const result = await this.query<{ count: string }>(
       "SELECT COUNT(*) as count FROM users WHERE email_verified = true"
     );
-    return parseInt(result.rows[0]?.count || "0", 10);
+    return Number.parseInt(result.rows[0]?.count || "0", 10);
+
   }
 
   async getBannedUsers(): Promise<number> {
     const result = await this.query<{ count: string }>(
       "SELECT COUNT(*) as count FROM users WHERE is_banned = true"
     );
-    return parseInt(result.rows[0]?.count || "0", 10);
+    return Number.parseInt(result.rows[0]?.count || "0", 10);
+
   }
 
   async getAdminUsers(): Promise<number> {
     const result = await this.query<{ count: string }>(
       "SELECT COUNT(*) as count FROM users WHERE is_admin = true"
     );
-    return parseInt(result.rows[0]?.count || "0", 10);
+    return Number.parseInt(result.rows[0]?.count || "0", 10);
+
   }
 
   async getUsersGroupedByPeriod(period: 'day' | 'week' | 'month' | 'year'): Promise<Array<{ date: string; count: number }>> {
@@ -138,7 +144,7 @@ class StatsRepository extends BaseRepository {
 
       return result.rows.map(row => ({
         date: row.date,
-        count: parseInt(row.count || "0", 10),
+        count: Number.parseInt(row.count || "0", 10),
       }));
     } catch (error) {
       console.warn("⚠️ Error retrieving grouped users:", error);
@@ -185,7 +191,7 @@ class StatsRepository extends BaseRepository {
 
       return result.rows.map(row => ({
         date: row.date,
-        count: parseInt(row.count || "0", 10),
+        count: Number.parseInt(row.count || "0", 10),
       }));
     } catch (error) {
       console.warn("⚠️ Error retrieving grouped documents:", error);
@@ -243,102 +249,3 @@ class StatsRepository extends BaseRepository {
     }
   }
 }
-
-const statsRepository = new StatsRepository();
-
-export async function GET(request: Request) {
-  try {
-    const adminResult = await requireAdmin();
-    if (adminResult instanceof NextResponse) {
-      return adminResult;
-    }
-
-
-    const { searchParams } = new URL(request.url);
-    const type = searchParams.get('type') as 'users' | 'documents' | 'shares' | null;
-    const period = (searchParams.get('period') as 'day' | 'week' | 'month' | 'year') || 'week';
-
-    // If a specific type is requested, return only grouped data for that type
-    if (type && ['users', 'documents', 'shares'].includes(type)) {
-      let groupedData: Array<{ date: string; count: number }> = [];
-      
-      if (type === 'users') {
-        groupedData = await statsRepository.getUsersGroupedByPeriod(period);
-      } else if (type === 'documents') {
-        groupedData = await statsRepository.getDocumentsGroupedByPeriod(period);
-      } else if (type === 'shares') {
-        groupedData = await statsRepository.getSharesGroupedByPeriod(period);
-      }
-
-      return NextResponse.json({
-        success: true,
-        data: groupedData,
-        period,
-        type,
-      });
-    }
-
-    // Otherwise, return all base statistics (without grouped data)
-    const [
-      totalUsers,
-      totalDocuments,
-      totalShares,
-      usersLast7Days,
-      usersLast30Days,
-      documentsLast7Days,
-      documentsLast30Days,
-      sharesLast7Days,
-      sharesLast30Days,
-      verifiedUsers,
-      bannedUsers,
-      adminUsers,
-    ] = await Promise.all([
-      statsRepository.getTotalUsers(),
-      statsRepository.getTotalDocuments(),
-      statsRepository.getTotalShares(),
-      statsRepository.getUsersCreatedSince(7),
-      statsRepository.getUsersCreatedSince(30),
-      statsRepository.getDocumentsCreatedSince(7),
-      statsRepository.getDocumentsCreatedSince(30),
-      statsRepository.getSharesCreatedSince(7),
-      statsRepository.getSharesCreatedSince(30),
-      statsRepository.getVerifiedUsers(),
-      statsRepository.getBannedUsers(),
-      statsRepository.getAdminUsers(),
-    ]);
-
-    return NextResponse.json({
-      success: true,
-      stats: {
-        users: {
-          total: totalUsers,
-          verified: verifiedUsers,
-          banned: bannedUsers,
-          admins: adminUsers,
-          last7Days: usersLast7Days,
-          last30Days: usersLast30Days,
-        },
-        documents: {
-          total: totalDocuments,
-          last7Days: documentsLast7Days,
-          last30Days: documentsLast30Days,
-        },
-        shares: {
-          total: totalShares,
-          last7Days: sharesLast7Days,
-          last30Days: sharesLast30Days,
-        },
-      },
-    });
-  } catch (error) {
-    console.error("❌ Error retrieving statistics:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Access denied",
-      },
-      { status: 500 }
-    );
-  }
-}
-

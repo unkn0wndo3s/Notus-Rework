@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button, Card, LoadingSpinner, StatusCircle } from "@/components/ui";
+import { verifyEmailAction } from "@/actions/userActions";
 
 type Status = "loading" | "success" | "error";
 
@@ -22,22 +23,14 @@ export default function VerifyEmailPage() {
 
     const verifyEmail = async (token: string) => {
       try {
-        const response = await fetch("/api/verify-email", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ token }),
-        });
+        const result = await verifyEmailAction(token);
 
-        const data = await response.json();
-
-        if (data.success) {
+        if (result.success) {
           setStatus("success");
-          setMessage(data.message);
+          setMessage(result.message || "Email verified successfully.");
         } else {
           setStatus("error");
-          setMessage(data.error || "Error during verification");
+          setMessage(result.error || "Error during verification");
         }
       } catch (error) {
         setStatus("error");

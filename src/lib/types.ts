@@ -70,7 +70,22 @@ export interface ActionResult {
   ok?: boolean;
   id?: number;
   dbResult?: { success: boolean; error?: string; document?: Document };
+  // AI fields
+  syntheses?: any[];
+  synthesis?: any;
+  data?: any;
+  limit?: number;
+  used?: number;
+  remaining?: number;
+  enabled?: boolean;
+  // Admin/User fields
+  isAdmin?: boolean;
+  profileImage?: string | null;
+  found?: boolean;
+  expired?: boolean;
+  expiresAt?: string | null;
 }
+
 
 // Types for services
 export interface CreateUserData {

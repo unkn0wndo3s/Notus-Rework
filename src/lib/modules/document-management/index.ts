@@ -1,2 +1,2 @@
 export * from "./DocumentService";
-export * from "./DocumentActions";
+export * from "@/actions/documentActions";

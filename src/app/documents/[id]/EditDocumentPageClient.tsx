@@ -3,7 +3,7 @@ import { startTransition, useActionState } from "react";
 import { Button, Modal } from "@/components/ui";
 import MenuItem from "@/components/ui/overlay/overlay-menu-item";
 import { Input } from "@/components/ui/input";
-import { updateDocumentAction } from "@/lib/actions";
+import { updateDocumentAction } from "@/actions/documentActions";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -20,7 +20,7 @@ import TagsManager from "@/components/documents/TagsManager";
 import CommentsSidebar from "@/components/documents/CommentsSidebar";
 import HistorySidebar from "@/components/documents/HistorySidebar";
 import SynthesisSidebar from "@/components/documents/SynthesisSidebar";
-import { addShareAction, deleteDocumentAction, createDocumentAction } from "@/lib/actions/DocumentActions";
+import { addShareAction, deleteDocumentAction, createDocumentAction, getDocumentByIdAction, fetchDocumentAccessListAction } from "@/actions/documentActions";
 import UserListButton from "@/components/ui/UserList/UserListButton";
 import { useGuardedNavigate } from "@/hooks/useGuardedNavigate";
 import { useCollaborativeTitle } from "@/lib/paper.js/useCollaborativeTitle";
@@ -147,11 +147,10 @@ export default function EditDocumentPageClient(props: Readonly<EditDocumentPageC
       const onlineOk = await checkConnectivity();
       if (!onlineOk) return;
       
-      const res = await fetch(`/api/openDoc/accessList?id=${document.id}`);
-      const data = await res.json();
-      if (data.success && Array.isArray(data.accessList)) {
+      const result = await fetchDocumentAccessListAction(Number(document.id));
+      if (result.success && result.data && Array.isArray(result.data.accessList)) {
         setUsers(
-          data.accessList.map((user: any) => ({
+          result.data.accessList.map((user: any) => ({
             ...user,
             avatarUrl: user.profile_image || "",
             name: user.username || user.email || "User",
@@ -378,10 +377,17 @@ export default function EditDocumentPageClient(props: Readonly<EditDocumentPageC
         return;
       }
 
-      const response = await fetch(`/api/openDoc?id=${props.params.id}`, { cache: "no-store" });
-      const result = await response.json();
+      const actionResult = await getDocumentByIdAction(Number(props.params.id));
+      const result = actionResult.success && actionResult.document ? {
+        success: true,
+        ...actionResult.document,
+        owner: actionResult.document.user_id 
+      } : {
+        success: false,
+        error: actionResult.error
+      };
 
-      if (result.success) {
+      if (result.success && result.title !== undefined) {
         const normalizedContent = normalizeContent(result.content);
         const docObj = {
           id: Number(props.params.id),
@@ -515,12 +521,11 @@ export default function EditDocumentPageClient(props: Readonly<EditDocumentPageC
       if (!isOffline && navigator.onLine) {
         checkConnectivity().then(onlineOk => {
           if (!onlineOk) return;
-          fetch(`/api/openDoc/accessList?id=${document.id}`)
-            .then(res => res.json())
-            .then(data => {
-              if (data.success && Array.isArray(data.accessList)) {
+          fetchDocumentAccessListAction(Number(document.id))
+            .then(result => {
+              if (result.success && result.data && Array.isArray(result.data.accessList)) {
                 setUsers(
-                  data.accessList.map((user: any) => ({
+                  result.data.accessList.map((user: any) => ({
                     ...user,
                     avatarUrl: user.profile_image || "",
                     name: user.username || user.email || "User",
@@ -826,9 +831,12 @@ export default function EditDocumentPageClient(props: Readonly<EditDocumentPageC
       console.log('🌐 Reconnection detected - Starting conflict resolution');
 
       try {
-        // Fetch current state from database
-        const response = await fetch(`/api/openDoc?id=${document.id}`, { cache: "no-store" });
-        const result = await response.json();
+        // Fetch current state from database using server action
+        const actionResult = await getDocumentByIdAction(Number(document.id));
+        const result = actionResult.success && actionResult.document ? {
+           success: true,
+           ...actionResult.document
+        } : { success: false, error: actionResult.error };
 
         if (result.success) {
           const remoteContent = normalizeContent(result.content);
@@ -1003,8 +1011,9 @@ export default function EditDocumentPageClient(props: Readonly<EditDocumentPageC
           return;
         }
         
-        const res = await fetch(`/api/openDoc/accessList?id=${document.id}`);
-        const result = await res.json();
+        const actionResult = await fetchDocumentAccessListAction(Number(document.id));
+        const result = actionResult.success ? { success: true, accessList: actionResult.data?.accessList } : { success: false, accessList: [] };
+        
         if (result.success && Array.isArray(result.accessList)) {
           const myEmail = String(userEmail).trim().toLowerCase();
 
@@ -1092,25 +1101,19 @@ export default function EditDocumentPageClient(props: Readonly<EditDocumentPageC
         return;
       }
 
-      const res = await fetch("/api/invite-share", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          documentId: document.id,
-          email: shareEmail.trim(),
-          permission: permission === "write",
-          docTitle: document.title,     // if available
-        }),
-      });
+      const formData = new FormData();
+      formData.append("documentId", String(document.id));
+      formData.append("email", shareEmail.trim());
+      formData.append("permission", permission === "write" ? "true" : "false");
 
-      const data = await res.json();
+      const res = await addShareAction(undefined, formData);
 
-      if (res.ok) {
-        setShareSuccess(data.message || "Share registered.");
+      if (typeof res === "object" && res.success) {
+        setShareSuccess(res.message || "Share registered.");
         setIsShareModalOpen(false);
         router.refresh();
       } else {
-        setShareError(data.error || "Error during sharing.");
+        setShareError(typeof res === "string" ? res : (res.error || "Error during sharing."));
       }
     } catch (err) {
       console.error(err);

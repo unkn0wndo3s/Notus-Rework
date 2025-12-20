@@ -11,6 +11,8 @@ import ViewModeSwitch from "@/components/support/ViewModeSwitch";
 import RequestHistoryCard from "@/components/support/RequestHistoryCard";
 import { cn } from "@/lib/utils";
 import type { Request } from "@/lib/repositories/RequestRepository";
+import { getRequestsAction, createRequestAction } from "@/actions/requestActions";
+import { getNotifications } from "@/actions/notificationActions";
 
 type RequestType = "help" | "data_restoration" | "other";
 type ViewMode = "new" | "history";
@@ -64,49 +66,52 @@ export default function SupportPage() {
     setError(null);
 
     try {
-      const [requestsResponse, notificationsResponse] = await Promise.all([
-        fetch(`/api/requests?userId=${session.user.id}`),
-        fetch(`/api/notification?id=${session.user.id}`),
-      ]);
+        const [requestsResult, notificationsResult] = await Promise.all([
+          getRequestsAction({ userId: Number(session.user.id) }),
+          getNotifications(Number(session.user.id)),
+        ]);
 
-      const requestsData = await requestsResponse.json();
-      const notificationsData = await notificationsResponse.json();
-
-      if (!requestsData.success) {
-        throw new Error(requestsData.error || "Error retrieving requests");
-      }
-
-      const userRequests: RequestWithMessage[] = (requestsData.requests || []).map((req: Request) => {
-        // Find message in notifications
-        const notification = (notificationsData.notifications || notificationsData.data || []).find(
-          (notif: any) => {
-            try {
-              const parsed = notif.parsed || (typeof notif.message === "string" ? JSON.parse(notif.message) : null);
-              return (
-                parsed &&
-                (parsed.type === "request-response" || parsed.type === "request-resolved") &&
-                parsed.requestId === req.id
-              );
-            } catch {
-              return false;
-            }
-          }
-        );
-
-        let message: string | undefined;
-        if (notification) {
-          try {
-            const parsed = notification.parsed || (typeof notification.message === "string" ? JSON.parse(notification.message) : null);
-            message = parsed?.message || (typeof notification.message === "string" ? notification.message : undefined);
-          } catch {
-            message = typeof notification.message === "string" ? notification.message : undefined;
-          }
+        if (!requestsResult.success) {
+          throw new Error(requestsResult.error || "Error retrieving requests");
         }
 
-        return { ...req, message };
-      });
+        const requestsList = requestsResult.data?.requests || [];
+        // Notification action returns structure { success, notifications: ... } or { success, data: ... } depending on implementation.
+        // Checking notificationActions.ts: getNotifications returns "result" which is { success: true, notifications: [...] } from service.
 
-      setRequests(userRequests);
+        const notificationsList = (notificationsResult as any).notifications || (notificationsResult as any).data || [];
+
+        const userRequests: RequestWithMessage[] = requestsList.map((req: Request) => {
+          // Find message in notifications
+          const notification = notificationsList.find(
+            (notif: any) => {
+              try {
+                const parsed = notif.parsed || (typeof notif.message === "string" ? JSON.parse(notif.message) : null);
+                return (
+                  parsed &&
+                  (parsed.type === "request-response" || parsed.type === "request-resolved") &&
+                  parsed.requestId === req.id
+                );
+              } catch {
+                return false;
+              }
+            }
+          );
+
+          let message: string | undefined;
+          if (notification) {
+            try {
+              const parsed = notification.parsed || (typeof notification.message === "string" ? JSON.parse(notification.message) : null);
+              message = parsed?.message || (typeof notification.message === "string" ? notification.message : undefined);
+            } catch {
+              message = typeof notification.message === "string" ? notification.message : undefined;
+            }
+          }
+
+          return { ...req, message };
+        }); 
+
+        setRequests(userRequests);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
       setRequests([]);
@@ -133,22 +138,14 @@ export default function SupportPage() {
     }
 
     try {
-      const response = await fetch("/api/requests", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          type,
-          title: title.trim(),
-          description: description.trim(),
-        }),
+      const response = await createRequestAction({
+        type,
+        title: title.trim(),
+        description: description.trim(),
       });
 
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || "Error creating request");
+      if (!response.success) {
+        throw new Error(response.error || "Error creating request");
       }
 
       setSuccess(true);

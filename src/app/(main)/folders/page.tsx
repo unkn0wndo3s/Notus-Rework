@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import NavBar from "@/components/navigation/NavBar";
 import ContentWrapper from "@/components/common/ContentWrapper";
 import { Button } from "@/components/ui/button";
-import { Card, Modal, Input } from "@/components/ui";
 import {
+  Card,
+  Modal,
+  Input,
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
@@ -16,11 +18,13 @@ import Icon from "@/components/Icon";
 import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 
+import { getFolders, createFolder, deleteFolder } from "@/actions/folderActions";
+
 interface Folder {
   id: number;
   name: string;
-  created_at: string;
-  updated_at: string;
+  created_at: Date;
+  updated_at: Date;
   documentCount: number;
 }
 
@@ -43,10 +47,9 @@ export default function FoldersPage() {
   const loadFolders = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/folders");
-      if (response.ok) {
-        const data = await response.json();
-        setFolders(data.folders || []);
+      const result = await getFolders();
+      if (result.success) {
+        setFolders(result.folders || []);
       }
     } catch (error) {
       console.error("Error loading folders:", error);
@@ -59,18 +62,13 @@ export default function FoldersPage() {
     if (!newFolderName.trim()) return;
     setIsCreating(true);
     try {
-      const response = await fetch("/api/folders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newFolderName.trim() }),
-      });
-      if (response.ok) {
+      const result = await createFolder(newFolderName.trim());
+      if (result.success) {
         setShowCreateModal(false);
         setNewFolderName("");
         loadFolders();
       } else {
-        const data = await response.json();
-        alert(data.error || "Error creating folder");
+        alert(result.error || "Error creating folder");
       }
     } catch (error) {
       console.error("Error creating folder:", error);
@@ -84,14 +82,11 @@ export default function FoldersPage() {
     if (!confirm("Are you sure you want to delete this folder?")) return;
     setDeletingId(id);
     try {
-      const response = await fetch(`/api/folders/${id}`, {
-        method: "DELETE",
-      });
-      if (response.ok) {
+      const result = await deleteFolder(id);
+      if (result.success) {
         loadFolders();
       } else {
-        const data = await response.json();
-        alert(data.error || "Error deleting folder");
+        alert(result.error || "Error deleting folder");
       }
     } catch (error) {
       console.error("Error deleting folder:", error);
@@ -163,8 +158,9 @@ export default function FoldersPage() {
           ) : (
             <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {folders.map((folder) => {
-                const formatDate = (dateString: string) => {
-                  const date = new Date(dateString);
+                const formatDate = (dateInput: string | Date | undefined) => {
+                  if (!dateInput) return "";
+                  const date = new Date(dateInput);
                   const day = String(date.getDate()).padStart(2, "0");
                   const month = String(date.getMonth() + 1).padStart(2, "0");
                   const year = date.getFullYear();

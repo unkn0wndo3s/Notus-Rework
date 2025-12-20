@@ -10,7 +10,8 @@ import Icon from "@/components/Icon";
 import { useSession } from "next-auth/react";
 import { SearchableDocumentsList } from "@/components/documents/SearchableDocumentsList";
 import Link from "next/link";
-import { createDocumentAction } from "@/lib/actions/DocumentActions";
+import { createDocumentAction } from "@/actions/documentActions";
+import { getFolderById, addDocumentsToFolder, removeDocumentsFromFolder } from "@/actions/folderActions";
 
 interface Document {
   id: number;
@@ -49,7 +50,7 @@ export default function FolderDetailPage() {
   const [noteTitle, setNoteTitle] = useState("");
   const [isAddingToFolder, setIsAddingToFolder] = useState(false);
 
-  const folderId = params?.id ? parseInt(String(params.id)) : null;
+  const folderId = params?.id ? Number.parseInt(String(params.id)) : null;
 
   const [createNoteState, createNoteAction, isCreatingNote] = useActionState(
     createDocumentAction as unknown as (
@@ -64,13 +65,11 @@ export default function FolderDetailPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/folders/${folderId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setFolder(data.folder);
+      const result = await getFolderById(folderId);
+      if (result.success) {
+        setFolder(result.folder as unknown as FolderData);
       } else {
-        const data = await response.json();
-        setError(data.error || "Error loading folder");
+        setError(result.error || "Error loading folder");
       }
     } catch (err: any) {
       console.error("Error loading folder:", err);
@@ -83,19 +82,14 @@ export default function FolderDetailPage() {
   const addNoteToFolder = useCallback(async (documentId: number, folderId: number) => {
     setIsAddingToFolder(true);
     try {
-      const response = await fetch(`/api/folders/${folderId}/documents`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ documentIds: [documentId] }),
-      });
-      if (response.ok) {
+      const result = await addDocumentsToFolder(folderId, [documentId]);
+      if (result.success) {
         setShowCreateNoteModal(false);
         setNoteTitle("");
         loadFolder();
         router.push(`/documents/${documentId}`);
       } else {
-        const data = await response.json();
-        alert(data.error || "Error adding note to folder");
+        alert(result.error || "Error adding note to folder");
       }
     } catch (err: any) {
       console.error("Error adding note to folder:", err);
@@ -112,8 +106,8 @@ export default function FolderDetailPage() {
   }, [session, folderId, loadFolder]);
 
   useEffect(() => {
-    if (createNoteState && (createNoteState as CreateDocumentActionResult).documentId) {
-      const documentId = (createNoteState as CreateDocumentActionResult).documentId;
+    if (createNoteState && createNoteState.documentId) {
+      const documentId = createNoteState.documentId;
       if (documentId && folderId) {
         addNoteToFolder(documentId, folderId);
       }
@@ -139,19 +133,14 @@ export default function FolderDetailPage() {
 
   const handleRemoveDocuments = async (documentIds: string[]) => {
     if (!folderId) return;
-    const ids = documentIds.map((id) => parseInt(id)).filter((id) => !isNaN(id));
+    const ids = documentIds.map((id) => Number.parseInt(id)).filter((id) => !Number.isNaN(id));
     setRemovingIds(new Set(ids));
     try {
-      const response = await fetch(`/api/folders/${folderId}/documents`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ documentIds }),
-      });
-      if (response.ok) {
+      const result = await removeDocumentsFromFolder(folderId, ids);
+      if (result.success) {
         loadFolder();
       } else {
-        const data = await response.json();
-        alert(data.error || "Error removing documents");
+        alert(result.error || "Error removing documents");
       }
     } catch (err: any) {
       console.error("Error removing documents:", err);
@@ -305,10 +294,10 @@ export default function FolderDetailPage() {
               }}
               autoFocus
             />
-            {createNoteState && (createNoteState as CreateDocumentActionResult).error && (
+            {createNoteState && createNoteState.error && (
               <Alert variant="error">
                 <Alert.Description>
-                  {(createNoteState as CreateDocumentActionResult).error}
+                  {createNoteState.error}
                 </Alert.Description>
               </Alert>
             )}

@@ -1,7 +1,8 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useActionState, startTransition } from "react";
-import { deleteDocumentAction, updateDocumentAction, toggleFavoriteAction } from "@/lib/actions";
+import { deleteDocumentAction, updateDocumentAction, toggleFavoriteAction, fetchDocumentAccessListAction } from "@/actions/documentActions";
+import { checkConnectivityAction } from "@/actions/userActions";
 import Link from "next/link";
 import { Button, Input } from "@/components/ui";
 import { useGuardedNavigate } from "@/hooks/useGuardedNavigate";
@@ -183,10 +184,10 @@ export default function DocumentCard({
     let mounted = true;
     (async () => {
       try {
-        const res = await fetch(`/api/openDoc/accessList?id=${(document as any).id}`);
-        const data = await res.json();
-        const list = data?.accessList || [];
-        if (data?.success && mounted) setAccessList(list);
+        const result = await fetchDocumentAccessListAction((document as any).id);
+        if (result.success && result.data?.accessList && mounted) {
+          setAccessList(result.data.accessList);
+        }
       } catch (e) {}
     })();
     return () => { mounted = false; };
@@ -321,9 +322,13 @@ export default function DocumentCard({
     try {
       const controller = new AbortController();
       const timeoutId = window.setTimeout(() => controller.abort(), 5000);
-      const resp = await fetch("/api/admin/check-status", { method: "GET", cache: "no-store", credentials: "include", headers: { "cache-control": "no-cache" }, signal: controller.signal });
-      window.clearTimeout(timeoutId);
-      if (resp.ok) { window.location.href = documentUrl; }
+      try {
+        const result = await checkConnectivityAction();
+        window.clearTimeout(timeoutId);
+        if (result.success) { window.location.href = documentUrl; }
+      } catch (e) {
+        throw e;
+      }
     } catch (err: any) {
       window.dispatchEvent(new CustomEvent("notus:offline-popin", { detail: { message: "You will be able to access this feature once connectivity is restored.", durationMs: 5000 } }));
     }

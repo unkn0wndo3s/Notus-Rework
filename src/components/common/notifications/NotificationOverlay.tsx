@@ -9,6 +9,7 @@ import type { Notification } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/Icon";
 import { useNotification } from "@/contexts/NotificationContext";
+import { getNotifications, markAsRead, deleteNotification } from "@/actions/notificationActions";
 import { cn } from "@/lib/utils";
 
 interface NotificationOverlayProps {
@@ -40,13 +41,12 @@ export default function NotificationOverlay({ isOpen = true, onClose }: Readonly
             setLoading(true);
             setError(null);
             try {
-                const res = await fetch(`/api/notification?id=${session.user.id}`, { cache: "no-store" });
-                const body = await res.json();
-                if (!body.success) {
-                    setError(body.error || "Error retrieving notifications");
-                    setNotifications([]);
+                const result = await getNotifications(Number(session.user.id));
+                if (result.success) {
+                    setNotifications((result.data as unknown as Notification[]) || []);
                 } else {
-                    setNotifications(body.notifications ?? body.data ?? []);
+                    setError(result.error || "Error retrieving notifications");
+                    setNotifications([]);
                 }
             } catch (e) {
                 setError(String(e));
@@ -59,12 +59,11 @@ export default function NotificationOverlay({ isOpen = true, onClose }: Readonly
         fetchNotifications();
     }, [isOpen, session]);
 
-    async function deleteNotification(notificationId: number) {
+    async function handleDeleteNotification(notificationId: number) {
         if (!notificationId) return false;
         try {
-            const url = `/api/notification/delete?id=${encodeURIComponent(String(notificationId))}`;
-            const res = await fetch(url, { method: "DELETE" });
-            if (!res || !res.ok) return false;
+            const result = await deleteNotification(notificationId);
+            if (!result.success) return false;
             const found = (notifications ?? []).find(x => x.id === notificationId);
             const wasUnread = found && !found.read_date;
             setNotifications(prev => prev ? prev.filter(x => x.id !== notificationId) : prev);
@@ -82,17 +81,12 @@ export default function NotificationOverlay({ isOpen = true, onClose }: Readonly
 
     if (!isOpen) return null;
 
-    async function markAsRead(notificationId: number): Promise<boolean> {
+    async function handleMarkAsRead(notificationId: number): Promise<boolean> {
         if (!notificationId) return false;
         setNotifications(prev => prev ? prev.map(n => n.id === notificationId ? { ...n, read_date: new Date() } : n) : prev);
         try {
-            const res = await fetch("/api/notification/mark-read", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ notificationId }),
-                cache: "no-store",
-            });
-            if (res.ok) {
+            const result = await markAsRead(notificationId);
+            if (result.success) {
                 try { adjustUnreadCount(-1); } catch {}
                 return true;
             }
@@ -213,7 +207,7 @@ export default function NotificationOverlay({ isOpen = true, onClose }: Readonly
                                                     onClick={async (e) => {
                                                         e.preventDefault();
                                                         e.stopPropagation();
-                                                        await deleteNotification(n.id);
+                                                        await handleDeleteNotification(n.id);
                                                     }}
                                                     className="ml-2 p-1 rounded hover:bg-accent/50 text-muted-foreground"
                                                     title="Delete notification"
@@ -297,7 +291,7 @@ export default function NotificationOverlay({ isOpen = true, onClose }: Readonly
                                 message={messageText}
                                 isRead={isRead}
                                 onClick={handleNotificationClick}
-                                onMarkRead={(id) => { void markAsRead(id); }}
+                                onMarkRead={(id) => { void handleMarkAsRead(id); }}
                                 onDelete={(id) => {
                                     const found = (notifications ?? []).find(x => x.id === id);
                                     const wasUnread = found && !found.read_date;

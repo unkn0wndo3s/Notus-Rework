@@ -3,19 +3,17 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Icon from "@/components/Icon";
+import { checkAdminStatus } from "@/actions/userActions";
 
 export default function AdminButton() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const checkAdminStatus = async () => {
+    const verifyAdmin = async () => {
       try {
-        const response = await fetch("/api/admin/check-status");
-        if (response.ok) {
-          const data = await response.json();
-          setIsAdmin(data.isAdmin);
-        }
+        const result = await checkAdminStatus();
+        setIsAdmin(!!(result.success && result.isAdmin));
       } catch (error) {
         console.error("Error checking admin status:", error);
       } finally {
@@ -23,7 +21,7 @@ export default function AdminButton() {
       }
     };
 
-    checkAdminStatus();
+    verifyAdmin();
   }, []);
 
   if (loading) {

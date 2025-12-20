@@ -1,6 +1,7 @@
 import React from "react";
 import Icon from "@/components/Icon";
 import { cn } from "@/lib/utils";
+import { deleteNotification } from "@/actions/notificationActions";
 
 interface NotificationItemProps {
     avatar?: string | null;
@@ -51,12 +52,9 @@ export default function NotificationItem({
         if (!notificationId || deleting) return;
         setDeleting(true);
         try {
-            const url = `/api/notification/delete?id=${encodeURIComponent(String(notificationId))}`;
-            const res = await fetch(url, { method: "DELETE", headers: { "Content-Type": "application/json" } });
-            if (!res.ok) {
-                let body: any = null;
-                try { body = await res.json(); } catch {}
-                const errMsg = body?.error || `Server returned ${res.status}`;
+            const result = await deleteNotification(notificationId);
+            if (!result.success) {
+                const errMsg = result.error || "Unknown error";
                 console.error("Failed to delete notification:", errMsg);
                 alert("Failed to delete notification: " + errMsg);
                 return;

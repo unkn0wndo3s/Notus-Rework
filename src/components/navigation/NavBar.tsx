@@ -15,6 +15,7 @@ import { useGuardedNavigate } from "@/hooks/useGuardedNavigate";
 import LoginRequiredModal from "@/components/auth/LoginRequiredModal";
 import BadgeIcon from "../ui/notifications/badge-icon";
 import NotesFilterModal from "@/components/documents/NotesFilterModal";
+import { getProfileImage, checkAdminStatus } from "@/actions/userActions";
 
 interface NavItem {
   name: string;
@@ -52,10 +53,9 @@ export default function NavBar() {
     const fetchProfileImage = async () => {
       if (isLoggedIn && !profileImage) {
         try {
-          const response = await fetch("/api/profile-image");
-          if (response.ok) {
-            const data = await response.json();
-            if (data.profileImage) setLocalProfileImage(data.profileImage);
+          const result = await getProfileImage();
+          if (result.success && result.profileImage) {
+            setLocalProfileImage(result.profileImage);
           }
         } catch {}
       }
@@ -64,16 +64,15 @@ export default function NavBar() {
   }, [isLoggedIn, profileImage]);
 
   useEffect(() => {
-    const checkAdminStatus = async () => {
+    const verifyAdmin = async () => {
       if (!isLoggedIn) {
         setAdminLoading(false);
         return;
       }
       try {
-        const response = await fetch("/api/admin/check-status");
-        if (response.ok) {
-          const data = await response.json();
-          setIsAdmin(data.isAdmin);
+        const result = await checkAdminStatus();
+        if (result.success) {
+          setIsAdmin(result.isAdmin ?? false);
         }
       } catch (error) {
         console.error("Error verifying admin status:", error);
@@ -82,7 +81,7 @@ export default function NavBar() {
       }
     };
 
-    checkAdminStatus();
+    verifyAdmin();
   }, [isLoggedIn]);
 
   const { unreadCount, refresh } = useNotification();

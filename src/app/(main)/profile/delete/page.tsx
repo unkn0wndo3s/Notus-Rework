@@ -1,6 +1,7 @@
 "use client";
 
 import NavBar from "@/components/navigation/NavBar";
+import { deleteAccountAction } from "@/actions/userActions";
 import Link from "next/link";
 import { Button, Input, Modal } from "@/components/ui";
 import Icon from "@/components/Icon";
@@ -144,13 +145,8 @@ export default function DeleteAccountPage() {
                 try {
                   setIsLoading(true);
                   setMessage(null);
-                  const res = await fetch("/api/delete-account", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ password }),
-                  });
-                  const data = await res.json();
-                  if (!res.ok || !data.success) {
+                  const data = await deleteAccountAction(password);
+                  if (!data.success) {
                     setMessage(data.error || "Unable to delete account. Please try again.");
                     return;
                   }

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui";
 import { useGuardedNavigate } from "@/hooks/useGuardedNavigate";
+import { checkAdminStatus } from "@/actions/userActions";
 
 export default function BackofficeEditButton() {
   const { guardedNavigate } = useGuardedNavigate();
@@ -10,13 +11,10 @@ export default function BackofficeEditButton() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const checkAdminStatus = async () => {
+    const verifyAdmin = async () => {
       try {
-        const response = await fetch("/api/admin/check-status");
-        if (response.ok) {
-          const data = await response.json();
-          setIsAdmin(data.isAdmin);
-        }
+        const result = await checkAdminStatus();
+        setIsAdmin(!!(result.success && result.isAdmin));
       } catch (error) {
         console.error("Error checking admin status:", error);
       } finally {
@@ -24,7 +22,7 @@ export default function BackofficeEditButton() {
       }
     };
 
-    checkAdminStatus();
+    verifyAdmin();
   }, []);
 
   if (loading || !isAdmin) {

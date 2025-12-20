@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Icon from "@/components/Icon";
+import { promoteSelfAction } from "@/actions/adminActions";
 
 export default function PromoteAdminButton() {
   const [isPromoting, setIsPromoting] = useState(false);
@@ -14,21 +15,15 @@ export default function PromoteAdminButton() {
     setIsPromoting(true);
 
     try {
-      const response = await fetch("/api/admin/promote-self", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      const result = await promoteSelfAction();
 
-      if (response.ok) {
+      if (result.success) {
         globalThis.window.alert(
           "You have been promoted to administrator! Reload the page to see the changes."
         );
         globalThis.window.location.reload();
       } else {
-        const error = await response.json();
-        globalThis.window.alert(`Error: ${error.message}`);
+        globalThis.window.alert(`Error: ${result.error}`);
       }
     } catch (error) {
       globalThis.window.alert(`Error: ${(error as Error).message}`);

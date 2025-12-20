@@ -5,6 +5,7 @@ import { Card } from "@/components/ui";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import StatsChart from "./StatsChart";
 import { cn } from "@/lib/utils";
+import { getAdminStatsAction } from "@/actions/adminActions";
 
 interface StatChartSectionProps {
   type: 'users' | 'documents' | 'shares';
@@ -24,22 +25,33 @@ export default function StatChartSection({
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    let mounted = true;
+
     const fetchData = async () => {
       setLoading(true);
       try {
-        const response = await fetch(`/api/admin/stats?type=${type}&period=${period}`);
-        const data = await response.json();
-        if (data.success && data.data) {
-          setChartData(data.data);
+        const result = await getAdminStatsAction(type, period);
+        if (!mounted) return;
+
+        if (result.success && result.data) {
+          setChartData(result.data);
         }
       } catch (error) {
-        console.error(`❌ Error retrieving ${type} data:`, error);
+        if (mounted) {
+          console.error(`❌ Error retrieving ${type} data:`, error);
+        }
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchData();
+
+    return () => {
+      mounted = false;
+    };
   }, [type, period]);
 
   // Reusable function to process period data

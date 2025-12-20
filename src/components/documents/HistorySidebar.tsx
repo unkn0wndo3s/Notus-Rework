@@ -8,6 +8,7 @@ import { useLocalSession } from "@/hooks/useLocalSession";
 import { cn } from "@/lib/utils";
 import { MarkdownConverter } from "@/components/Paper.js/Editor/MarkdownConverter";
 import { sanitizeHtml, EDITOR_SANITIZE_CONFIG } from "@/lib/sanitizeHtml";
+import { getDocumentHistoryAction } from "@/actions/documentActions";
 
 interface HistoryUser {
   id: number;
@@ -223,25 +224,21 @@ export default function HistorySidebar({ documentId, isOpen, onClose }: Readonly
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const { userId } = useLocalSession();
 
+// ...
+
   const fetchHistory = useCallback(async () => {
     if (!documentId) return;
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/openDoc/history?documentId=${documentId}`, {
-        method: "GET",
-        headers: {
-          Accept: "application/json",
-        },
-        cache: "no-store",
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        setError(data.error || "Unable to load history");
+      const result = await getDocumentHistoryAction(documentId);
+      
+      if (!result.success) {
+        setError(result.error || "Unable to load history");
         setEntries([]);
         return;
       }
-      const raw = Array.isArray(data.history) ? data.history : [];
+      const raw = Array.isArray(result.history) ? result.history : [];
       const normalized: HistoryItem[] = raw.map((item: any) => ({
         id: item.id,
         created_at: item.created_at,

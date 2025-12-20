@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import Icon from "@/components/Icon";
 import Link from "next/link";
 import Image from "next/image";
+import { updateShareAction, removeShareAction } from "@/actions/documentActions";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -63,14 +64,10 @@ export default function UserList({
     setLoadingEmail(targetEmail);
 
     try {
-      const res = await fetch('/api/openDoc/share', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ documentId, email: targetEmail, permission: newPermission }),
-      });
-      const body = await res.json();
-      if (!res.ok || !body.success) {
-        throw new Error(body?.error || 'Server error');
+      const result = await updateShareAction(documentId, targetEmail, newPermission);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Server error');
       }
       setMenuOpen(null);
       setLoadingEmail(null);
@@ -91,14 +88,10 @@ export default function UserList({
     }
 
     try {
-      const res = await fetch('/api/openDoc/share/delete', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ documentId, email: targetEmail }),
-      });
-      const body = await res.json();
-      if (!res.ok || !body.success) {
-        throw new Error(body?.error || 'Server error');
+      const result = await removeShareAction(documentId, targetEmail);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Server error');
       }
       setMenuOpen(null);
       setLoadingEmail(null);

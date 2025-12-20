@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback } from "react";
+import { checkConnectivityAction } from "@/actions/userActions";
 
 export function useGuardedNavigate() {
   const router = useRouter();
@@ -12,16 +13,10 @@ export function useGuardedNavigate() {
       const controller = new AbortController();
       const timeoutId = globalThis.window.setTimeout(() => controller.abort(), 5000);
       console.log(`[GuardedNavigate] Checking connectivity...`);
-      const resp = await fetch("/api/admin/check-status", {
-        method: "GET",
-        cache: "no-store",
-        credentials: "include",
-        headers: { "cache-control": "no-cache" },
-        signal: controller.signal,
-      });
+      const result = await checkConnectivityAction();
       globalThis.window.clearTimeout(timeoutId);
-      console.log(`[GuardedNavigate] Check response: ${resp.status} ${resp.ok ? "OK" : "FAIL"}`);
-      if (!resp.ok) {
+      console.log(`[GuardedNavigate] Check response: ${result.success ? "OK" : "FAIL"}`);
+      if (!result.success) {
         globalThis.window.dispatchEvent(
           new CustomEvent("notus:offline-popin", {
             detail: {
@@ -32,7 +27,7 @@ export function useGuardedNavigate() {
           })
         );
       }
-      return resp.ok;
+      return result.success;
     } catch (error) {
       console.log(`[GuardedNavigate] Connectivity check error:`, error);
       globalThis.window.dispatchEvent(

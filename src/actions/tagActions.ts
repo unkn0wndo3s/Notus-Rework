@@ -1,16 +1,21 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/security/routeGuards";
+"use server";
 
-export async function GET() {
+import { prisma } from "@/lib/prisma";
+import { auth } from "@/../auth";
+
+/**
+ * Retrieves all unique tags for the current user's documents.
+ */
+export async function getTags() {
   try {
-    const authResult = await requireAuth();
-    if (authResult instanceof NextResponse) {
-      return authResult;
+    const session = await auth();
+    if (!session?.user?.id) {
+      throw new Error("Unauthorized");
     }
+    const userId = parseInt(session.user.id);
 
     const documents = await prisma.document.findMany({
-      where: { user_id: authResult.userId },
+      where: { user_id: userId },
       select: { tags: true },
     });
 
@@ -30,16 +35,12 @@ export async function GET() {
     // Sort tags alphabetically
     const sortedTags = Array.from(allTags).sort((a, b) => a.localeCompare(b, "en"));
 
-    return NextResponse.json({
+    return {
       success: true,
       tags: sortedTags,
-    });
+    };
   } catch (error) {
     console.error("❌ Error retrieving tags:", error);
-    return NextResponse.json(
-      { success: false, error: "Access denied", tags: [] },
-      { status: 500 }
-    );
+    return { success: false, error: "Failed to retrieve tags", tags: [] };
   }
 }
-

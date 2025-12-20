@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import Icon from "@/components/Icon";
 import { useSearch, type NoteFilters } from "@/contexts/SearchContext";
 import { useTagsContext } from "@/contexts/TagsContext";
+import { getFolders as getFoldersAction } from "@/actions/folderActions";
+import { getTags as getTagsAction } from "@/actions/tagActions";
 
 interface NotesFilterModalProps {
   isOpen: boolean;
@@ -76,15 +78,13 @@ export default function NotesFilterModal({ isOpen, onClose }: NotesFilterModalPr
     try {
       setIsLoadingFolders(true);
       setFoldersError(null);
-      const response = await fetch("/api/folders", { credentials: "include" });
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        setFoldersError(data.error || "Failed to load folders.");
+      const result = await getFoldersAction();
+      if (!result.success) {
+        setFoldersError(result.error || "Failed to load folders.");
         setFolders([]);
         return;
       }
-      const data = await response.json();
-      setFolders(Array.isArray(data.folders) ? data.folders : []);
+      setFolders(result.folders || []);
       setHasLoadedFolders(true);
     } catch (error) {
       setFoldersError("Failed to load folders.");
@@ -98,15 +98,13 @@ export default function NotesFilterModal({ isOpen, onClose }: NotesFilterModalPr
     try {
       setIsLoadingTags(true);
       setTagsError(null);
-      const response = await fetch("/api/tags", { credentials: "include" });
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        setTagsError(data.error || "Failed to load tags.");
+      const result = await getTagsAction();
+      if (!result.success) {
+        setTagsError(result.error || "Failed to load tags.");
         setAvailableTags([]);
         return;
       }
-      const data = await response.json();
-      setAvailableTags(Array.isArray(data.tags) ? data.tags : []);
+      setAvailableTags(result.tags || []);
     } catch (error) {
       setTagsError("Failed to load tags.");
       setAvailableTags([]);

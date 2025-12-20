@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useActionState, startTransition } from "react";
 import { deleteMultipleDocumentsAction } from "@/lib/actions";
+import { addDocumentsToFolder as addDocumentsToFolderAction } from "@/actions/folderActions";
 import DocumentCard from "@/components/documents/DocumentCard";
 import SelectionBar from "@/components/documents/SelectionBar";
 import ConnectionWarning from "@/components/common/ConnectionWarning";
@@ -121,17 +122,13 @@ export default function DocumentsGridClient({ documents: serverDocuments = [], c
           onBulkDelete={handleBulkDelete}
           onAddToFolder={currentUserId ? async (folderId: number, documentIds: string[]) => {
             try {
-              const response = await fetch(`/api/folders/${folderId}/documents`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ documentIds }),
-              });
-              if (response.ok) {
+              const docIds = documentIds.map(id => Number(id)).filter(id => !isNaN(id));
+              const result = await addDocumentsToFolderAction(folderId, docIds);
+              if (result.success) {
                 setSelectMode(false);
                 setSelectedIds([]);
               } else {
-                const data = await response.json();
-                console.error("Error:", data.error);
+                console.error("Error:", result.error);
               }
             } catch (error) {
               console.error("Error adding to folder:", error);

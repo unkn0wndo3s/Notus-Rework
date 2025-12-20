@@ -110,13 +110,13 @@ async function extractAuthContext(request: NextRequest): Promise<AuthContext | n
     }
 
     const rawId = (token as Record<string, unknown>).id ?? token.sub ?? null;
-    const parsedId =
-      typeof rawId === "number"
-        ? rawId
-        : typeof rawId === "string"
-        ? Number(rawId)
-        : null;
-    const userId = Number.isFinite(parsedId ?? NaN) ? (parsedId as number) : null;
+    let parsedId: number | null = null;
+    if (typeof rawId === "number") {
+      parsedId = rawId;
+    } else if (typeof rawId === "string") {
+      parsedId = Number(rawId);
+    }
+    const userId = Number.isFinite(parsedId ?? Number.NaN) ? (parsedId as number) : null;
 
     const email =
       typeof token.email === "string" ? token.email.toLowerCase().trim() : null;
@@ -188,7 +188,7 @@ async function enforceDocumentOwnershipFromQuery(context: PolicyContext) {
 
 async function enforceSharedEmailMatchesContext(context: PolicyContext) {
   const authContext = context.authContext;
-  if (!authContext || !authContext.email) {
+  if (!authContext?.email) {
     return NextResponse.json(
       { success: false, error: "Access denied" },
       { status: 401 }
@@ -206,35 +206,6 @@ async function enforceSharedEmailMatchesContext(context: PolicyContext) {
   }
 
   if (requestedEmail !== authContext.email) {
-    return NextResponse.json(
-      { success: false, error: "Access denied" },
-      { status: 403 }
-    );
-  }
-
-  return null;
-}
-
-async function enforceNotificationQueryMatchesUser(context: PolicyContext) {
-  const authContext = context.authContext;
-  if (!authContext?.userId) {
-    return NextResponse.json(
-      { success: false, error: "Access denied" },
-      { status: 401 }
-    );
-  }
-
-  const { searchParams } = new URL(context.request.url);
-  const requestedId = toNumber(searchParams.get("id"));
-
-  if (!requestedId) {
-    return NextResponse.json(
-      { success: false, error: "Access denied" },
-      { status: 400 }
-    );
-  }
-
-  if (requestedId !== authContext.userId) {
     return NextResponse.json(
       { success: false, error: "Access denied" },
       { status: 403 }
@@ -283,38 +254,13 @@ async function enforceRequestsAccess(context: PolicyContext) {
 }
 
 export const apiRoutePolicies: RoutePolicy[] = [
-  {
-    id: "open-doc-share-delete",
-    description: "Delete a targeted share from a document",
-    matcher: /^\/api\/openDoc\/share\/delete$/,
-    methods: ["DELETE"],
-    jsonBodyFor: ["DELETE"],
-    requireAuth: true,
-    enforce: enforceDocumentOwnershipFromBody,
-  },
-  {
-    id: "open-doc-share",
-    description: "Add or update a document share",
-    matcher: /^\/api\/openDoc\/share$/,
-    methods: ["PATCH"],
-    jsonBodyFor: ["PATCH"],
-    requireAuth: true,
-    enforce: enforceDocumentOwnershipFromBody,
-  },
+
   {
     id: "folders-documents",
     description: "Add or remove documents in a folder",
     matcher: /^\/api\/folders\/[^/]+\/documents$/,
     methods: ["POST", "DELETE"],
     jsonBodyFor: ["POST", "DELETE"],
-    requireAuth: true,
-    enforce: enforceFolderOwnershipFromPath,
-  },
-  {
-    id: "folders-detail",
-    description: "Read or delete a specific folder",
-    matcher: /^\/api\/folders\/[^/]+$/,
-    methods: ["GET", "DELETE"],
     requireAuth: true,
     enforce: enforceFolderOwnershipFromPath,
   },
@@ -371,85 +317,7 @@ export const apiRoutePolicies: RoutePolicy[] = [
     methods: ["DELETE"],
     requireAuth: true,
   },
-  {
-    id: "open-doc-access-list",
-    description: "List access to a document",
-    matcher: /^\/api\/openDoc\/accessList$/,
-    methods: ["GET"],
-    requireAuth: true,
-    enforce: enforceOpenDocAccess,
-  },
-  {
-    id: "open-doc-shared",
-    description: "Documents shared with the current user",
-    matcher: /^\/api\/openDoc\/shared$/,
-    methods: ["GET"],
-    requireAuth: true,
-    enforce: enforceSharedEmailMatchesContext,
-  },
-  {
-    id: "open-doc-history",
-    description: "Modification history of a document",
-    matcher: /^\/api\/openDoc\/history$/,
-    methods: ["GET"],
-    requireAuth: true,
-    enforce: enforceOpenDocAccess,
-  },
-  {
-    id: "open-doc-single",
-    description: "Read a document via shared access",
-    matcher: /^\/api\/openDoc$/,
-    methods: ["GET"],
-    requireAuth: true,
-    enforce: enforceOpenDocAccess,
-  },
-  {
-    id: "notification-unread-count",
-    description: "Number of unread notifications",
-    matcher: /^\/api\/notification\/unread-count$/,
-    methods: ["GET"],
-    requireAuth: true,
-    enforce: enforceNotificationQueryMatchesUser,
-  },
-  {
-    id: "notification-list",
-    description: "Paginated list of notifications",
-    matcher: /^\/api\/notification\/?$/,
-    methods: ["GET"],
-    requireAuth: true,
-    enforce: enforceNotificationQueryMatchesUser,
-  },
-  {
-    id: "tags-list",
-    description: "Retrieve user tags",
-    matcher: /^\/api\/tags$/,
-    methods: ["GET"],
-    requireAuth: true,
-  },
-  {
-    id: "profile-image",
-    description: "Read profile image",
-    matcher: /^\/api\/profile-image$/,
-    methods: ["GET"],
-    requireAuth: true,
-  },
-  {
-    id: "requests",
-    description: "Create or consult assistance requests",
-    matcher: /^\/api\/requests$/,
-    methods: ["GET", "POST"],
-    jsonBodyFor: ["POST"],
-    requireAuth: true,
-    enforce: enforceRequestsAccess,
-  },
-  {
-    id: "folders",
-    description: "Listing and creating folders",
-    matcher: /^\/api\/folders$/,
-    methods: ["GET", "POST"],
-    jsonBodyFor: ["POST"],
-    requireAuth: true,
-  },
+
   {
     id: "invite-share",
     description: "Invite a collaborator to a document",
@@ -465,28 +333,7 @@ export const apiRoutePolicies: RoutePolicy[] = [
     matcher: /^\/api\/confirm-share$/,
     methods: ["GET"],
   },
-  {
-    id: "reactivate-account",
-    description: "Restore a deleted account",
-    matcher: /^\/api\/reactivate-account$/,
-    methods: ["POST"],
-    jsonBodyFor: ["POST"],
-  },
-  {
-    id: "delete-account",
-    description: "Permanently delete an account",
-    matcher: /^\/api\/delete-account$/,
-    methods: ["POST"],
-    jsonBodyFor: ["POST"],
-    requireAuth: true,
-  },
-  {
-    id: "check-deleted-account",
-    description: "Verify a deleted account",
-    matcher: /^\/api\/check-deleted-account$/,
-    methods: ["POST"],
-    jsonBodyFor: ["POST"],
-  },
+
   {
     id: "verify-email",
     description: "Email address validation by token",
@@ -520,15 +367,6 @@ export const apiRoutePolicies: RoutePolicy[] = [
     matcher: /^\/api\/socket$/,
     methods: ["GET"],
     requireAuth: true,
-  },
-  {
-    id: "comments",
-    description: "Retrieve and create comments on a document",
-    matcher: /^\/api\/comments$/,
-    methods: ["GET", "POST"],
-    jsonBodyFor: ["POST"],
-    requireAuth: true,
-    enforce: enforceCommentsAccess,
   },
 ];
 
@@ -607,51 +445,6 @@ async function enforceDocumentAccessFromQuery(context: PolicyContext) {
   return null;
 }
 
-async function enforceCommentsAccess(context: PolicyContext) {
-  const method = context.request.method.toUpperCase();
-  
-  if (method === "GET") {
-    // For GET, use the same verification as for opening a document
-    return enforceOpenDocAccess(context);
-  } else if (method === "POST") {
-    // For POST, verify access via body using the same logic
-    const body = await parseJsonBody<Record<string, unknown>>(context.request);
-    const documentId = parseDocumentIdFromBody(body);
-
-    if (!documentId) {
-      return NextResponse.json(
-        { success: false, error: "Access denied" },
-        { status: 400 }
-      );
-    }
-
-    if (!context.authContext || (!context.authContext.userId && !context.authContext.email)) {
-      return NextResponse.json(
-        { success: false, error: "Access denied" },
-        { status: 401 }
-      );
-    }
-
-    // Use the same access verification as for opening a document
-    const hasAccess = await documentAccessService.userHasAccessToDocument(
-      documentId,
-      context.authContext.userId ?? undefined,
-      context.authContext.email ?? undefined
-    );
-
-    if (!hasAccess) {
-      return NextResponse.json(
-        { success: false, error: "Access denied" },
-        { status: 403 }
-      );
-    }
-
-    return null;
-  }
-
-  return null;
-}
-
 async function enforceFolderOwnershipFromPath(context: PolicyContext) {
   if (!context.authContext?.userId) {
     return NextResponse.json(
@@ -662,7 +455,7 @@ async function enforceFolderOwnershipFromPath(context: PolicyContext) {
 
   // Extract folder ID from pathname
   // Format: /api/folders/123 or /api/folders/123/documents
-  const match = context.pathname.match(/^\/api\/folders\/([^/]+)/);
+  const match = /^\/api\/folders\/([^/]+)/.exec(context.pathname);
   if (!match) {
     return NextResponse.json(
       { success: false, error: "Access denied" },
@@ -734,49 +527,17 @@ export async function enforceApiPolicies(request: NextRequest) {
     );
   }
 
-  const jsonMethods = new Set<HttpMethod>(policy.jsonBodyFor ?? []);
-  const shouldEnforceJson = jsonMethods.has(method) && jsonMethodSet.has(method);
-
-  if (shouldEnforceJson) {
-    const contentType = request.headers.get("content-type")?.toLowerCase() ?? "";
-    if (!contentType.includes("application/json")) {
-      return NextResponse.json(
-        { success: false, error: "Access denied" },
-        { status: 415 }
-      );
-    }
-
-    const limit = policy.maxBodySize ?? DEFAULT_JSON_BODY_LIMIT;
-    const contentLengthHeader = request.headers.get("content-length");
-    if (contentLengthHeader) {
-      const contentLength = Number(contentLengthHeader);
-      if (!Number.isNaN(contentLength) && contentLength > limit) {
-        return NextResponse.json(
-          { success: false, error: "Access denied" },
-          { status: 413 }
-        );
-      }
-    }
-  }
+  const jsonError = await checkJsonEnforcement(request, method, policy);
+  if (jsonError) return jsonError;
 
   let authContext: AuthContext | null = null;
 
   if (policy.requireAuth || policy.requireAdmin) {
-    authContext = await extractAuthContext(request);
-
-    if (!authContext) {
-      return NextResponse.json(
-        { success: false, error: "Access denied" },
-        { status: 401 }
-      );
+    const authResult = await checkAuthEnforcement(request, policy);
+    if ('error' in authResult) {
+      return authResult.error; // it's a NextResponse
     }
-
-    if (policy.requireAdmin && !authContext.isAdmin) {
-      return NextResponse.json(
-        { success: false, error: "Access denied" },
-        { status: 403 }
-      );
-    }
+    authContext = authResult.context;
   }
 
   if (policy.enforce) {
@@ -787,6 +548,58 @@ export async function enforceApiPolicies(request: NextRequest) {
   }
 
   return null;
+}
+
+async function checkJsonEnforcement(request: NextRequest, method: HttpMethod, policy: RoutePolicy): Promise<NextResponse | null> {
+  const jsonMethods = new Set<HttpMethod>(policy.jsonBodyFor ?? []);
+  const shouldEnforceJson = jsonMethods.has(method) && jsonMethodSet.has(method);
+
+  if (!shouldEnforceJson) return null;
+
+  const contentType = request.headers.get("content-type")?.toLowerCase() ?? "";
+  if (!contentType.includes("application/json")) {
+    return NextResponse.json(
+      { success: false, error: "Access denied" },
+      { status: 415 }
+    );
+  }
+
+  const limit = policy.maxBodySize ?? DEFAULT_JSON_BODY_LIMIT;
+  const contentLengthHeader = request.headers.get("content-length");
+  if (contentLengthHeader) {
+    const contentLength = Number(contentLengthHeader);
+    if (!Number.isNaN(contentLength) && contentLength > limit) {
+      return NextResponse.json(
+        { success: false, error: "Access denied" },
+        { status: 413 }
+      );
+    }
+  }
+  return null;
+}
+
+async function checkAuthEnforcement(request: NextRequest, policy: RoutePolicy): Promise<{ error: NextResponse } | { context: AuthContext }> {
+  const authContext = await extractAuthContext(request);
+
+  if (!authContext) {
+    return {
+      error: NextResponse.json(
+        { success: false, error: "Access denied" },
+        { status: 401 }
+      )
+    };
+  }
+
+  if (policy.requireAdmin && !authContext.isAdmin) {
+    return {
+      error: NextResponse.json(
+        { success: false, error: "Access denied" },
+        { status: 403 }
+      )
+    };
+  }
+
+  return { context: authContext };
 }
 
 

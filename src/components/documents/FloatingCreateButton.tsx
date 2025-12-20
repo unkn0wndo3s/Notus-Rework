@@ -7,7 +7,7 @@ import { useSelection } from "@/contexts/SelectionContext";
 import type { Session } from "next-auth";
 import Icon from "@/components/Icon";
 import { useActionState, startTransition, useEffect } from "react";
-import { createDocumentAction } from "@/lib/actions/DocumentActions";
+import { createDocumentAction } from "@/actions/documentActions";
 
 interface FloatingCreateButtonProps {
   serverSession?: Session | null;

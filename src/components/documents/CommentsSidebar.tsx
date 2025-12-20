@@ -90,6 +90,8 @@ function getDateKey(date: Date): string {
   });
 }
 
+import { getComments, createComment } from "@/actions/commentActions";
+
 export default function CommentsSidebar({ documentId, isOpen, onClose }: Readonly<CommentsSidebarProps>) {
   const [comments, setComments] = useState<CommentItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -104,20 +106,13 @@ export default function CommentsSidebar({ documentId, isOpen, onClose }: Readonl
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/comments?documentId=${documentId}`, {
-        method: "GET",
-        headers: {
-          "Accept": "application/json",
-        },
-        cache: "no-store",
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        setError(data.error || "Unable to load comments");
+      const result = await getComments(documentId);
+      if (result.success) {
+        setComments((result.comments as unknown as CommentItem[]) || []);
+      } else {
+        setError(result.error || "Unable to load comments");
         setComments([]);
-        return;
       }
-      setComments(Array.isArray(data.comments) ? data.comments : []);
     } catch (e) {
       setError("Error loading comments");
       setComments([]);
@@ -160,27 +155,16 @@ export default function CommentsSidebar({ documentId, isOpen, onClose }: Readonl
     setSubmitting(true);
     setError(null);
     try {
-      const res = await fetch("/api/comments", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-        },
-        body: JSON.stringify({ documentId, content }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        setError(data.error || "Unable to send comment");
-        return;
-      }
-
-      setNewComment("");
-      // Add new comment at the bottom
-      if (data.comment) {
-        setComments((prev) => [...prev, data.comment as CommentItem]);
+      const result = await createComment(documentId, content);
+      if (result.success) {
+        setNewComment("");
+        if (result.comment) {
+          setComments((prev) => [...prev, result.comment as unknown as CommentItem]);
+        } else {
+          void fetchComments();
+        }
       } else {
-        // Fallback reload
-        void fetchComments();
+        setError(result.error || "Unable to send comment");
       }
     } catch (e) {
       setError("Error sending comment");

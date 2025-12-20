@@ -1,7 +1,8 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
+import { getUnreadCount } from "@/actions/notificationActions";
 
 type NotificationContextValue = {
   unreadCount: number;
@@ -24,12 +25,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         return;
       }
       try {
-        const id = encodeURIComponent(String(session.user.id));
-        const res = await fetch(`/api/notification/unread-count?id=${id}`);
-        if (!res.ok) return;
-        const data = await res.json();
-        if (mounted && typeof data?.count === "number") setUnreadCount(data.count);
-      } catch {}
+        const result = await getUnreadCount();
+        if (mounted && result.success && typeof result.data === "number") {
+          setUnreadCount(result.data);
+        }
+      } catch (error) {
+        console.error("fetchCount error", error);
+      }
     }
     fetchCount();
     return () => { mounted = false; };
@@ -43,18 +45,19 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     setUnreadCount((prev) => Math.max(0, prev + Math.floor(delta || 0)));
   };
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     if (!session?.user?.id) return;
     try {
-      const id = encodeURIComponent(String(session.user.id));
-      const res = await fetch(`/api/notification/unread-count?id=${id}`);
-      if (!res.ok) return;
-      const data = await res.json();
-      if (typeof data?.count === "number") setUnreadCount(data.count);
-    } catch {}
-  };
+      const result = await getUnreadCount();
+      if (result.success && typeof result.data === "number") {
+        setUnreadCount(result.data);
+      }
+    } catch (error) {
+      console.error("refresh error", error);
+    }
+  }, [session?.user?.id]);
 
-  const value = useMemo(() => ({ unreadCount, setUnreadCountSync, adjustUnreadCount, refresh }), [unreadCount]);
+  const value = useMemo(() => ({ unreadCount, setUnreadCountSync, adjustUnreadCount, refresh }), [unreadCount, refresh]);
 
   return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>;
 }
