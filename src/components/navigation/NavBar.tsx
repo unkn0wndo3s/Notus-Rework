@@ -76,7 +76,7 @@ export default function NavBar() {
           setIsAdmin(data.isAdmin);
         }
       } catch (error) {
-        console.error("Erreur lors de la vérification du statut admin:", error);
+        console.error("Error verifying admin status:", error);
       } finally {
         setAdminLoading(false);
       }
@@ -88,12 +88,12 @@ export default function NavBar() {
   const { unreadCount, refresh } = useNotification();
 
   const items: NavItem[] = [
-    { name: "Mes notes", href: "/app", icon: "note" },
-    { name: "Favoris", href: "/favorites", icon: "star" },
-    { name: "Dossiers", href: "/dossiers", icon: "folder" },
-    { name: "Assistance", href: "/assistance", icon: "alert" },
+    { name: "My notes", href: "/app", icon: "note" },
+    { name: "Favorites", href: "/favorites", icon: "star" },
+    { name: "Folders", href: "/folders", icon: "folder" },
+    { name: "Support", href: "/support", icon: "alert" },
     { name: "Notifications", href: "#", icon: "bell", onClick: (e) => { e.preventDefault(); handleNotificationOverlay(e); }, mobileHidden: true, unreadNotifications: unreadCount },
-    { name: "Corbeille", href: "/trash", icon: "trash" },
+    { name: "Trash", href: "/trash", icon: "trash" },
   ];
 
   const pageTitle = getPageTitle(pathname, items);
@@ -115,7 +115,7 @@ export default function NavBar() {
   };
   const handleNavItemClick = (e: React.MouseEvent, href: string) => {
     e.preventDefault(); setIsOpen(false);
-    if ((href === "/favorites" || href === "/trash" || href === "/dossiers" || href === "/assistance") && !isLoggedIn) { setShowLoginModal(true); return; }
+    if ((href === "/favorites" || href === "/trash" || href === "/folders" || href === "/support") && !isLoggedIn) { setShowLoginModal(true); return; }
     guardedNavigate(href);
   };
   const handleNotificationOverlay = (e?: React.MouseEvent) => {
@@ -129,11 +129,11 @@ export default function NavBar() {
       <header className="sticky top-0 z-40 bg-background">
         <div className="w-full px-2 h-16 flex items-center justify-between md:hidden">
           <div className="flex items-center gap-3">
-            <button aria-label="Ouvrir le menu" onClick={() => setIsOpen(!isOpen)} className="md:hidden p-2 rounded-md hover:bg-accent/20 text-foreground focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer transition-colors duration-200 ease-in-out">
+            <button aria-label="Open menu" onClick={() => setIsOpen(!isOpen)} className="md:hidden p-2 rounded-md hover:bg-accent/20 text-foreground focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer transition-colors duration-200 ease-in-out">
               <Icon name="menu" className="w-6 h-6" />
             </button>
             <span className="font-title text-2xl sm:text-3xl font-regular text-foreground leading-tight">{pageTitle}</span>
-            <button type="button" className="items-center hidden md:flex cursor-pointer" onClick={() => guardedNavigate("/app")} aria-label="Accueil">
+            <button type="button" className="items-center hidden md:flex cursor-pointer" onClick={() => guardedNavigate("/app")} aria-label="Home">
               <Logo width={160} height={46} />
             </button>
           </div>
@@ -143,9 +143,9 @@ export default function NavBar() {
                 <button aria-label="Notifications" onClick={handleNotificationOverlay} className={`p-2 rounded-md hover:bg-accent/20 text-foreground focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer transition-colors duration-200 ease-in-out ${showNotifications ? 'bg-accent' : ''}`} title="Notifications">
                   <BadgeIcon name="bell" count={unreadCount} />
                 </button>
-                <button type="button" onClick={() => guardedNavigate("/profile")} aria-label="Profil" className="ml-1 inline-flex items-center justify-center w-8 h-8 rounded-full overflow-hidden bg-muted ring-1 ring-border/20 shadow-sm" title={userName || "Profil"}>
+                <button type="button" onClick={() => guardedNavigate("/profile")} aria-label="Profile" className="ml-1 inline-flex items-center justify-center w-8 h-8 rounded-full overflow-hidden bg-muted ring-1 ring-border/20 shadow-sm" title={userName || "Profile"}>
                   {localProfileImage ? (
-                    <img src={localProfileImage} alt="Photo de profil" className="w-full h-full object-cover" />
+                    <img src={localProfileImage} alt="Profile photo" className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full bg-secondary text-secondary-foreground font-semibold flex items-center justify-center">{getInitials(userName)}</div>
                   )}
@@ -161,26 +161,26 @@ export default function NavBar() {
           <div className="absolute inset-0 bg-foreground/30" onClick={() => setIsOpen(false)} />
           <div className="absolute left-0 top-0 h-full w-72 bg-background border-r-2 border-border/50 p-4 flex flex-col">
             <div className="flex items-center justify-end mb-4">
-              <button aria-label="Fermer" onClick={() => setIsOpen(false)} className="p-2 rounded-sm hover:bg-accent/20 text-foreground focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer transition-colors duration-200 ease-in-out">
+              <button aria-label="Close" onClick={() => setIsOpen(false)} className="p-2 rounded-sm hover:bg-accent/20 text-foreground focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer transition-colors duration-200 ease-in-out">
                 <Icon name="x" className="w-6 h-6" />
               </button>
             </div>
             <nav className="space-y-1 flex-1 overflow-y-auto">
               <div className="flex justify-center mb-3 p-3">
-                <button type="button" onClick={() => { setIsOpen(false); guardedNavigate("/app"); }} className="inline-flex items-center cursor-pointer" aria-label="Accueil">
+                <button type="button" onClick={() => { setIsOpen(false); guardedNavigate("/app"); }} className="inline-flex items-center cursor-pointer" aria-label="Home">
                   <Logo width={160} height={46} />
                 </button>
               </div>
               <div className="px-3 mb-3">
                 <div className="flex items-center gap-2">
-                  <Input className="flex-1" placeholder="Rechercher..." value={searchQuery} onChange={handleSearchChange} onKeyDown={handleDesktopSearchKeyDown} />
+                  <Input className="flex-1" placeholder="Search..." value={searchQuery} onChange={handleSearchChange} onKeyDown={handleDesktopSearchKeyDown} />
                   <button
                     type="button"
                     onClick={() => { setShowFiltersModal(true); setIsOpen(false); }}
                     className={`inline-flex items-center justify-center h-10 w-10 rounded-md border border-border transition-colors duration-200 ease-in-out ${hasActiveFilters ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-accent/20"}`}
                     aria-pressed={hasActiveFilters}
-                    aria-label="Ouvrir les filtres"
-                    title="Filtrer les notes"
+                    aria-label="Open filters"
+                    title="Filter notes"
                   >
                     <Icon name="filter" className="w-4 h-4" />
                   </button>
@@ -212,23 +212,23 @@ export default function NavBar() {
               {mounted && isLoggedIn ? (
                 <>
                   <Link
-                    href="/assistance"
-                    onClick={(e) => handleNavItemClick(e, "/assistance")}
+                    href="/support"
+                    onClick={(e) => handleNavItemClick(e, "/support")}
                     className="block text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 ease-in-out"
                   >
-                    Besoin d'aide ?
+                    Need help?
                   </Link>
               <div className="flex items-center gap-3 border-t border-border pt-3">
                 <button type="button" onClick={() => guardedNavigate("/profile")} className="flex items-center gap-3 flex-1 bg-transparent cursor-pointer text-left">
                   <div className="flex items-center justify-center w-10 h-10 rounded-full overflow-hidden bg-muted ring-1 ring-border/20 shadow-sm">
                     {localProfileImage ? (
-                      <img src={localProfileImage} alt="Photo de profil" className="w-full h-full object-cover" />
+                      <img src={localProfileImage} alt="Profile photo" className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full bg-secondary text-secondary-foreground font-semibold flex items-center justify-center">{getInitials(userName || username || "Anonyme")}</div>
+                      <div className="w-full h-full bg-secondary text-secondary-foreground font-semibold flex items-center justify-center">{getInitials(userName || username || "Anonymous")}</div>
                     )}
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-foreground">{username || userName || "Anonyme"}</span>
+                    <span className="text-sm font-semibold text-foreground">{username || userName || "Anonymous"}</span>
                   </div>
                 </button>
                 {!adminLoading && isAdmin && (
@@ -246,8 +246,8 @@ export default function NavBar() {
                   type="button"
                   onClick={(e) => handleNavItemClick(e, "/settings")}
                   className="p-2 rounded-sm text-muted-foreground hover:text-foreground focus:outline-none transition-all duration-300 ease-in-out hover:scale-110 hover:rotate-90"
-                  aria-label="Paramètres"
-                  title="Paramètres"
+                  aria-label="Settings"
+                  title="Settings"
                 >
                   <Icon name="gear" className="w-6 h-6 cursor-pointer" />
                 </button>
@@ -256,24 +256,24 @@ export default function NavBar() {
               ) : (
                 <div className="flex items-center justify-between border-t border-border pt-3">
                   <Link
-                    href="/assistance"
-                    onClick={(e) => handleNavItemClick(e, "/assistance")}
+                    href="/support"
+                    onClick={(e) => handleNavItemClick(e, "/support")}
                     className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 ease-in-out"
                   >
-                    Besoin d'aide ?
+                    Need help?
                   </Link>
                   <button
                     type="button"
                     onClick={(e) => handleNavItemClick(e, "/settings")}
                     className="p-2 rounded-sm text-muted-foreground hover:text-foreground focus:outline-none transition-all duration-300 ease-in-out hover:scale-110 hover:rotate-90"
-                    aria-label="Paramètres"
-                    title="Paramètres"
+                    aria-label="Settings"
+                    title="Settings"
                   >
                     <Icon name="gear" className="w-6 h-6 cursor-pointer" />
                   </button>
                 </div>
               )}
-              <Button onClick={handleLogout} className="w-full py-2" variant="primary">{isLoggedIn ? "Se déconnecter" : "Se connecter"}</Button>
+              <Button onClick={handleLogout} className="w-full py-2" variant="primary">{isLoggedIn ? "Log out" : "Log in"}</Button>
             </div>
           </div>
         </div>
@@ -287,28 +287,28 @@ export default function NavBar() {
 
       <aside className="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:left-0 md:w-64 bg-background border-r-2 border-border/50 z-30">
         <div className="px-4 py-3 pt-10 flex justify-center">
-          <button type="button" onClick={() => guardedNavigate("/app")} className="inline-flex items-center cursor-pointer" aria-label="Accueil">
+          <button type="button" onClick={() => guardedNavigate("/app")} className="inline-flex items-center cursor-pointer" aria-label="Home">
             <Logo width={160} height={40} />
           </button>
         </div>
         <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
           <div className="mt-3">
             <div className="flex items-center gap-2">
-              <Input className="flex-1" placeholder="Rechercher..." value={searchQuery} onChange={handleSearchChange} onKeyDown={handleDesktopSearchKeyDown} />
+              <Input className="flex-1" placeholder="Search..." value={searchQuery} onChange={handleSearchChange} onKeyDown={handleDesktopSearchKeyDown} />
               <button
                 type="button"
                 onClick={() => setShowFiltersModal(true)}
                 className={`inline-flex items-center justify-center h-10 w-10 rounded-md border border-border transition-colors ${hasActiveFilters ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-accent/20"}`}
                 aria-pressed={hasActiveFilters}
-                aria-label="Ouvrir les filtres"
-                title="Filtrer les notes"
+                aria-label="Open filters"
+                title="Filter notes"
               >
                 <Icon name="filter" className="w-4 h-4" />
               </button>
             </div>
           </div>
           <div className="mt-4 space-y-1">
-            {items.filter((item) => item.name !== "Assistance").map((item) => (
+            {items.filter((item) => item.name !== "Support").map((item) => (
               item.onClick ? (
                 <button key={item.href} onClick={(e) => { e.preventDefault(); item.onClick?.(e); }} className={`w-full flex items-center gap-3 p-3 rounded-sm hover:bg-accent/20 text-foreground cursor-pointer transition-colors duration-200 ease-in-out ${pathname === item.href || (item.name === 'Notifications' && showNotifications) ? 'bg-accent' : ''}`}>
                   <div className="relative flex items-center">
@@ -331,23 +331,23 @@ export default function NavBar() {
           {mounted && isLoggedIn ? (
             <>
               <Link
-                href="/assistance"
-                onClick={(e) => handleNavItemClick(e, "/assistance")}
+                href="/support"
+                onClick={(e) => handleNavItemClick(e, "/support")}
                 className="block text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 ease-in-out"
               >
-                Besoin d'aide ?
+                Need help?
               </Link>
               <div className="flex items-center gap-3 border-t border-border pt-3">
                 <button type="button" onClick={() => guardedNavigate("/profile")} className="flex items-center gap-3 flex-1 bg-transparent cursor-pointer text-left">
                   <div className="flex items-center justify-center w-10 h-10 rounded-full overflow-hidden bg-muted ring-1 ring-border/20 shadow-sm">
                     {localProfileImage ? (
-                      <img src={localProfileImage} alt="Photo de profil" className="w-full h-full object-cover" />
+                      <img src={localProfileImage} alt="Profile photo" className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full bg-secondary text-secondary-foreground font-semibold flex items-center justify-center">{getInitials(userName || username || "Anonyme")}</div>
+                      <div className="w-full h-full bg-secondary text-secondary-foreground font-semibold flex items-center justify-center">{getInitials(userName || username || "Anonymous")}</div>
                     )}
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-foreground">{username || userName || "Anonyme"}</span>
+                    <span className="text-sm font-semibold text-foreground">{username || userName || "Anonymous"}</span>
                   </div>
                 </button>
                 {!adminLoading && isAdmin && (
@@ -365,8 +365,8 @@ export default function NavBar() {
                   type="button"
                   onClick={(e) => handleNavItemClick(e, "/settings")}
                   className="p-2 rounded-sm text-muted-foreground hover:text-foreground focus:outline-none transition-all hover:scale-110 hover:rotate-90"
-                  aria-label="Paramètres"
-                  title="Paramètres"
+                  aria-label="Settings"
+                  title="Settings"
                 >
                   <Icon name="gear" className="w-6 h-6 cursor-pointer" />
                 </button>
@@ -375,31 +375,31 @@ export default function NavBar() {
           ) : (
             <div className="flex items-center justify-between border-t border-border pt-3">
               <Link
-                href="/assistance"
-                onClick={(e) => handleNavItemClick(e, "/assistance")}
+                href="/support"
+                onClick={(e) => handleNavItemClick(e, "/support")}
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 ease-in-out"
               >
-                Besoin d'aide ?
+                Need help?
               </Link>
               <button
                 type="button"
                 onClick={(e) => handleNavItemClick(e, "/settings")}
                 className="p-2 rounded-sm text-muted-foreground hover:text-foreground focus:outline-none transition-all hover:scale-110 hover:rotate-90"
-                aria-label="Paramètres"
-                title="Paramètres"
+                aria-label="Settings"
+                title="Settings"
               >
                 <Icon name="gear" className="w-6 h-6 cursor-pointer" />
               </button>
             </div>
           )}
-          <Button onClick={handleLogout} variant="primary" className="w-full">{isLoggedIn ? "Se déconnecter" : "Se connecter"}</Button>
+          <Button onClick={handleLogout} variant="primary" className="w-full">{isLoggedIn ? "Log out" : "Log in"}</Button>
         </div>
       </aside>
       <div className="hidden md:block md:fixed md:left-[16rem] md:top-0 z-40">
         <NotificationOverlay isOpen={showNotifications} onClose={() => setShowNotifications(false)} />
       </div>
 
-      <LoginRequiredModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} message="Vous devez être connecté pour avoir accès aux notes partagées." />
+      <LoginRequiredModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} message="You must be logged in to access shared notes." />
       <NotesFilterModal isOpen={showFiltersModal} onClose={() => setShowFiltersModal(false)} />
     </>
   );
@@ -409,15 +409,15 @@ function getPageTitle(pathname: string | null, items: NavItem[]): string {
   if (!pathname) return "Notus";
   const found = items.find((i) => i.href === pathname);
   if (found) return found.name;
-  if (pathname === "/") return "Mes notes";
-  if (pathname === "/profile") return "Mon compte";
-  if (pathname === "/settings") return "Paramètres";
-  if (pathname === "/favorites") return "Favoris";
-  if (pathname === "/dossiers") return "Dossiers";
-  if (pathname.startsWith("/dossiers/")) return "Dossier";
-  if (pathname === "/assistance") return "Assistance";
-  if (pathname === "/trash") return "Corbeille";
-  if (pathname.startsWith("/profile/edit")) return "Modifier le profil";
+  if (pathname === "/") return "My notes";
+  if (pathname === "/profile") return "My account";
+  if (pathname === "/settings") return "Settings";
+  if (pathname === "/favorites") return "Favorites";
+  if (pathname === "/folders") return "Folders";
+  if (pathname.startsWith("/folders/")) return "Folder";
+  if (pathname === "/support") return "Support";
+  if (pathname === "/trash") return "Trash";
+  if (pathname.startsWith("/profile/edit")) return "Edit profile";
   return "Notus";
 }
 

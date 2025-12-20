@@ -21,7 +21,7 @@ export async function POST(request: Request) {
 
     if (!documentId || !email || !docTitle) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     const docId = parseInt(String(documentId));
     if (!Number.isFinite(docId)) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
@@ -39,24 +39,24 @@ export async function POST(request: Request) {
       return ownershipCheck;
     }
 
-    // Normaliser l'email fourni pour la comparaison
+    // Normalize the provided email for comparison
     const normalizedEmail = email.toLowerCase().trim();
     const normalizedAuthEmail = authResult.email.toLowerCase().trim();
 
-    // Empêcher l'auto-invitation
+    // Prevent self-invitation
     if (normalizedEmail === normalizedAuthEmail) {
       return NextResponse.json(
-        { success: false, error: "Vous ne pouvez pas vous inviter vous-même." },
+        { success: false, error: "You cannot invite yourself." },
         { status: 400 }
       );
     }
 
-    // Vérifier si l'utilisateur avec cet email existe avant d'envoyer le mail
+    // Verify if a user with this email exists before sending the email
     const userRepo = new PrismaUserRepository();
     const userResult = await userRepo.getUserByEmail(normalizedEmail);
     if (!userResult.success || !userResult.user) {
       return NextResponse.json(
-        { success: false, error: "Vous ne pouvez pas envoyer de mail à cet utilisateur." },
+        { success: false, error: "You cannot send an email to this user." },
         { status: 404 }
       );
     }
@@ -68,12 +68,12 @@ export async function POST(request: Request) {
     const emailResult = await emailService.sendShareInviteEmail(
       normalizedEmail,
       confirmUrl,
-      inviterName || "Un utilisateur",
+      inviterName || "A user",
       docTitle
     );
 
     if (!emailResult.success) {
-      return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 500 });
+      return NextResponse.json({ success: false, error: "Access denied" }, { status: 500 });
     }
 
     try {
@@ -83,7 +83,7 @@ export async function POST(request: Request) {
       // message can be structured; NotificationRepository stringifies it
       await notifSvc.sendNotification(senderId, userResult.user.id, {
         type: "share-invite",
-        from: inviterName || "Un utilisateur",
+        from: inviterName || "A user",
         documentId: docId,
         documentTitle: docTitle,
         url: confirmUrl,
@@ -92,11 +92,11 @@ export async function POST(request: Request) {
       console.warn("Could not create in-app notification for invite:", e);
     }
 
-    return NextResponse.json({ success: true, message: "Invitation envoyée !" });
+    return NextResponse.json({ success: true, message: "Invitation sent!" });
   } catch (error) {
-    console.error("❌ Erreur API invite-share:", error);
+    console.error("❌ API error invite-share:", error);
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 500 }
     );
   }

@@ -48,7 +48,7 @@ export class RequestRepository extends BaseRepository {
 
     return this.ensureInitialized(async () => {
       try {
-        // Table des requêtes utilisateurs
+        // User requests table
         await this.query(`
           CREATE TABLE IF NOT EXISTS user_requests (
             id SERIAL PRIMARY KEY,
@@ -65,13 +65,13 @@ export class RequestRepository extends BaseRepository {
           )
         `);
 
-        // Créer les index
+        // Create indexes
         await this.createIndexes();
 
-        // Créer les triggers
+        // Create triggers
         await this.createTriggers();
       } catch (error) {
-        console.error("❌ Erreur lors de l'initialisation de la table user_requests:", error);
+        console.error("❌ Error initializing user_requests table:", error);
         throw error;
       }
     });
@@ -91,7 +91,7 @@ export class RequestRepository extends BaseRepository {
   }
 
   private async createTriggers(): Promise<void> {
-    // Fonction pour mettre à jour updated_at
+    // Function to update updated_at
     await this.query(`
       CREATE OR REPLACE FUNCTION update_updated_at_column()
       RETURNS TRIGGER AS $$
@@ -102,7 +102,7 @@ export class RequestRepository extends BaseRepository {
       $$ language 'plpgsql'
     `);
 
-    // Trigger pour user_requests
+    // Trigger for user_requests
     await this.query(`
       DROP TRIGGER IF EXISTS update_user_requests_updated_at ON user_requests;
       CREATE TRIGGER update_user_requests_updated_at
@@ -122,15 +122,15 @@ export class RequestRepository extends BaseRepository {
       );
 
       if (result.rows.length === 0) {
-        return { success: false, error: "Erreur lors de la création de la requête" };
+        return { success: false, error: "Error creating request" };
       }
 
       return { success: true, request: result.rows[0] };
     } catch (error) {
-      console.error("❌ Erreur création requête:", error);
+      console.error("❌ Error creating request:", error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Erreur inconnue",
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
@@ -151,7 +151,7 @@ export class RequestRepository extends BaseRepository {
       );
 
       if (result.rows.length === 0) {
-        return { success: false, error: "Requête non trouvée" };
+        return { success: false, error: "Request not found" };
       }
 
       const row = result.rows[0];
@@ -166,10 +166,10 @@ export class RequestRepository extends BaseRepository {
         },
       };
     } catch (error) {
-      console.error("❌ Erreur récupération requête:", error);
+      console.error("❌ Error retrieving request:", error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Erreur inconnue",
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
@@ -200,10 +200,10 @@ export class RequestRepository extends BaseRepository {
 
       return { success: true, requests };
     } catch (error) {
-      console.error("❌ Erreur récupération requêtes:", error);
+      console.error("❌ Error retrieving requests:", error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Erreur inconnue",
+        error: error instanceof Error ? error.message : "Unknown error",
         requests: [],
       };
     }
@@ -220,10 +220,10 @@ export class RequestRepository extends BaseRepository {
 
       return { success: true, requests: result.rows };
     } catch (error) {
-      console.error("❌ Erreur récupération requêtes utilisateur:", error);
+      console.error("❌ Error retrieving user requests:", error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Erreur inconnue",
+        error: error instanceof Error ? error.message : "Unknown error",
         requests: [],
       };
     }
@@ -260,7 +260,7 @@ export class RequestRepository extends BaseRepository {
       }
 
       if (updates.length === 0) {
-        return { success: false, error: "Aucune donnée à mettre à jour" };
+        return { success: false, error: "No data to update" };
       }
 
       values.push(id);
@@ -273,15 +273,15 @@ export class RequestRepository extends BaseRepository {
       );
 
       if (result.rows.length === 0) {
-        return { success: false, error: "Requête non trouvée" };
+        return { success: false, error: "Request not found" };
       }
 
       return { success: true, request: result.rows[0] };
     } catch (error) {
-      console.error("❌ Erreur mise à jour requête:", error);
+      console.error("❌ Error updating request:", error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Erreur inconnue",
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
@@ -291,10 +291,10 @@ export class RequestRepository extends BaseRepository {
       await this.query("DELETE FROM user_requests WHERE id = $1", [id]);
       return { success: true };
     } catch (error) {
-      console.error("❌ Erreur suppression requête:", error);
+      console.error("❌ Error deleting request:", error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Erreur inconnue",
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }

@@ -9,7 +9,7 @@ interface ColorPickerProps {
   className?: string;
 }
 
-export default function ColorPicker({ selectedColor, onColorChange, className }: ColorPickerProps) {
+export default function ColorPicker({ selectedColor, onColorChange, className }: Readonly<ColorPickerProps>) {
   const currentColor = selectedColor && /^#([0-9a-fA-F]{6})$/.test(selectedColor) ? selectedColor : DEFAULT_COLOR;
 
   return (
@@ -22,7 +22,7 @@ export default function ColorPicker({ selectedColor, onColorChange, className }:
               key={color.value}
               type="button"
               onClick={() => onColorChange(color.value)}
-              aria-label={`Sélectionner la couleur ${color.name}`}
+              aria-label={`Select color ${color.name}`}
               className={cn(
                 "relative h-12 w-12 rounded-full border-2 transition-all focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
                 isSelected
@@ -58,7 +58,7 @@ export default function ColorPicker({ selectedColor, onColorChange, className }:
         />
         <div className="flex-1">
           <p className="text-sm font-medium text-foreground">
-            {COLOR_PALETTE.find((c) => c.value.toLowerCase() === currentColor.toLowerCase())?.name || "Couleur personnalisée"}
+            {COLOR_PALETTE.find((c) => c.value.toLowerCase() === currentColor.toLowerCase())?.name || "Custom color"}
           </p>
           <p className="text-xs text-muted-foreground">{currentColor}</p>
         </div>

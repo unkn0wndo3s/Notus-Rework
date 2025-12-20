@@ -948,7 +948,7 @@ export class FormattingHandler {
           }
 
           // Fallback to native prompt if no value provided
-          const urlPrompt = prompt('URL du lien:');
+          const urlPrompt = prompt('Link URL:');
           if (urlPrompt) {
             document.execCommand('createLink', false, urlPrompt);
             restoreSelection();
@@ -988,7 +988,7 @@ export class FormattingHandler {
             }
             restoreSelection();
           } else {
-            const imageUrl = prompt('URL de l\'image:');
+            const imageUrl = prompt('Image URL:');
             if (imageUrl) {
               document.execCommand('insertImage', false, imageUrl);
               restoreSelection();
@@ -1001,10 +1001,10 @@ export class FormattingHandler {
               const fileData = JSON.parse(value);
               const { dataUrl, name, type } = fileData as { dataUrl?: string; name?: string; type?: string };
               if (!dataUrl || typeof dataUrl !== 'string') {
-                console.error('Données de fichier invalides pour insertFile');
+                console.error('Invalid file data for insertFile');
                 break;
               }
-              const safeName = name || 'Fichier';
+              const safeName = name || 'File';
               const safeType = typeof type === 'string' && type.length > 0 ? type : 'application/octet-stream';
               
               // If current selection is inside a link, move caret outside before inserting
@@ -1115,7 +1115,7 @@ export class FormattingHandler {
                 this.syncMarkdown();
               }, 0);
             } catch (e) {
-              console.error('Erreur insertion fichier:', e);
+              console.error('File insertion error:', e);
             }
             restoreSelection();
           }

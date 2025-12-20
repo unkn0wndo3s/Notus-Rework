@@ -1,10 +1,9 @@
 "use client";
 
 import { useActionState, useEffect, useMemo, useRef, useState, startTransition } from "react";
-import { Button, Card, Form, Input, ImageUpload } from "@/components/ui";
+import { Button, Card, Input, ImageUpload } from "@/components/ui";
 import Icon from "@/components/Icon";
 import { updateUserProfileAction } from "@/lib/actions";
-import { useRouter } from "next/navigation";
 import { useGuardedNavigate } from "@/hooks/useGuardedNavigate";
 import { useSession } from "next-auth/react";
 import { saveUserSession } from "@/lib/session-utils";
@@ -26,8 +25,7 @@ interface EditProfilePageClientProps {
   user: User;
 }
 
-export default function EditProfilePageClient({ user }: EditProfilePageClientProps) {
-  const router = useRouter();
+export default function EditProfilePageClient({ user }: Readonly<EditProfilePageClientProps>) {
   const { checkConnectivity, guardedNavigate } = useGuardedNavigate();
   const { update } = useSession();
   const [message, formAction, isPending] = useActionState(
@@ -52,12 +50,12 @@ export default function EditProfilePageClient({ user }: EditProfilePageClientPro
     `${initial.firstName} ${initial.lastName}`.trim() ||
     initial.username ||
     initial.name ||
-    "MonCompte";
+    "MyAccount";
 
   const [username, setUsername] = useState(initial.username);
   const [firstName, setFirstName] = useState(initial.firstName);
   const [lastName, setLastName] = useState(initial.lastName);
-  const [email, setEmail] = useState(initial.email);
+  const [email] = useState(initial.email);
   const [profileImage, setProfileImage] = useState<string | null>(initial.profileImage);
   const [bannerImage, setBannerImage] = useState<string | null>(initial.bannerImage);
   const hasSyncedRef = useRef(false);
@@ -66,7 +64,7 @@ export default function EditProfilePageClient({ user }: EditProfilePageClientPro
     useImageValidation();
 
   useEffect(() => {
-    if (!message || !message.toLowerCase().includes("succès")) return;
+    if (!message || !message.toLowerCase().includes("success")) return;
     if (hasSyncedRef.current) return;
     hasSyncedRef.current = true;
 
@@ -83,7 +81,7 @@ export default function EditProfilePageClient({ user }: EditProfilePageClientPro
           bannerImage,
         });
       } catch (e) {
-        console.error("Erreur lors de la mise à jour de la session:", e);
+        console.error("Error updating session:", e);
       }
 
       try {
@@ -100,7 +98,7 @@ export default function EditProfilePageClient({ user }: EditProfilePageClientPro
         });
       } catch (e) {
         console.error(
-          "Erreur lors de l'enregistrement de la session locale:",
+          "Error saving local session:",
           e
         );
       }
@@ -108,7 +106,9 @@ export default function EditProfilePageClient({ user }: EditProfilePageClientPro
       guardedNavigate("/profile");
     };
 
-    const t = setTimeout(() => doUpdate(), 200);
+    const t = setTimeout(() => {
+      doUpdate();
+    }, 200);
     return () => clearTimeout(t);
   }, [
     message,
@@ -120,6 +120,7 @@ export default function EditProfilePageClient({ user }: EditProfilePageClientPro
     update,
     profileImage,
     bannerImage,
+    guardedNavigate
   ]);
 
   const handleImageChange = (imageType: "profile" | "banner", value: string | null) => {
@@ -141,13 +142,13 @@ export default function EditProfilePageClient({ user }: EditProfilePageClientPro
   };
 
   const handleSubmit = async (formData: FormData) => {
-    // Vérification de connexion
+    // Connection check
     const online = await checkConnectivity();
     if (!online) {
-      console.log(`[EditProfile] Soumission bloquée (offline)`);
+      console.log(`[EditProfile] Submission blocked (offline)`);
       return;
     }
-    // Validation des images avant soumission
+    // Validate images before submission
     const profileData = {
       profileImage: profileImage || undefined,
       bannerImage: bannerImage || undefined,
@@ -155,7 +156,7 @@ export default function EditProfilePageClient({ user }: EditProfilePageClientPro
 
     const validation = validateProfileImages(profileData);
     if (!validation.isValid) {
-      return; // Ne pas soumettre si validation échoue
+      return; // Do not submit if validation fails
     }
 
     formData.set("username", username);
@@ -177,7 +178,7 @@ export default function EditProfilePageClient({ user }: EditProfilePageClientPro
           {profileImage ? (
             <img
               src={profileImage}
-              alt="Photo de profil"
+              alt="Profile"
               className="w-full h-full object-cover"
             />
           ) : (
@@ -191,56 +192,46 @@ export default function EditProfilePageClient({ user }: EditProfilePageClientPro
 
       <div className="mt-6">
         <h2 className="font-title text-3xl md:text-4xl text-foreground mb-4">
-          Informations personnelles
+          Personal Information
         </h2>
 
         <Card className="px-3 py-6">
           <form action={handleSubmit} className="space-y-4">
             <Input
-              label="Pseudo"
+              label="Username"
               labelClassName="!text-foreground text-xl font-title font-bold"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="Pseudo"
+              placeholder="Username"
               className="bg-card !text-foreground border-0 border-b border-border rounded-none pl-0 pt-0"
               noFocusRing
               endAdornment={<Icon name="pencil" className="w-4 h-4" />}
             />
             <Input
-              label="Nom"
+              label="Last Name"
               labelClassName="!text-foreground text-xl font-title font-bold"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              placeholder="Nom"
+              placeholder="Last Name"
               className="bg-card !text-foreground border-0 border-b border-border rounded-none pl-0 pt-0"
               noFocusRing
               endAdornment={<Icon name="pencil" className="w-4 h-4" />}
             />
             <Input
-              label="Prénom"
+              label="First Name"
               labelClassName="!text-foreground text-xl font-title font-bold"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              placeholder="Prénom"
+              placeholder="First Name"
               className="bg-card !text-foreground border-0 border-b border-border rounded-none pl-0 pt-0"
               noFocusRing
               endAdornment={<Icon name="pencil" className="w-4 h-4" />}
             />
-            {/* <Input
-              label="Adresse mail"
-              labelClassName="text-foreground text-xl font-title font-bold"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="email@example.com"
-              className="bg-card !text-foreground border-0 border-b border-border rounded-none pl-0 pt-0"
-              noFocusRing
-            /> */}
 
-            {/* Champs d'images */}
+            {/* Image fields */}
             <div className="space-y-6">
               <ImageUpload
-                label="Image de profil"
+                label="Profile Picture"
                 value={profileImage}
                 onChange={(value) => handleImageChange("profile", value)}
                 error={errors.profileImage || undefined}
@@ -251,7 +242,7 @@ export default function EditProfilePageClient({ user }: EditProfilePageClientPro
               />
 
               <ImageUpload
-                label="Image de bannière"
+                label="Banner Image"
                 value={bannerImage}
                 onChange={(value) => handleImageChange("banner", value)}
                 error={errors.bannerImage || undefined}
@@ -265,7 +256,7 @@ export default function EditProfilePageClient({ user }: EditProfilePageClientPro
 
             {message && (
               <p
-                className={`text-sm ${message.toLowerCase().includes("succès")
+                className={`text-sm ${message.toLowerCase().includes("success")
                   ? "text-primary"
                   : "text-destructive"
                   }`}
@@ -281,7 +272,7 @@ export default function EditProfilePageClient({ user }: EditProfilePageClientPro
                 variant="primary"
                 className="px-6 py-2"
               >
-                Mettre à jour
+                Update
               </Button>
               <Button
                 type="button"
@@ -289,15 +280,15 @@ export default function EditProfilePageClient({ user }: EditProfilePageClientPro
                 className="px-6 py-2"
                 onClick={() => guardedNavigate("/profile")}
               >
-                Annuler
+                Cancel
               </Button>
             </div>
           </form>
         </Card>
         <div className="flex justify-center pt-10 gap-4">
-        <Button variant="danger" className="px-6 py-2">
+        <Button variant="danger" className="px-6 py-2" asChild>
             <Link href="/profile/delete">
-              Supprimer le compte
+              Delete Account
             </Link>
           </Button>
         </div>
@@ -313,4 +304,3 @@ function getInitials(name: string | null): string {
   const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
   return (first + last).toUpperCase() || "?";
 }
-

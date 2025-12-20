@@ -26,7 +26,13 @@ interface UserListProps {
   isOwner?: boolean;
 }
 
-export default function UserList({ users, currentUserId, documentId, onChanged, isOwner }: UserListProps) {
+export default function UserList({
+  users,
+  currentUserId,
+  documentId,
+  onChanged,
+  isOwner,
+}: Readonly<UserListProps>) {
   const [menuOpen, setMenuOpen] = useState<number | null>(null);
   const [localUsers, setLocalUsers] = useState<User[]>(users);
   const [loadingEmail, setLoadingEmail] = useState<string | null>(null);
@@ -48,7 +54,7 @@ export default function UserList({ users, currentUserId, documentId, onChanged, 
 
   async function handleSetPermission(targetEmail: string | undefined | null, newPermission: boolean) {
     if (!targetEmail) {
-      alert("Impossible de trouver l'email de l'utilisateur");
+      alert("Could not find user email");
       return;
     }
 
@@ -64,7 +70,7 @@ export default function UserList({ users, currentUserId, documentId, onChanged, 
       });
       const body = await res.json();
       if (!res.ok || !body.success) {
-        throw new Error(body?.error || 'Erreur serveur');
+        throw new Error(body?.error || 'Server error');
       }
       setMenuOpen(null);
       setLoadingEmail(null);
@@ -74,13 +80,13 @@ export default function UserList({ users, currentUserId, documentId, onChanged, 
     } catch (err) {
       setLocalUsers(prev);
       setLoadingEmail(null);
-      alert('Impossible de modifier la permission : ' + (err instanceof Error ? err.message : String(err)));
+      alert('Could not modify permission: ' + (err instanceof Error ? err.message : String(err)));
     }
   }
 
   async function handleRemoveUser(targetEmail: string | undefined | null) {
     if (!targetEmail) {
-      alert("Impossible de trouver l'email de l'utilisateur");
+      alert("Could not find user email");
       return;
     }
 
@@ -92,7 +98,7 @@ export default function UserList({ users, currentUserId, documentId, onChanged, 
       });
       const body = await res.json();
       if (!res.ok || !body.success) {
-        throw new Error(body?.error || 'Erreur serveur');
+        throw new Error(body?.error || 'Server error');
       }
       setMenuOpen(null);
       setLoadingEmail(null);
@@ -100,7 +106,7 @@ export default function UserList({ users, currentUserId, documentId, onChanged, 
         try { await onChanged(); } catch (_) { }
       }
     } catch (err) {
-      alert('Impossible de supprimer l\'utilisateur : ' + (err instanceof Error ? err.message : String(err)));
+      alert('Could not remove user: ' + (err instanceof Error ? err.message : String(err)));
     }
   }
 
@@ -114,9 +120,12 @@ export default function UserList({ users, currentUserId, documentId, onChanged, 
           <div className="flex items-center gap-3">
             {user.avatarUrl && user.avatarUrl !== ""
               ? (
-                <img
+                <Image
                   src={user.avatarUrl}
                   alt={user.name}
+                  width={40}
+                  height={40}
+                  unoptimized
                   className="w-10 h-10 rounded-full object-cover hover:opacity-80 transition"
                 />
               ) : (
@@ -129,15 +138,15 @@ export default function UserList({ users, currentUserId, documentId, onChanged, 
               <span>
                 {user.name}
                 {user.id === connectedId && (
-                  <span className="ml-2 text-xs text-muted-foreground">(vous)</span>
+                  <span className="ml-2 text-xs text-muted-foreground">(you)</span>
                 )}
               </span>
               <span className="text-xs text-muted-foreground">
                 {idx === 0
-                  ? "Propriétaire"
+                  ? "Owner"
                   : user.permission === true
-                    ? "Éditeur"
-                    : "Lecteur"}
+                    ? "Editor"
+                    : "Viewer"}
               </span>
             </div>
           </div>
@@ -146,7 +155,7 @@ export default function UserList({ users, currentUserId, documentId, onChanged, 
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
-                  aria-label="Plus d'options"
+                  aria-label="More options"
                   className="p-2 rounded hover:bg-accent/50"
                   onClick={() => setMenuOpen(prev => prev === (user.id ?? null) ? null : (user.id ?? null))}
                 >
@@ -158,13 +167,13 @@ export default function UserList({ users, currentUserId, documentId, onChanged, 
                   onClick={() => handleSetPermission(user.email, true)}
                   aria-disabled={loadingEmail !== null}
                 >
-                  {loadingEmail === user.email ? '...' : 'Mettre en éditeur'}
+                  {loadingEmail === user.email ? '...' : 'Make editor'}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => handleSetPermission(user.email, false)}
                   aria-disabled={loadingEmail !== null}
                 >
-                  {loadingEmail === user.email ? '...' : 'Mettre en lecteur'}
+                  {loadingEmail === user.email ? '...' : 'Make viewer'}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => {
@@ -177,7 +186,7 @@ export default function UserList({ users, currentUserId, documentId, onChanged, 
                   }}
                   aria-disabled={loadingEmail !== null}
                 >
-                  {loadingEmail === user.email ? '...' : 'Expulser'}
+                  {loadingEmail === user.email ? '...' : 'Remove'}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -208,10 +217,10 @@ export default function UserList({ users, currentUserId, documentId, onChanged, 
             }}
           >
             <header className="mb-4 text-center">
-              <h2 id="userlist-confirm-title" className="text-2xl font-title font-bold text-foreground">Confirmer l'expulsion</h2>
+              <h2 id="userlist-confirm-title" className="text-2xl font-title font-bold text-foreground">Confirm Removal</h2>
             </header>
             <main id="userlist-confirm-desc" className="text-center">
-              <p>Voulez-vous vraiment expulser cet utilisateur du document&nbsp;?</p>
+              <p>Are you sure you want to remove this user from the document?</p>
             </main>
             <footer className="mt-6 flex justify-center space-x-3" role="group" aria-label="Actions">
               <Button asChild variant="primary">
@@ -230,12 +239,12 @@ export default function UserList({ users, currentUserId, documentId, onChanged, 
                   }}
                   disabled={loadingEmail !== null && selectedEmailToRemove === loadingEmail}
                 >
-                  Oui
+                  Yes
                 </button>
               </Button>
               <Button asChild variant="ghost">
                 <button type="button" onClick={() => { setRemoveModalOpen(false); setSelectedEmailToRemove(null); }}>
-                  Non
+                  No
                 </button>
               </Button>
             </footer>

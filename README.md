@@ -1,118 +1,123 @@
-# Notus - Application Next.js avec Authentification
+# Notus - Next.js Application with Authentication
 
-## 🚀 Démarrage rapide
+## 🚀 Quick Start
 
-### 1. Installation des dépendances
+### 1. Install dependencies
 
 ```bash
 npm install
 ```
 
-### 2. Configuration de l'environnement
+### 2. Environment Configuration
 
-Copiez le fichier `env.template` vers `.env` et configurez vos identifiants :
+Copy the `env.template` file to `.env` and configure your credentials:
 
 ```bash
 cp env.template .env
 ```
 
-### 3. Configuration de la base de données (Optionnel)
+### 3. Database Configuration
 
-#### Option A : Mode simulation (sans base de données)
+#### Option A: Simulation mode (no database)
 
-L'application fonctionne en mode simulation sans base de données. Les formulaires sont validés mais les données ne sont pas persistées.
+The application works in simulation mode without a database. Forms are validated but data is not persisted.
 
-#### Option B : Avec PostgreSQL
+#### Option B: With PostgreSQL & Prisma
 
-1. **Installer PostgreSQL** et créer une base de données :
+1. **Install PostgreSQL** and create a database:
 
 ```sql
 CREATE DATABASE notus_db;
 ```
 
-2. **Configurer le fichier `.env`** avec votre URL de base de données :
+2. **Configure the `.env` file** with your database URL:
 
 ```env
 DATABASE_URL=postgresql://username:password@host:port/database
-AUTH_SECRET=votre-clé-secrète
+AUTH_SECRET=your-secret-key
 ```
 
-3. **Initialiser les tables** :
+3. **Initialize the database**:
 
 ```bash
-npm run init-db
+npx prisma generate
+npx prisma db push
 ```
 
-### 4. Configuration Google OAuth (Optionnel)
+### 4. Google OAuth Configuration (Optional)
 
-Pour activer l'authentification Google OAuth :
+To enable Google OAuth authentication:
 
-1. **Suivez le guide** dans `GOOGLE_OAUTH_SETUP.md`
-2. **Ajoutez les variables** à votre fichier `.env` :
+1. **Follow the guide** in `ENV_SETUP.md`
+2. **Add the variables** to your `.env` file:
 
 ```env
-# URL de base (OBLIGATOIRE pour NextAuth.js)
+# Base URL (REQUIRED for NextAuth.js)
 NEXTAUTH_URL=http://localhost:3000
 
-# Clés Google OAuth
-AUTH_GOOGLE_ID=votre_client_id_google
-AUTH_GOOGLE_SECRET=votre_client_secret_google
+# Google OAuth Keys
+AUTH_GOOGLE_ID=your_google_client_id
+AUTH_GOOGLE_SECRET=your_google_client_secret
 ```
 
-⚠️ **Important** : `NEXTAUTH_URL` est **obligatoire** pour que Google OAuth fonctionne correctement.
+⚠️ **Important**: `NEXTAUTH_URL` is **required** for Google OAuth to work correctly.
 
-### 5. Démarrer l'application
+### 5. Start the application
 
 ```bash
 npm run dev
 ```
 
-L'application sera disponible sur `http://localhost:3000`
+The application will be available at `http://localhost:3000`
 
-## 📁 Structure du projet
+## 📁 Project Structure
 
 ```
 notus/
+├── prisma/                 # Prisma schema and migrations
 ├── src/
-│   ├── app/
-│   │   ├── login/          # Page de connexion
-│   │   ├── register/       # Page d'inscription
-│   │   ├── logout/         # Page de déconnexion
-│   │   └── page.js         # Page d'accueil
-│   ├── components/
-│   │   └── GoogleSignInButton.js  # Bouton Google OAuth
-│   └── lib/
-│       ├── actions.ts      # Actions serveur
-│       ├── database.js     # Connexion PostgreSQL
-│       └── validation.js   # Validation des données
-├── auth.ts                 # Configuration NextAuth.js
-├── auth.config.ts          # Configuration des pages
-├── middleware.ts           # Protection des routes
-├── env.template            # Template de configuration
-└── GOOGLE_OAUTH_SETUP.md   # Guide configuration Google OAuth
+│   ├── app/                # Next.js App Router (pages and API)
+│   │   ├── (auth)/         # Login, Register, Forgot Password
+│   │   ├── (main)/         # Dashboard, Profile, Folders
+│   │   └── api/            # API Routes
+│   ├── components/         # React Components
+│   ├── contexts/           # React Contexts
+│   ├── hooks/              # Custom Hooks
+│   ├── lib/
+│   │   ├── actions/        # Server Actions
+│   │   ├── repositories/   # Data access layer (Prisma)
+│   │   ├── services/       # Business logic layer
+│   │   └── auth/           # NextAuth.js configuration
+│   └── types/              # Type definitions
+├── public/                 # Static assets
+├── middleware.ts           # Route protection
+└── env.template            # Configuration template
 ```
 
-## 🔐 Fonctionnalités
+## 🔐 Features
 
-- ✅ **Inscription** avec validation complète
-- ✅ **Connexion** sécurisée avec NextAuth.js
-- ✅ **Authentification Google OAuth** (inscription et connexion)
-- ✅ **Validation** côté client et serveur
-- ✅ **Protection des routes** via middleware
-- ✅ **Mode simulation** sans base de données
-- ✅ **Interface responsive** avec Tailwind CSS
+- ✅ **Registration** with full validation
+- ✅ **Secure Login** with NextAuth.js
+- ✅ **Google OAuth Authentication** (registration and login)
+- ✅ **Document Management** with real-time editing
+- ✅ **Folder Organization** for documents
+- ✅ **Email Notifications** for password reset
+- ✅ **Admin Dashboard** for user management
+- ✅ **Responsive UI** with Tailwind CSS v4
 
 ## 🛠️ Technologies
 
-- **Next.js 15** avec App Router
-- **NextAuth.js** pour l'authentification
-- **PostgreSQL** pour la base de données
-- **Tailwind CSS** pour le styling
-- **bcryptjs** pour le hachage des mots de passe
-- **Zod** pour la validation
+- **Next.js 15** with App Router & Turbopack
+- **NextAuth.js v4** for authentication
+- **Prisma** (ORM) with **PostgreSQL**
+- **Tailwind CSS v4** for styling
+- **TypeScript** for type safety
+- **Bcrypt.js** for password hashing
+- **Zod** for validation
+- **Socket.io** for collaborative features
 
 ## 📝 Notes
 
-- En mode simulation, les données ne sont pas persistées
-- Pour la production, configurez PostgreSQL et générez une clé AUTH_SECRET sécurisée
-- L'application utilise des cookies sécurisés pour les sessions
+- In simulation mode, data is not persisted.
+- For production, configure PostgreSQL and generate a secure `AUTH_SECRET`.
+- The application uses secure cookies for sessions.

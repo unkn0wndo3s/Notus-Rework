@@ -24,8 +24,8 @@ export default function NotificationItem({
     onDelete,
     onMarkRead,
     isRead = false,
-}: NotificationItemProps) {
-    const isSystem = typeof id_sender !== "undefined"
+}: Readonly<NotificationItemProps>) {
+    const isSystem = id_sender !== undefined
         ? id_sender === null
         : (username || "").toLowerCase() === "system" || avatar === "system";
 
@@ -51,20 +51,20 @@ export default function NotificationItem({
         if (!notificationId || deleting) return;
         setDeleting(true);
         try {
-            const url = `/api/notification/detete?id=${encodeURIComponent(String(notificationId))}`;
+            const url = `/api/notification/delete?id=${encodeURIComponent(String(notificationId))}`;
             const res = await fetch(url, { method: "DELETE", headers: { "Content-Type": "application/json" } });
             if (!res.ok) {
                 let body: any = null;
                 try { body = await res.json(); } catch {}
                 const errMsg = body?.error || `Server returned ${res.status}`;
                 console.error("Failed to delete notification:", errMsg);
-                alert("Impossible de supprimer la notification : " + errMsg);
+                alert("Failed to delete notification: " + errMsg);
                 return;
             }
             onDelete?.(notificationId);
         } catch (err) {
             console.error("Failed to delete notification", err);
-            alert("Impossible de supprimer la notification");
+            alert("Failed to delete notification");
         } finally {
             setDeleting(false);
         }
@@ -102,7 +102,7 @@ export default function NotificationItem({
                 onClick && "cursor-pointer"
             )}
         >
-            {!isSystem ? (
+            {isSystem ? null : (
                 hasAvatar && !imgError ? (
                     <img
                         src={normalizedAvatar}
@@ -114,19 +114,19 @@ export default function NotificationItem({
                     <div className="w-8 h-8 rounded-full mr-3 bg-muted flex items-center justify-center text-xs text-muted-foreground">
                     </div>
                 )
-            ) : null}
+            )}
 
             <div className="flex-1 flex flex-col min-w-0">
                 <div className="flex items-center justify-between gap-2">
-                    <span className="font-medium text-sm">{isSystem ? "Système" : username || "Utilisateur"}</span>
+                    <span className="font-medium text-sm">{isSystem ? "System" : username || "User"}</span>
                     <div className="flex items-center gap-2">
                         {!isRead && (
                             <button
                                 type="button"
                                 onClick={handleMarkRead}
                                 className="p-1 rounded hover:bg-accent/50 text-muted-foreground"
-                                title="Marquer comme lu"
-                                aria-label="Marquer comme lu"
+                                title="Mark as read"
+                                aria-label="Mark as read"
                                 disabled={marking}
                             >
                                 <Icon name="check" className="w-4 h-4" />
@@ -138,8 +138,8 @@ export default function NotificationItem({
                             type="button"
                             onClick={handleDeleteClick}
                             className={`ml-2 p-1 rounded hover:bg-accent/50 text-muted-foreground ${deleting ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            title="Supprimer la notification"
-                            aria-label="Supprimer la notification"
+                            title="Delete notification"
+                            aria-label="Delete notification"
                             disabled={deleting}
                         >
                             <Icon name="trash" className="w-4 h-4" />

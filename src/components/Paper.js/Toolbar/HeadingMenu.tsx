@@ -6,7 +6,7 @@ interface HeadingMenuProps {
   onFormatChange: (command: string, value: string) => void;
 }
 
-export default function HeadingMenu({ onFormatChange }: HeadingMenuProps) {
+export default function HeadingMenu({ onFormatChange }: Readonly<HeadingMenuProps>) {
   const [showHeadingMenu, setShowHeadingMenu] = useState(false);
   const MENU_ID = 'headingMenu';
 
@@ -16,10 +16,10 @@ export default function HeadingMenu({ onFormatChange }: HeadingMenuProps) {
     try {
       onFormatChange('fontSize', size);
       // Use rAF to schedule after layout/selection restore
-      if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
-        window.requestAnimationFrame(() => onFormatChange('fontSize', size));
+      if (globalThis.window !== undefined && typeof globalThis.window.requestAnimationFrame === 'function') {
+        globalThis.window.requestAnimationFrame(() => onFormatChange('fontSize', size));
       } else {
-        setTimeout(() => onFormatChange('fontSize', size), 0);
+        globalThis.window.setTimeout(() => onFormatChange('fontSize', size), 0);
       }
     } catch {
       // Fallback single apply if anything goes wrong
@@ -32,8 +32,8 @@ export default function HeadingMenu({ onFormatChange }: HeadingMenuProps) {
       const ce = e as CustomEvent<string>;
       if (ce.detail !== MENU_ID) setShowHeadingMenu(false);
     };
-    window.addEventListener('wysiwyg:open-menu', handler as EventListener);
-    return () => window.removeEventListener('wysiwyg:open-menu', handler as EventListener);
+    globalThis.window.addEventListener('wysiwyg:open-menu', handler as EventListener);
+    return () => globalThis.window.removeEventListener('wysiwyg:open-menu', handler as EventListener);
   }, []);
 
   // Close when clicking outside the heading menu
@@ -43,7 +43,7 @@ export default function HeadingMenu({ onFormatChange }: HeadingMenuProps) {
       const target = ev.target as Element | null;
       if (target && !target.closest('[data-heading-menu]')) {
         setShowHeadingMenu(false);
-        window.dispatchEvent(new CustomEvent('wysiwyg:open-menu', { detail: '' }));
+        globalThis.window.dispatchEvent(new CustomEvent('wysiwyg:open-menu', { detail: '' }));
       }
     };
     document.addEventListener('mousedown', onDocMouse);
@@ -57,11 +57,11 @@ export default function HeadingMenu({ onFormatChange }: HeadingMenuProps) {
         onClick={() => {
           const next = !showHeadingMenu;
           setShowHeadingMenu(next);
-          if (next) window.dispatchEvent(new CustomEvent('wysiwyg:open-menu', { detail: MENU_ID }));
-          else window.dispatchEvent(new CustomEvent('wysiwyg:open-menu', { detail: '' }));
+          if (next) globalThis.window.dispatchEvent(new CustomEvent('wysiwyg:open-menu', { detail: MENU_ID }));
+          else globalThis.window.dispatchEvent(new CustomEvent('wysiwyg:open-menu', { detail: '' }));
         }}
         className="p-2 rounded transition-colors bg-muted hover:bg-muted/80 text-foreground"
-        title="Titre"
+        title="Heading"
       >
         <Icon name="heading" className="w-5 h-5" />
       </button>
@@ -90,12 +90,12 @@ export default function HeadingMenu({ onFormatChange }: HeadingMenuProps) {
               };
               const fontSize = fontSizeMap[level];
               const labelMap: Record<number, string> = {
-                1: '30px - Titre principal',
-                2: '24px - Sous-titre',
-                3: '20px - Titre de section',
-                4: '18px - Titre niveau 4',
-                5: '16px - Titre niveau 5',
-                6: '14px - Titre niveau 6'
+                1: '30px - Main title',
+                2: '24px - Subtitle',
+                3: '20px - Section title',
+                4: '18px - Heading level 4',
+                5: '16px - Heading level 5',
+                6: '14px - Heading level 6'
               };
               return (
                 <button

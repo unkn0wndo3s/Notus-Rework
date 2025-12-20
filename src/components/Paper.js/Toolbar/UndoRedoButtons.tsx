@@ -27,7 +27,7 @@ export default function UndoRedoButtons({ canUndo, canRedo, onFormatChange }: Un
             ? "bg-muted hover:bg-muted/80 text-foreground"
             : "bg-muted text-muted-foreground cursor-not-allowed"
         }`}
-        title="Annuler (Ctrl+Z)"
+        title="Undo (Ctrl+Z)"
       >
         <Icon name="undo" className="h-5 w-5" />
       </button>
@@ -48,7 +48,7 @@ export default function UndoRedoButtons({ canUndo, canRedo, onFormatChange }: Un
             ? "bg-muted hover:bg-muted/80 text-foreground"
             : "bg-muted text-muted-foreground cursor-not-allowed"
         }`}
-        title="Rétablir (Ctrl+Y ou Ctrl+Shift+Z)"
+        title="Redo (Ctrl+Y or Ctrl+Shift+Z)"
       >
         <Icon name="redo" className="h-5 w-5" />
       </button>

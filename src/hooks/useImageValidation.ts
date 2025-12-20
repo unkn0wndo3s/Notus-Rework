@@ -21,36 +21,36 @@ interface UseImageValidationReturn {
   clearAllErrors: () => void;
 }
 
-// Validation côté client pour les images base64
+// Client-side validation for base64 images
 const validateBase64Image = (base64: string, fieldName: string): ValidationResult => {
   const errors: string[] = [];
 
   if (base64 && base64.trim() !== "") {
-    // Vérifier le format base64
+    // Check base64 format
     const base64Regex = /^data:image\/(jpeg|jpg|png|gif);base64,/;
-    if (!base64Regex.test(base64)) {
-      errors.push(
-        `${fieldName} doit être une image en base64 valide (JPEG, PNG, ou GIF)`
-      );
-    } else {
-      // Vérifier que les données base64 sont valides
+    if (base64Regex.test(base64)) {
+      // Check that base64 data is valid
       const base64Data = base64.split(",")[1];
       if (!base64Data || base64Data.length === 0) {
-        errors.push(`${fieldName} contient des données base64 invalides`);
+        errors.push(`${fieldName} contains invalid base64 data`);
       } else {
-        // Vérifier que c'est du base64 valide
+        // Check that it's valid base64
         try {
           atob(base64Data);
         } catch {
-          errors.push(`${fieldName} contient des données base64 corrompues`);
+          errors.push(`${fieldName} contains corrupted base64 data`);
         }
       }
+    } else {
+      errors.push(
+        `${fieldName} must be a valid base64 image (JPEG, PNG, or GIF)`
+      );
     }
 
-    // Vérifier la taille (limite à 10MB pour éviter les problèmes de performance)
+    // Check size (limit to 10MB to avoid performance issues)
     if (base64.length > 13.3 * 1024 * 1024) {
-      // 10MB en base64 ≈ 13.3MB
-      errors.push(`${fieldName} est trop volumineuse (maximum 10MB)`);
+      // 10MB in base64 ≈ 13.3MB
+      errors.push(`${fieldName} is too large (maximum 10MB)`);
     }
   }
 
@@ -77,22 +77,22 @@ export function useImageValidation(): UseImageValidationReturn {
   const validateProfileImages = useCallback((profileData: ProfileData): ValidationResult => {
     const newErrors: Record<string, string | null> = {};
 
-    // Validation image de profil
+    // Profile image validation
     if (profileData.profileImage) {
       const profileValidation = validateBase64Image(
         profileData.profileImage,
-        "Image de profil"
+        "Profile image"
       );
       if (!profileValidation.isValid) {
         newErrors.profileImage = profileValidation.errors[0];
       }
     }
 
-    // Validation image de bannière
+    // Banner image validation
     if (profileData.bannerImage) {
       const bannerValidation = validateBase64Image(
         profileData.bannerImage,
-        "Image de bannière"
+        "Banner image"
       );
       if (!bannerValidation.isValid) {
         newErrors.bannerImage = bannerValidation.errors[0];

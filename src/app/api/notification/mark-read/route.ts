@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const notificationId = body?.notificationId;
     if (!notificationId) {
-      return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Access denied" }, { status: 400 });
     }
 
     const ownershipCheck = await requireNotificationOwnership(
@@ -26,12 +26,12 @@ export async function POST(request: Request) {
     const notifSvc = new NotificationService();
     const result = await notifSvc.markNotificationAsRead(Number(notificationId));
     if (!result.success) {
-      return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 500 });
+      return NextResponse.json({ success: false, error: "Access denied" }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
   } catch (e) {
     console.error(e);
-    return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 500 });
+    return NextResponse.json({ success: false, error: "Access denied" }, { status: 500 });
   }
 }

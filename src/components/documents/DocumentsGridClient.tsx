@@ -119,9 +119,9 @@ export default function DocumentsGridClient({ documents: serverDocuments = [], c
           onCancel={() => { setSelectMode(false); setSelectedIds([]); }}
           onToggleAll={toggleAll}
           onBulkDelete={handleBulkDelete}
-          onAddToDossier={currentUserId ? async (dossierId: number, documentIds: string[]) => {
+          onAddToFolder={currentUserId ? async (folderId: number, documentIds: string[]) => {
             try {
-              const response = await fetch(`/api/dossiers/${dossierId}/documents`, {
+              const response = await fetch(`/api/folders/${folderId}/documents`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ documentIds }),
@@ -131,10 +131,10 @@ export default function DocumentsGridClient({ documents: serverDocuments = [], c
                 setSelectedIds([]);
               } else {
                 const data = await response.json();
-                console.error("Erreur:", data.error);
+                console.error("Error:", data.error);
               }
             } catch (error) {
-              console.error("Erreur lors de l'ajout au dossier:", error);
+              console.error("Error adding to folder:", error);
             }
           } : undefined}
           selectedDocumentIds={selectedIds}

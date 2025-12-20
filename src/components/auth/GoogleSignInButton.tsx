@@ -10,8 +10,8 @@ interface GoogleSignInButtonProps {
 }
 
 export default function GoogleSignInButton({
-  text = "Se connecter avec Google",
-}: GoogleSignInButtonProps) {
+  text = "Sign in with Google",
+}: Readonly<GoogleSignInButtonProps>) {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -25,8 +25,8 @@ export default function GoogleSignInButton({
         redirect: true,
       });
     } catch (error) {
-      console.error("Erreur connexion Google:", error);
-      setError("Erreur lors de la connexion avec Google. Veuillez réessayer.");
+      console.error("Google sign in error:", error);
+      setError("Error signing in with Google. Please try again.");
       setIsLoading(false);
     }
   };
@@ -52,5 +52,3 @@ export default function GoogleSignInButton({
     </div>
   );
 }
-
-

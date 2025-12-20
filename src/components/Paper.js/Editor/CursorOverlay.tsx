@@ -16,19 +16,19 @@ interface CursorOverlayProps {
   remoteCursors: Map<string, RemoteCursor>;
 }
 
-// Générer une couleur basée sur le clientId pour avoir des couleurs cohérentes
+// Generate a color based on the clientId for consistent colors
 function getColorForClientId(clientId: string): string {
   let hash = 0;
   for (let i = 0; i < clientId.length; i++) {
     hash = clientId.charCodeAt(i) + ((hash << 5) - hash);
   }
   
-  // Générer une couleur pastel
+  // Generate a pastel color
   const hue = Math.abs(hash) % 360;
   return `hsl(${hue}, 70%, 50%)`;
 }
 
-// Calculer la position (x, y) à partir d'un offset de texte dans l'éditeur
+// Calculate the (x, y) position from a text offset in the editor
 function getPositionFromOffset(editor: HTMLDivElement, offset: number): { x: number; y: number } | null {
   try {
     if (!editor.hasChildNodes() || editor.textContent === '') {
@@ -111,7 +111,7 @@ function getPositionFromOffset(editor: HTMLDivElement, offset: number): { x: num
           y = tempRect.top - editorRect.top;
           tempSpan.remove();
         } catch (e) {
-          // Fallback: utiliser une range pour obtenir la position du nœud texte
+          // Fallback: use a range to get the position of the text node
           const fallbackRange = document.createRange();
           fallbackRange.selectNodeContents(textNode);
           const nodeRect = fallbackRange.getBoundingClientRect();
@@ -123,7 +123,7 @@ function getPositionFromOffset(editor: HTMLDivElement, offset: number): { x: num
       return { x, y };
     }
   } catch (e) {
-    console.error('Erreur lors du calcul de la position du curseur:', e);
+    console.error('Error calculating cursor position:', e);
   }
 
   return null;
@@ -134,8 +134,8 @@ export default function CursorOverlay({ editorRef, remoteCursors }: CursorOverla
   const [hoveredCursor, setHoveredCursor] = useState<string | null>(null);
   const previousTextRef = useRef<string | null>(null);
 
-  // Offsets ajustés côté client pour tenir compte des modifications locales
-  // (on ne modifie pas la Map d'origine pour rester pure)
+  // Client-side adjusted offsets to account for local changes
+  // (the original Map is not modified to remain pure)
   const [adjustedOffsets, setAdjustedOffsets] = useState<Map<string, number>>(
     () => new Map()
   );
@@ -169,47 +169,46 @@ export default function CursorOverlay({ editorRef, remoteCursors }: CursorOverla
     };
   }, [editorRef]);
 
-  // Ajuster les offsets des curseurs distants lorsque le contenu texte de l'éditeur change.
-  // Cela permet que, si NOUS insérons/supprimons du texte avant un curseur distant,
-  // sa position suive correctement dans notre vue.
-  useEffect(() => {
-    if (!editorRef.current) return;
-
-    const editor = editorRef.current;
-    const newText = editor.textContent || "";
-    const oldText =
-      previousTextRef.current !== null ? previousTextRef.current : newText;
-
-    // Première initialisation : on enregistre juste le texte courant
-    if (previousTextRef.current === null) {
-      previousTextRef.current = newText;
-      // Initialiser les offsets à ceux reçus du serveur
-      setAdjustedOffsets(() => {
-        const initial = new Map<string, number>();
-        remoteCursors.forEach((cursor) => {
-          initial.set(cursor.clientId, cursor.offset);
+    // Adjust remote cursor offsets when the editor's text content changes.
+    // This allows the position to follow correctly in our view if WE insert/delete text before a remote cursor.
+    useEffect(() => {
+      if (!editorRef.current) return;
+  
+      const editor = editorRef.current;
+      const newText = editor.textContent || "";
+      const oldText =
+        previousTextRef.current !== null ? previousTextRef.current : newText;
+  
+      // First initialization: just record the current text
+      if (previousTextRef.current === null) {
+        previousTextRef.current = newText;
+        // Initialize offsets with those received from the server
+        setAdjustedOffsets(() => {
+          const initial = new Map<string, number>();
+          remoteCursors.forEach((cursor) => {
+            initial.set(cursor.clientId, cursor.offset);
+          });
+          return initial;
         });
-        return initial;
-      });
-      return;
-    }
-
-    // Si le texte n'a pas changé mais que les remoteCursors ont changé,
-    // on synchronise simplement les offsets avec ceux reçus du serveur.
-    // Cela évite de conserver un offset ajusté obsolète quand l'autre
-    // utilisateur déplace son curseur sans modifier le texte.
-    if (oldText === newText) {
-      setAdjustedOffsets(() => {
-        const synced = new Map<string, number>();
-        remoteCursors.forEach((cursor) => {
-          synced.set(cursor.clientId, cursor.offset);
+        return;
+      }
+  
+      // If the text has not changed but the remoteCursors have changed,
+      // we simply synchronize the offsets with those received from the server.
+      // This avoids keeping an obsolete adjusted offset when the other
+      // user moves their cursor without modifying the text.
+      if (oldText === newText) {
+        setAdjustedOffsets(() => {
+          const synced = new Map<string, number>();
+          remoteCursors.forEach((cursor) => {
+            synced.set(cursor.clientId, cursor.offset);
+          });
+          return synced;
         });
-        return synced;
-      });
-      return;
-    }
-
-    // Ajuster tous les curseurs en fonction de la différence oldText → newText
+        return;
+      }
+  
+      // Adjust all cursors based on the oldText → newText difference
     setAdjustedOffsets((prev) => {
       const updated = new Map<string, number>();
 
@@ -283,7 +282,7 @@ export default function CursorOverlay({ editorRef, remoteCursors }: CursorOverla
             onMouseEnter={() => setHoveredCursor(cursor.clientId)}
             onMouseLeave={() => setHoveredCursor(null)}
           >
-            {/* Pseudo au-dessus - affiché uniquement au hover */}
+            {/* Username above - only shown on hover */}
             {isHovered && (
               <div
                 className="absolute bottom-full mb-1 px-2 py-1 rounded text-xs font-medium text-white whitespace-nowrap shadow-lg pointer-events-none"
@@ -293,7 +292,7 @@ export default function CursorOverlay({ editorRef, remoteCursors }: CursorOverla
                   left: '50%',
                 }}
               >
-                {cursor.username || 'Utilisateur'}
+                {cursor.username || 'User'}
               </div>
             )}
             

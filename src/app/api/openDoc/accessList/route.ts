@@ -11,7 +11,7 @@ export async function GET(request: Request) {
 
     if (!id) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
@@ -19,7 +19,7 @@ export async function GET(request: Request) {
     const documentId = parseInt(id);
     if (isNaN(documentId) || documentId <= 0) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
@@ -29,7 +29,7 @@ export async function GET(request: Request) {
       return authResult;
     }
 
-    // Vérifier l'accès au document (propriétaire ou utilisateur avec partage)
+    // Check document access (owner or shared user)
     const accessCheck = await requireDocumentAccess(
       documentId,
       authResult.userId,
@@ -42,7 +42,7 @@ export async function GET(request: Request) {
     const result = await documentService.fetchDocumentAccessList(documentId);
     if (!result.success) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 404 }
       );
     }
@@ -50,7 +50,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ success: true, accessList: result.data?.accessList ?? [] });
   } catch (error) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 500 }
     );
   }

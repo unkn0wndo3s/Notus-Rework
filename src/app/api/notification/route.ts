@@ -13,7 +13,7 @@ export async function GET(request: Request) {
         const id = searchParams.get("id");
         if (!id) {
             return NextResponse.json(
-                { success: false, error: "Accès refusé" },
+                { success: false, error: "Access denied" },
                 { status: 400 }
             );
         }
@@ -29,14 +29,14 @@ export async function GET(request: Request) {
         const result = await notifSvc.getNotificationsForUser(id_receiver);
         if (!result.success) {
             return NextResponse.json(
-                { success: false, error: "Accès refusé" },
+                { success: false, error: "Access denied" },
                 { status: 404 }
             );
         }
         return NextResponse.json({ success: true, notifications: result.data ?? [] });
     } catch (error) {
         return NextResponse.json(
-            { success: false, error: "Accès refusé" },
+            { success: false, error: "Access denied" },
             { status: 500 }
         );
     }

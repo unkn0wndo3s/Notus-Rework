@@ -16,7 +16,7 @@ export async function GET(request: Request) {
 
     if (!email) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
@@ -30,7 +30,7 @@ export async function GET(request: Request) {
     const result = await documentService.fetchSharedWithUser(email);
     if (!result.success) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 404 }
       );
     }
@@ -38,7 +38,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ success: true, documents: result.documents ?? [] });
   } catch (error) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 500 }
     );
   }

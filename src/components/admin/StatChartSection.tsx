@@ -18,7 +18,7 @@ export default function StatChartSection({
   title, 
   initialPeriod = 'week',
   className 
-}: StatChartSectionProps) {
+}: Readonly<StatChartSectionProps>) {
   const [period, setPeriod] = useState<'day' | 'week' | 'month' | 'year'>(initialPeriod);
   const [chartData, setChartData] = useState<Array<{ date: string; count: number }>>([]);
   const [loading, setLoading] = useState(false);
@@ -33,7 +33,7 @@ export default function StatChartSection({
           setChartData(data.data);
         }
       } catch (error) {
-        console.error(`❌ Erreur récupération données ${type}:`, error);
+        console.error(`❌ Error retrieving ${type} data:`, error);
       } finally {
         setLoading(false);
       }
@@ -42,12 +42,12 @@ export default function StatChartSection({
     fetchData();
   }, [type, period]);
 
-  // Fonction réutilisable pour traiter les données de période
+  // Reusable function to process period data
   const processPeriodData = (
     data: Array<{ date: string; count: number }>,
     periodType: 'day' | 'week' | 'month' | 'year'
   ): Array<{ name: string; value: number; date: string }> => {
-    // Créer un map des données existantes avec les dates de l'API
+    // Create a map of existing data with dates from the API
     const dataMap = new Map<string, number>();
     if (data && data.length > 0) {
       data.forEach((item) => {
@@ -55,13 +55,13 @@ export default function StatChartSection({
       });
     }
 
-    // Pour semaine, générer toutes les 4 semaines et compléter avec 0
+    // For week, generate all 4 weeks and fill with 0
     if (periodType === 'week') {
       const periods: Array<{ name: string; value: number; date: string }> = [];
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
-      // Calculer le lundi de la semaine actuelle (compatible avec PostgreSQL DATE_TRUNC('week'))
+      // Calculate Monday of the current week (compatible with PostgreSQL DATE_TRUNC('week'))
       const dayOfWeek = today.getDay();
       const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
       const currentWeekMonday = new Date(today);
@@ -74,7 +74,7 @@ export default function StatChartSection({
         return `${day}/${month}`;
       };
       
-      // Générer les 4 dernières semaines
+      // Generate the last 4 weeks
       for (let i = 3; i >= 0; i--) {
         const weekMonday = new Date(currentWeekMonday);
         weekMonday.setDate(currentWeekMonday.getDate() - (i * 7));
@@ -82,13 +82,13 @@ export default function StatChartSection({
         const weekEnd = new Date(weekMonday);
         weekEnd.setDate(weekMonday.getDate() + 6);
         
-        // Format de date pour correspondre à PostgreSQL (YYYY-MM-DD)
+        // Date format to match PostgreSQL (YYYY-MM-DD)
         const dateStr = weekMonday.toISOString().split('T')[0];
         
-        // Chercher dans dataMap avec la date exacte
+        // Search in dataMap with the exact date
         let value = dataMap.get(dateStr) || 0;
         
-        // Si pas trouvé, essayer de normaliser les dates de l'API et comparer
+        // If not found, try to normalize API dates and compare
         if (value === 0 && dataMap.size > 0) {
           for (const [apiDate, apiCount] of dataMap.entries()) {
             const apiDateNormalized = new Date(apiDate + 'T00:00:00').toISOString().split('T')[0];
@@ -109,7 +109,7 @@ export default function StatChartSection({
       return periods;
     }
 
-    // Pour jour, mois et année, générer toutes les périodes et compléter avec 0
+    // For day, month, and year, generate all periods and fill with 0
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const periods: Array<{ name: string; value: number; date: string }> = [];
@@ -135,7 +135,7 @@ export default function StatChartSection({
           return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`;
         };
         dateLabel = (date: Date) => {
-          const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+          const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
           return `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
         };
         break;
@@ -152,7 +152,7 @@ export default function StatChartSection({
         return [];
     }
 
-    // Générer toutes les périodes
+    // Generate all periods
     for (let i = count - 1; i >= 0; i--) {
       const date = new Date(today);
       
@@ -184,16 +184,16 @@ export default function StatChartSection({
   const periodData = processPeriodData(chartData, period);
 
   const periodLabel = {
-    day: 'jour',
-    week: 'semaine',
-    month: 'mois',
-    year: 'année',
+    day: 'day',
+    week: 'week',
+    month: 'month',
+    year: 'year',
   }[period];
 
   const typeLabel = {
-    users: 'utilisateurs',
+    users: 'users',
     documents: 'documents',
-    shares: 'notes partagées',
+    shares: 'shared notes',
   }[type];
 
   return (
@@ -208,10 +208,10 @@ export default function StatChartSection({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="day">Par jour (7 derniers jours)</SelectItem>
-              <SelectItem value="week">Par semaine (4 dernières semaines)</SelectItem>
-              <SelectItem value="month">Par mois</SelectItem>
-              <SelectItem value="year">Par année</SelectItem>
+              <SelectItem value="day">By day (last 7 days)</SelectItem>
+              <SelectItem value="week">By week (last 4 weeks)</SelectItem>
+              <SelectItem value="month">By month</SelectItem>
+              <SelectItem value="year">By year</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -219,22 +219,21 @@ export default function StatChartSection({
       <Card.Content>
         {loading ? (
           <div className="flex items-center justify-center h-[300px]">
-            <p className="text-muted-foreground">Chargement...</p>
+            <p className="text-muted-foreground">Loading...</p>
           </div>
         ) : periodData.length > 0 ? (
           <StatsChart
             data={periodData}
             type="line"
             dataKey="value"
-            title={`Nombre de ${typeLabel} créés par ${periodLabel}`}
+            title={`Number of ${typeLabel} created per ${periodLabel}`}
           />
         ) : (
           <div className="flex items-center justify-center h-[300px]">
-            <p className="text-muted-foreground">Aucune donnée disponible</p>
+            <p className="text-muted-foreground">No data available</p>
           </div>
         )}
       </Card.Content>
     </Card>
   );
 }
-

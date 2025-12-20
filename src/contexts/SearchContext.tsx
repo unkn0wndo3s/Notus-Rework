@@ -10,7 +10,7 @@ export interface NoteFilters {
   dateTo?: string;
   author?: string;
   shared?: SharedFilter;
-  dossierId?: number;
+  folderId?: number;
   tags: string[];
 }
 
@@ -60,7 +60,7 @@ export function SearchProvider({ children }: SearchProviderProps) {
       normalizedFilters.dateFrom ||
       normalizedFilters.dateTo ||
       normalizedFilters.shared ||
-      normalizedFilters.dossierId ||
+      normalizedFilters.folderId ||
       (normalizedFilters.tags?.length ?? 0) > 0
     );
   }, [normalizedFilters]);
@@ -83,8 +83,8 @@ export function SearchProvider({ children }: SearchProviderProps) {
       dateFrom: nextFilters.dateFrom || undefined,
       dateTo: nextFilters.dateTo || undefined,
       shared: nextFilters.shared,
-      dossierId: typeof nextFilters.dossierId === "number" && !Number.isNaN(nextFilters.dossierId)
-        ? nextFilters.dossierId
+      folderId: typeof nextFilters.folderId === "number" && !Number.isNaN(nextFilters.folderId)
+        ? nextFilters.folderId
         : undefined,
       tags: Array.from(new Set((nextFilters.tags || []).map((tag) => tag.trim()).filter(Boolean))),
     };
@@ -158,12 +158,13 @@ export function SearchProvider({ children }: SearchProviderProps) {
       if (!allTagsPresent) return false;
     }
 
-    if (normalizedFilters.dossierId) {
-      const dossierIds = Array.isArray(docAny.dossierIds) ? docAny.dossierIds : [];
-      const hasDossier = dossierIds.some(
-        (id: number | string) => Number(id) === Number(normalizedFilters.dossierId)
+    if (normalizedFilters.folderId) {
+      // Logic supports folderIds
+      const folderIds = Array.isArray(docAny.folderIds) ? docAny.folderIds : [];
+      const hasFolder = folderIds.some(
+        (id: number | string) => Number(id) === Number(normalizedFilters.folderId)
       );
-      if (!hasDossier) return false;
+      if (!hasFolder) return false;
     }
 
     if (normalizedFilters.shared) {

@@ -22,14 +22,14 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
     if (typeof isBanned !== "boolean") {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
 
     if (parseInt(id) === adminResult.userId) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
@@ -37,19 +37,19 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     const result = await userService.toggleUserBan(parseInt(id), isBanned, reason);
 
     if (!result.success) {
-      return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Access denied" }, { status: 400 });
     }
 
     return NextResponse.json({
       success: true,
-      message: `Utilisateur ${isBanned ? "banni" : "débanni"} avec succès`,
+      message: `User ${isBanned ? "banned" : "unbanned"} successfully`,
       user: result.data,
       emailSent: true,
     });
   } catch (error) {
-    console.error("Erreur API bannissement utilisateur:", error);
+    console.error("API Error user banning:", error);
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 500 }
     );
   }

@@ -17,7 +17,7 @@ export default function AdminButton() {
           setIsAdmin(data.isAdmin);
         }
       } catch (error) {
-        console.error("Erreur lors de la vérification du statut admin:", error);
+        console.error("Error checking admin status:", error);
       } finally {
         setLoading(false);
       }

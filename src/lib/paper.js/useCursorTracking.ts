@@ -1,7 +1,6 @@
-"use client";
 import { useEffect, useRef, useCallback, useState } from "react";
 import { useSocket } from "./socket-client";
-import type { ClientToServerEvents, ServerToClientEvents, CursorPositionData } from "./types";
+import type { ServerToClientEvents, CursorPositionData } from "./types";
 
 interface UseCursorTrackingOptions {
   roomId: string | undefined;
@@ -29,38 +28,38 @@ export function useCursorTracking({
   const [remoteCursors, setRemoteCursors] = useState<Map<string, RemoteCursor>>(new Map());
   const cursorUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Fonction pour obtenir la position du curseur dans l'éditeur
+  // Function to get cursor position in the editor
   const getCursorPosition = useCallback((): { offset: number; x: number; y: number } | null => {
     if (!editorRef.current) return null;
 
-    const selection = window.getSelection();
+    const selection = globalThis.getSelection();
     if (!selection || selection.rangeCount === 0) return null;
 
     const range = selection.getRangeAt(0);
     const editor = editorRef.current;
 
-    // Vérifier que le curseur est dans l'éditeur
+    // Check that cursor is in the editor
     if (!editor.contains(range.commonAncestorContainer)) {
       return null;
     }
 
-    // Calculer l'offset du curseur dans le texte
+    // Calculate cursor offset in text
     const preCaretRange = range.cloneRange();
     preCaretRange.selectNodeContents(editor);
     preCaretRange.setEnd(range.endContainer, range.endOffset);
     const offset = preCaretRange.toString().length;
 
-    // Obtenir la position visuelle du curseur
+    // Get visual cursor position
     const rect = range.getBoundingClientRect();
     const editorRect = editor.getBoundingClientRect();
 
-    // Si le curseur est invisible (fin de ligne ou élément vide), créer un marqueur temporaire
+    // If cursor is invisible (end of line or empty element), create a temporary marker
     let x = rect.left - editorRect.left;
     let y = rect.top - editorRect.top;
 
     if (rect.width === 0 || rect.height === 0) {
       try {
-        const tempSpan = document.createElement('span');
+        const tempSpan = globalThis.document.createElement('span');
         tempSpan.textContent = '\u200b'; // Zero-width space
         tempSpan.style.position = 'absolute';
         tempSpan.style.visibility = 'hidden';
@@ -70,14 +69,14 @@ export function useCursorTracking({
         y = tempRect.top - editorRect.top;
         tempSpan.remove();
       } catch (e) {
-        // Si l'insertion échoue, utiliser la position par défaut
+        console.error("Failed to insert temporary marker for cursor position calculation:", e);
       }
     }
 
     return { offset, x, y };
   }, [editorRef]);
 
-  // Fonction pour envoyer la position du curseur
+  // Function to send cursor position
   const sendCursorPosition = useCallback(() => {
     // Never send cursor position if offline
     if (typeof navigator !== 'undefined' && !navigator.onLine) return;
@@ -98,29 +97,29 @@ export function useCursorTracking({
     socket.emit('cursor-position', roomId, cursorData);
   }, [socket, roomId, isConnected, clientId, username, getCursorPosition]);
 
-  // Écouter les événements de mouvement du curseur
+  // Listen to cursor movement events
   useEffect(() => {
     if (!editorRef.current || !roomId) return;
 
     const editor = editorRef.current;
 
     const handleCursorMove = () => {
-      // Délai pour éviter trop d'envois
+      // Delay to avoid too many sends
       if (cursorUpdateTimeoutRef.current) {
         clearTimeout(cursorUpdateTimeoutRef.current);
       }
 
       cursorUpdateTimeoutRef.current = setTimeout(() => {
         sendCursorPosition();
-      }, 50); // Envoyer toutes les 50ms max
+      }, 50); // Send every 50ms max
     };
 
-    // Écouter les événements de mouvement du curseur
+    // Listen to cursor movement events
     editor.addEventListener('keyup', handleCursorMove);
     editor.addEventListener('click', handleCursorMove);
     editor.addEventListener('mouseup', handleCursorMove);
 
-    // Écouter aussi les changements de sélection (pour les flèches, etc.)
+    // Also listen to selection changes (for arrows, etc.)
     document.addEventListener('selectionchange', handleCursorMove);
 
     return () => {
@@ -134,14 +133,14 @@ export function useCursorTracking({
     };
   }, [editorRef, roomId, sendCursorPosition]);
 
-  // Écouter les positions de curseur des autres utilisateurs
+  // Listen to cursor positions of other users
   useEffect(() => {
     // Never listen to socket events if offline
     if (typeof navigator !== 'undefined' && !navigator.onLine) return;
     if (!socket || !roomId) return;
 
     const handleCursorPosition: ServerToClientEvents['cursor-position'] = (data) => {
-      // Ignorer notre propre curseur
+      // Ignore our own cursor
       if (data.clientId === clientId) return;
 
       setRemoteCursors((prev) => {
@@ -192,9 +191,9 @@ export function useCursorTracking({
     };
   }, [socket, roomId, clientId]);
 
-  // Les curseurs ne sont supprimés que quand l'utilisateur quitte le document (via l'événement user-left)
+  // Cursors are only removed when user leaves document (via user-left event)
 
-  // Nettoyer les curseurs quand un utilisateur quitte
+  // Cleanup cursors when a user leaves
   useEffect(() => {
     if (!socket || !roomId) return;
 
@@ -213,13 +212,13 @@ export function useCursorTracking({
     };
   }, [socket, roomId]);
 
-  // Nettoyer les curseurs qui n'ont pas été mis à jour depuis un certain temps (timeout)
+  // Cleanup cursors that haven't been updated for a while (timeout)
   useEffect(() => {
     if (!socket || !roomId) return;
 
     const cleanupInterval = setInterval(() => {
       const now = Date.now();
-      const TIMEOUT_MS = 60000; // 60 secondes sans mise à jour = considérer comme déconnecté
+      const TIMEOUT_MS = 60000; // 60 seconds without update = considered disconnected
 
       setRemoteCursors((prev) => {
         const newMap = new Map(prev);
@@ -234,7 +233,7 @@ export function useCursorTracking({
 
         return hasChanges ? newMap : prev;
       });
-    }, 1000); // Vérifier toutes les secondes
+    }, 1000); // Check every second
 
     return () => {
       clearInterval(cleanupInterval);
@@ -243,4 +242,5 @@ export function useCursorTracking({
 
   return { remoteCursors };
 }
+
 

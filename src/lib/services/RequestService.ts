@@ -15,8 +15,8 @@ export class RequestService {
     try {
       return await this.requestRepository.createRequest(data);
     } catch (error) {
-      console.error("❌ Erreur création requête:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error creating request:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -24,8 +24,8 @@ export class RequestService {
     try {
       return await this.requestRepository.getRequestById(id);
     } catch (error) {
-      console.error("❌ Erreur récupération requête:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error retrieving request:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -33,8 +33,8 @@ export class RequestService {
     try {
       return await this.requestRepository.getAllRequests(limit, offset);
     } catch (error) {
-      console.error("❌ Erreur récupération requêtes:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue", requests: [] };
+      console.error("❌ Error retrieving requests:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error", requests: [] };
     }
   }
 
@@ -42,8 +42,8 @@ export class RequestService {
     try {
       return await this.requestRepository.getRequestsByUser(userId);
     } catch (error) {
-      console.error("❌ Erreur récupération requêtes utilisateur:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue", requests: [] };
+      console.error("❌ Error retrieving user requests:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error", requests: [] };
     }
   }
 
@@ -51,8 +51,8 @@ export class RequestService {
     try {
       return await this.requestRepository.updateRequest(id, data);
     } catch (error) {
-      console.error("❌ Erreur mise à jour requête:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error updating request:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -65,8 +65,8 @@ export class RequestService {
         validated_at: new Date(),
       });
     } catch (error) {
-      console.error("❌ Erreur validation requête:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error validating request:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -79,8 +79,8 @@ export class RequestService {
         validated_at: new Date(),
       });
     } catch (error) {
-      console.error("❌ Erreur rejet requête:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error rejecting request:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -93,8 +93,8 @@ export class RequestService {
         validated_at: new Date(),
       });
     } catch (error) {
-      console.error("❌ Erreur résolution requête:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error resolving request:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -102,8 +102,8 @@ export class RequestService {
     try {
       return await this.requestRepository.deleteRequest(id);
     } catch (error) {
-      console.error("❌ Erreur suppression requête:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error deleting request:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 }

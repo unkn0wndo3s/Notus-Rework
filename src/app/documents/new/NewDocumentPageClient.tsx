@@ -19,7 +19,7 @@ interface NotepadContent {
   timestamp?: number;
 }
 
-export default function NewDocumentPageClient(props: NewDocumentPageClientProps) {
+export default function NewDocumentPageClient(props: Readonly<NewDocumentPageClientProps>) {
   // -------- State management --------
   const router = useRouter();
   const [title, setTitle] = useState("");
@@ -106,7 +106,7 @@ export default function NewDocumentPageClient(props: NewDocumentPageClientProps)
       const submittingUserId =
         userId ?? (localSession as { id?: number } | null)?.id ?? props.session?.user?.id;
       if (!submittingUserId) {
-        alert("Session invalide. Veuillez vous reconnecter.");
+        alert("Invalid session. Please log in again.");
         return;
       }
 
@@ -119,7 +119,7 @@ export default function NewDocumentPageClient(props: NewDocumentPageClientProps)
       // Prepare form data
       const formData = new FormData();
       formData.append("userId", String(submittingUserId));
-      formData.append("title", title || "Sans titre");
+      formData.append("title", title || "Untitled");
       formData.append("content", JSON.stringify(contentToSave));
       formData.append("tags", JSON.stringify([]));
 
@@ -162,7 +162,7 @@ export default function NewDocumentPageClient(props: NewDocumentPageClientProps)
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-primary">
-            Chargement de la session...
+            Loading session...
           </p>
         </div>
       </div>
@@ -174,16 +174,16 @@ export default function NewDocumentPageClient(props: NewDocumentPageClientProps)
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="bg-card rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
           <h1 className="text-2xl font-bold text-foreground mb-4">
-            Accès refusé
+            Access Denied
           </h1>
           <p className="text-muted-foreground mb-6">
-            Vous devez être connecté pour créer un document.
+            You must be logged in to create a document.
           </p>
           <Link
             href="/login"
             className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-3 px-6 rounded-lg transition-colors"
           >
-            Se connecter
+            Log In
           </Link>
         </div>
       </div>
@@ -201,7 +201,7 @@ export default function NewDocumentPageClient(props: NewDocumentPageClientProps)
             className="text-foreground font-semibold flex items-center"
           >
             <Icon name="arrowLeft" className="h-5 w-5 mr-2" />
-            Retour
+            Back
           </Link>
         </div>
 
@@ -215,7 +215,7 @@ export default function NewDocumentPageClient(props: NewDocumentPageClientProps)
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 className="w-full px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-ring bg-transparent text-foreground text-xl font-semibold"
-                placeholder="Titre du document"
+                placeholder="Document title"
                 maxLength={255}
               />
             </div>
@@ -226,7 +226,7 @@ export default function NewDocumentPageClient(props: NewDocumentPageClientProps)
                 <WysiwygNotepad
                   initialData={content}
                   onContentChange={handleContentChange}
-                  placeholder="Commencez à écrire votre document..."
+                  placeholder="Start writing your document..."
                   className=""
                   showDebug={false}
                 />
@@ -236,7 +236,7 @@ export default function NewDocumentPageClient(props: NewDocumentPageClientProps)
             {/* Buttons */}
             <div className="flex justify-center space-x-4">
               <Button variant="ghost" className="px-6 py-3" onClick={() => router.back()}>
-                Annuler
+                Cancel
               </Button>
               <Button
                 type="submit"
@@ -244,10 +244,10 @@ export default function NewDocumentPageClient(props: NewDocumentPageClientProps)
                 className={`bg-primary hover:bg-primary/90 text-primary-foreground disabled:bg-muted disabled:cursor-not-allowed font-semibold py-3 px-6 rounded-lg transition-colors`}
               >
                 {isPending
-                  ? "Sauvegarde..."
+                  ? "Saving..."
                   : showSavedState
-                    ? "Sauvegardé"
-                    : "Sauvegarder"}
+                    ? "Saved"
+                    : "Save"}
               </Button>
             </div>
 
@@ -268,8 +268,8 @@ export default function NewDocumentPageClient(props: NewDocumentPageClientProps)
                   }`}
                 >
                   {showSuccessMessage
-                    ? "Document créé avec succès !"
-                    : (state as CreateDocumentState)?.error || "Erreur lors de la création"}
+                    ? "Document created successfully!"
+                    : (state as CreateDocumentState)?.error || "Error during creation"}
                 </p>
               </div>
             )}
@@ -279,4 +279,3 @@ export default function NewDocumentPageClient(props: NewDocumentPageClientProps)
     </div>
   );
 }
-

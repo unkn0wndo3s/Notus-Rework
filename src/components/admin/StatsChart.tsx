@@ -25,19 +25,19 @@ interface ChartData {
 }
 
 interface StatsChartProps {
-  data: ChartData[];
-  type?: "bar" | "line" | "pie";
-  dataKey?: string;
-  series?: string[];
-  title?: string;
-  className?: string;
-  colors?: string[];
+  readonly data: ChartData[];
+  readonly type?: "bar" | "line" | "pie";
+  readonly dataKey?: string;
+  readonly series?: string[];
+  readonly title?: string;
+  readonly className?: string;
+  readonly colors?: string[];
 }
 
-// Fonction pour obtenir la couleur calculée depuis une variable CSS
+// Function to get the computed color from a CSS variable
 const getComputedColor = (cssVar: string): string => {
-  if (typeof window === "undefined") {
-    // Fallback pour SSR - valeurs approximatives basées sur les tokens
+  if (typeof globalThis.window === "undefined") {
+    // SSR Fallback - approximate values based on tokens
     const fallbacks: Record<string, string> = {
       "var(--primary)": "#9d4edd",
       "var(--accent)": "#9d4edd",
@@ -48,13 +48,13 @@ const getComputedColor = (cssVar: string): string => {
     return fallbacks[cssVar] || "#9d4edd";
   }
   
-  const tempEl = document.createElement("div");
+  const tempEl = globalThis.window.document.createElement("div");
   tempEl.style.color = cssVar;
-  document.body.appendChild(tempEl);
-  const computed = window.getComputedStyle(tempEl).color;
-  document.body.removeChild(tempEl);
+  globalThis.window.document.body.appendChild(tempEl);
+  const computed = globalThis.window.getComputedStyle(tempEl).color;
+  globalThis.window.document.body.removeChild(tempEl);
   
-  // Convertir rgb/rgba en hex si nécessaire
+  // Convert rgb/rgba to hex if necessary
   if (computed.startsWith("rgb")) {
     const rgb = computed.match(/\d+/g);
     if (rgb && rgb.length >= 3) {
@@ -85,9 +85,9 @@ export default function StatsChart({
   className,
   colors = DEFAULT_COLORS,
 }: StatsChartProps) {
-  // Convertir les couleurs CSS en valeurs utilisables (côté client uniquement)
+  // Convert CSS colors to usable values (client-side only)
   const [computedColors, setComputedColors] = useState<string[]>(() => {
-    // Fallback SSR - valeurs approximatives
+    // SSR Fallback - approximate values
     return colors.map((color) => {
       if (color.startsWith("var(")) {
         const fallbacks: Record<string, string> = {
@@ -104,7 +104,7 @@ export default function StatsChart({
   });
 
   useEffect(() => {
-    // Calculer les vraies couleurs côté client
+    // Calculate actual colors on the client side
     const newColors = colors.map((color) => 
       color.startsWith("var(") ? getComputedColor(color) : color
     );

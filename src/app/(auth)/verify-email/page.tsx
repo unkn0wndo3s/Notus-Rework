@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Button, Card, Alert, LoadingSpinner, StatusCircle } from "@/components/ui";
+import { Button, Card, LoadingSpinner, StatusCircle } from "@/components/ui";
 
 type Status = "loading" | "success" | "error";
 
@@ -16,43 +16,43 @@ export default function VerifyEmailPage() {
   useEffect(() => {
     if (!token) {
       setStatus("error");
-      setMessage("Token de vérification manquant");
+      setMessage("Missing verification token");
       return;
     }
 
+    const verifyEmail = async (token: string) => {
+      try {
+        const response = await fetch("/api/verify-email", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ token }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          setStatus("success");
+          setMessage(data.message);
+        } else {
+          setStatus("error");
+          setMessage(data.error || "Error during verification");
+        }
+      } catch (error) {
+        setStatus("error");
+        setMessage("Connection error. Please try again.");
+      }
+    };
+
     verifyEmail(token);
   }, [token]);
-
-  const verifyEmail = async (token: string) => {
-    try {
-      const response = await fetch("/api/verify-email", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ token }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setStatus("success");
-        setMessage(data.message);
-      } else {
-        setStatus("error");
-        setMessage(data.error || "Erreur lors de la vérification");
-      }
-    } catch (error) {
-      setStatus("error");
-      setMessage("Erreur de connexion. Veuillez réessayer.");
-    }
-  };
 
   if (status === "loading") {
     return (
       <main className="min-h-screen bg-background flex items-center justify-center p-4">
         <LoadingSpinner.Card
-          message="Vérification en cours..."
+          message="Verifying email..."
           className="max-w-md w-full"
         />
       </main>
@@ -64,20 +64,20 @@ export default function VerifyEmailPage() {
       <main className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="max-w-md w-full text-center">
           <Card.Content>
-            <StatusCircle variant="success" className="mb-6" label="Email vérifié">
+            <StatusCircle variant="success" className="mb-6" label="Email verified">
               <span className="text-2xl">✓</span>
             </StatusCircle>
-            <Card.Title className="text-2xl mb-4">Email vérifié !</Card.Title>
+            <Card.Title className="text-2xl mb-4">Email verified!</Card.Title>
             <Card.Description className="mb-6">
               {message ||
-                "Votre adresse email a été vérifiée avec succès. Vous pouvez maintenant vous connecter."}
+                "Your email address has been successfully verified. You can now log in."}
             </Card.Description>
             <div className="space-y-3">
               <Button asChild className="w-full">
-                <Link href="/login">Se connecter</Link>
+                <Link href="/login">Login</Link>
               </Button>
               <Button variant="outline" asChild className="w-full">
-                <Link href="/app">Retour à l'accueil</Link>
+                <Link href="/app">Go to Dashboard</Link>
               </Button>
             </div>
           </Card.Content>
@@ -90,20 +90,20 @@ export default function VerifyEmailPage() {
     <main className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="max-w-md w-full text-center">
         <Card.Content>
-          <StatusCircle variant="error" className="mb-6" label="Erreur de vérification">
+          <StatusCircle variant="error" className="mb-6" label="Verification error">
             <span className="text-2xl">✗</span>
           </StatusCircle>
-          <Card.Title className="text-2xl mb-4">Erreur de vérification</Card.Title>
+          <Card.Title className="text-2xl mb-4">Verification Error</Card.Title>
           <Card.Description className="mb-6">
             {message ||
-              "Une erreur est survenue lors de la vérification de votre email."}
+              "An error occurred while verifying your email."}
           </Card.Description>
           <div className="space-y-3">
             <Button asChild className="w-full">
-              <Link href="/register">Réessayer l'inscription</Link>
+              <Link href="/register">Try registering again</Link>
             </Button>
             <Button variant="outline" asChild className="w-full">
-              <Link href="/app">Retour à l'accueil</Link>
+              <Link href="/app">Go to Dashboard</Link>
             </Button>
           </div>
         </Card.Content>
@@ -111,4 +111,3 @@ export default function VerifyEmailPage() {
     </main>
   );
 }
-

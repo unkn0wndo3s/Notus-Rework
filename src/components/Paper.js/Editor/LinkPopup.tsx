@@ -9,18 +9,18 @@ interface LinkPopupProps {
   onClose: () => void;
 }
 
-export default function LinkPopup({ visible, x, y, url, onClose }: LinkPopupProps) {
+export default function LinkPopup({ visible, x, y, url, onClose }: Readonly<LinkPopupProps>) {
   const popupTimeout = useRef<NodeJS.Timeout | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
 
   const sanitizeHref = useCallback((href: string) => {
     if (!href) return "";
-    let cleaned = href.replace(/%3C\/?em%3E/gi, "_").replace(/<\/?em>/gi, "_");
+    let cleaned = href.replaceAll(/%3C\/?em%3E/gi, "_").replaceAll(/<\/?em>/gi, "_");
     try {
       const decoded = decodeURIComponent(cleaned);
-      cleaned = decoded.replace(/<\/?em>/gi, "_");
-    } catch (_e) {
-      // ignore
+      cleaned = decoded.replaceAll(/<\/?em>/gi, "_");
+    } catch (err) {
+      console.error("LinkPopup: error decoding URI component", err);
     }
     return cleaned;
   }, []);
@@ -29,24 +29,25 @@ export default function LinkPopup({ visible, x, y, url, onClose }: LinkPopupProp
 
   const trustedOrigin = useMemo(() => {
     // Prefer explicit NEXT_PUBLIC_, fallback to NEXTAUTH_URL if exposed, else current origin
-    if (typeof window === "undefined") return "";
+    if (globalThis.window === undefined) return "";
     const envOrigin =
       process.env.NEXT_PUBLIC_NEXTAUTH_URL ||
       process.env.NEXTAUTH_URL ||
-      window.location.origin;
+      globalThis.window.location.origin;
     try {
       return new URL(envOrigin).origin;
-    } catch (_) {
-      return window.location.origin;
+    } catch (err) {
+      return globalThis.window.location.origin;
     }
   }, []);
 
   const isTrustedUrl = useCallback(
     (target: string) => {
       try {
-        const parsed = new URL(target || safeUrl, window.location.href);
+        const parsed = new URL(target || safeUrl, globalThis.window.location.href);
         return parsed.origin === trustedOrigin;
-      } catch (_e) {
+      } catch (err) {
+        console.error("LinkPopup: error parsing URL", err);
         return false;
       }
     },
@@ -134,7 +135,7 @@ export default function LinkPopup({ visible, x, y, url, onClose }: LinkPopupProp
     const handleSelectionChange = () => {
       if (showConfirm) return;
       if (visible) {
-        const selection = window.getSelection();
+        const selection = globalThis.window.getSelection();
         if (selection && selection.rangeCount > 0) {
           const range = selection.getRangeAt(0);
           const link = range.commonAncestorContainer.parentElement?.closest('a') || 
@@ -186,7 +187,7 @@ export default function LinkPopup({ visible, x, y, url, onClose }: LinkPopupProp
             onClick={() => openLink(safeUrl)}
             className="px-2 py-1 text-xs bg-primary hover:bg-primary/90 text-primary-foreground rounded transition-colors"
           >
-            Ouvrir
+            Open
           </button>
         </div>
       </div>
@@ -194,9 +195,9 @@ export default function LinkPopup({ visible, x, y, url, onClose }: LinkPopupProp
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
           <div className="bg-card border border-border rounded-lg shadow-xl max-w-md w-full p-4 space-y-3">
             <div className="space-y-1">
-              <h3 className="text-base font-semibold text-foreground">Êtes-vous sûr ?</h3>
+              <h3 className="text-base font-semibold text-foreground">Are you sure?</h3>
               <p className="text-sm text-muted-foreground">
-                Ce lien mène vers un site externe qui pourrait ne pas être sécurisé. Voulez-vous continuer ?
+                This link leads to an external site that might not be secure. Do you want to continue?
               </p>
               <p className="text-xs text-muted-foreground break-all">{safeUrl}</p>
             </div>
@@ -206,14 +207,14 @@ export default function LinkPopup({ visible, x, y, url, onClose }: LinkPopupProp
                 onClick={handleCancel}
                 className="px-3 py-2 text-sm rounded border border-border bg-muted hover:bg-muted/80 transition-colors"
               >
-                Annuler
+                Cancel
               </button>
               <button
                 type="button"
                 onClick={handleContinue}
                 className="px-3 py-2 text-sm rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
               >
-                Continuer
+                Continue
               </button>
             </div>
           </div>

@@ -9,8 +9,8 @@ interface NavigationProps {
   serverSession?: Session | null;
 }
 
-export default function Navigation({ serverSession }: NavigationProps) {
-  const { session: localSession, loading, isLoggedIn, userName } = useLocalSession(serverSession);
+export default function Navigation({ serverSession }: Readonly<NavigationProps>) {
+  const { loading, isLoggedIn, userName } = useLocalSession(serverSession);
 
   if (loading) {
     return (
@@ -25,10 +25,10 @@ export default function Navigation({ serverSession }: NavigationProps) {
     return (
       <div className="flex items-center space-x-4">
         <Link href="/register" className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-2 px-4 rounded-lg transition-colors">
-          S'inscrire
+          Sign up
         </Link>
         <Link href="/login" className="border border-border hover:bg-muted text-foreground font-semibold py-2 px-4 rounded-lg transition-colors">
-          Se connecter
+          Log in
         </Link>
       </div>
     );
@@ -37,7 +37,7 @@ export default function Navigation({ serverSession }: NavigationProps) {
   return (
     <div className="flex items-center space-x-4">
       <span className="text-foreground">
-        Bonjour, <strong>{userName}</strong>
+        Hello, <strong>{userName}</strong>
       </span>
       <AdminButton />
     </div>

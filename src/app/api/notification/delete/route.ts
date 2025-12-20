@@ -21,12 +21,12 @@ export async function DELETE(request: Request) {
     }
 
     if (!idParam) {
-      return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Access denied" }, { status: 400 });
     }
 
-    const notificationId = parseInt(String(idParam), 10);
+    const notificationId = Number.parseInt(String(idParam), 10);
     if (Number.isNaN(notificationId)) {
-      return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Access denied" }, { status: 400 });
     }
 
     const ownershipCheck = await requireNotificationOwnership(notificationId, authResult.userId);
@@ -38,12 +38,12 @@ export async function DELETE(request: Request) {
     const result = await notifSvc.deleteNotification(notificationId);
 
     if (!result.success) {
-      return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Access denied" }, { status: 400 });
     }
 
     return NextResponse.json({ success: true, data: result.data }, { status: 200 });
   } catch (error) {
-    console.error("API /notification/detete DELETE error:", error);
-    return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 500 });
+    console.error("API /notification/delete DELETE error:", error);
+    return NextResponse.json({ success: false, error: "Access denied" }, { status: 500 });
   }
 }

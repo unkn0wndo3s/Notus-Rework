@@ -4,21 +4,21 @@ import { Card } from "@/components/ui";
 const testimonials = [
   {
     name: "Moïse Aérien",
-    role: "Développeuse, indépendante",
+    role: "Freelance Developer",
     quote:
-      "Notus a réduit de moitié le temps de consolidation des notes internes. L’éditeur et les synthèses IA sont devenus indispensables pour rédiger des messages pour mes clients.",
+      "Notus has cut internal note consolidation time in half. The editor and AI syntheses have become indispensable for writing messages for my clients.",
   },
   {
     name: "Gastien Bitard",
     role: "CEO, DotTxt",
     quote:
-      "Nous avons enfin un référentiel unique pour les équipes produit et support. Les dossiers partagés nous évitent de multiples réunions.",
+      "We finally have a single repository for product and support teams. Shared folders save us multiple meetings.",
   },
   {
     name: "Methane Manchot",
-    role: "Chef de projet, Yanotela",
+    role: "Project Manager, Yanotela",
     quote:
-      "Le suivi des versions et les commentaires contextualisés ont fluidifié nos validations. L’adoption a été immédiate.",
+      "Version tracking and contextual comments have streamlined our validations. Adoption was immediate.",
   },
 ];
 
@@ -27,9 +27,9 @@ export default function TestimonialSection() {
     <section id="testimonials" className="py-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionHeading
-          eyebrow="Ils utilisent Notus"
-          title="Des équipes exigeantes nous font confiance"
-          description="PME, cabinets, scale-ups... tous gagnent en efficacité documentaire."
+          eyebrow="They use Notus"
+          title="Demanding teams trust us"
+          description="SMEs, law firms, scale-ups... all gain documentary efficiency."
         />
         <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6">
           {testimonials.map((testimonial) => (

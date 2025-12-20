@@ -9,7 +9,8 @@ export async function GET() {
       return authResult;
     }
 
-    const dossiers = await prisma.dossier.findMany({
+    // Using prisma.folder
+    const folders = await prisma.folder.findMany({
       where: { user_id: authResult.userId },
       include: {
         documents: {
@@ -23,18 +24,18 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      dossiers: dossiers.map((d) => ({
-        id: d.id,
-        nom: d.nom,
-        created_at: d.created_at,
-        updated_at: d.updated_at,
-        documentCount: d.documents.length,
+      folders: folders.map((f) => ({
+        id: f.id,
+        name: f.name,
+        created_at: f.created_at,
+        updated_at: f.updated_at,
+        documentCount: f.documents.length,
       })),
     });
   } catch (error) {
-    console.error("❌ Erreur récupération dossiers:", error);
+    console.error("❌ Error retrieving folders:", error);
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 500 }
     );
   }
@@ -48,32 +49,40 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { nom } = body;
+    const { name } = body;
 
-    if (!nom || typeof nom !== "string" || nom.trim().length === 0) {
+    if (!name || typeof name !== "string" || name.trim().length === 0) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Invalid name" },
         { status: 400 }
       );
     }
 
-    const dossier = await prisma.dossier.create({
+    // Using prisma.folder
+    const folder = await prisma.folder.create({
       data: {
         user_id: authResult.userId,
-        nom: nom.trim(),
+        name: name.trim(),
       },
     });
 
     return NextResponse.json(
-      { success: true, dossier: { id: dossier.id, nom: dossier.nom, created_at: dossier.created_at, updated_at: dossier.updated_at } },
+      { 
+        success: true, 
+        folder: { 
+          id: folder.id, 
+          name: folder.name, 
+          created_at: folder.created_at, 
+          updated_at: folder.updated_at 
+        } 
+      },
       { status: 201 }
     );
   } catch (error) {
-    console.error("❌ Erreur création dossier:", error);
+    console.error("❌ Error creating folder:", error);
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 500 }
     );
   }
 }
-

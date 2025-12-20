@@ -9,7 +9,7 @@ export async function POST(request: Request) {
 
     if (!token) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
@@ -18,19 +18,19 @@ export async function POST(request: Request) {
 
     if (!result.success) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: `Bienvenue ${result.data!.first_name} ! Votre compte a été activé avec succès.`,
+      message: `Welcome ${result.data!.first_name}! Your account has been successfully activated.`,
     });
   } catch (error) {
-    console.error("❌ Erreur API vérification email:", error);
+    console.error("❌ API Error email verification:", error);
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 500 }
     );
   }

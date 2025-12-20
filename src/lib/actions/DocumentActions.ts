@@ -6,7 +6,6 @@ import { DocumentService } from "../services/DocumentService";
 import { DocumentValidator } from "../validators/DocumentValidator";
 import { ActionResult } from "../types";
 import { recordDocumentHistoryImmediate } from "../documentHistory";
-import { recordDocumentHistory } from "../documentHistory";
 
 const documentService = new DocumentService();
 
@@ -18,41 +17,41 @@ export async function createDocumentAction(prevState: unknown, formData: FormDat
     const rawTags = formData.get("tags") as string;
 
     if (!userId) {
-      return "Utilisateur requis.";
+      return "User required.";
     }
 
-    // Gérer les différents types d'IDs utilisateur
+    // Handle different types of user IDs
     let userIdNumber: number;
 
-    // Si l'ID utilisateur est undefined ou null
+    // If user ID is undefined or null
     if (
       !userId ||
       userId === "undefined" ||
       userId === "null" ||
       userId === "unknown"
     ) {
-      console.error("❌ ID utilisateur non défini dans la session");
-      return "Session utilisateur invalide. Veuillez vous reconnecter.";
+      console.error("❌ User ID not defined in session");
+      return "Invalid user session. Please log in again.";
     }
 
-    // Si c'est un ID de simulation OAuth
+    // If it's a simulated OAuth ID
     if (userId === "oauth-simulated-user") {
-      userIdNumber = 1; // ID de simulation
+      userIdNumber = 1; // Simulation ID
     } else {
-      // Vérifier que l'ID utilisateur est un nombre valide
+      // Verify that user ID is a valid number
       userIdNumber = parseInt(userId);
       if (isNaN(userIdNumber) || userIdNumber <= 0) {
         console.error(
-          "❌ ID utilisateur invalide:",
+          "❌ Invalid User ID:",
           userId,
           "Parsed as:",
           userIdNumber
         );
-        return "ID utilisateur invalide. Veuillez vous reconnecter.";
+        return "Invalid user ID. Please log in again.";
       }
     }
 
-    // Parser les tags
+    // Parse tags
     let tags: string[] = [];
     try {
       if (rawTags) {
@@ -63,7 +62,7 @@ export async function createDocumentAction(prevState: unknown, formData: FormDat
       tags = [];
     }
 
-    // Validation des données
+    // Data validation
     const validation = DocumentValidator.validateDocumentData({
       title: title || "",
       content: content || "",
@@ -71,18 +70,18 @@ export async function createDocumentAction(prevState: unknown, formData: FormDat
     });
 
     if (!validation.isValid) {
-      return Object.values(validation.errors)[0] || "Données invalides";
+      return Object.values(validation.errors)[0] || "Invalid data";
     }
 
-    // Vérifier si la base de données est configurée
+    // Check if database is configured
     if (!process.env.DATABASE_URL) {
-      return "Document créé avec succès (mode simulation). Configurez DATABASE_URL pour la persistance.";
+      return "Document created successfully (simulation mode). Configure DATABASE_URL for persistence.";
     }
 
-    // Initialiser les tables si elles n'existent pas
+    // Initialize tables if they don't exist
     await documentService.initializeTables();
 
-    // Créer un nouveau document
+    // Create new document
     const result = await documentService.createDocument({
       userId: userIdNumber,
       title: title.trim(),
@@ -91,40 +90,40 @@ export async function createDocumentAction(prevState: unknown, formData: FormDat
     });
 
     if (!result.success) {
-      console.error("❌ Erreur création document:", result.error);
-      return "Erreur lors de la création du document. Veuillez réessayer.";
+      console.error("❌ Error creating document:", result.error);
+      return "Error creating document. Please try again.";
     }
 
     return {
       success: true,
-      message: "Document créé avec succès !",
+      message: "Document created successfully!",
       documentId: result.document!.id,
     };
   } catch (error: unknown) {
-    console.error("❌ Erreur lors de la création du document:", error);
+    console.error("❌ Error creating document:", error);
 
     if (error && typeof error === 'object' && 'code' in error && 
         (error.code === "ECONNRESET" || error.code === "ECONNREFUSED")) {
-      return "Base de données non accessible. Vérifiez la configuration PostgreSQL.";
+      return "Database not accessible. Check PostgreSQL configuration.";
     }
 
-    return "Erreur lors de la création du document. Veuillez réessayer.";
+    return "Error creating document. Please try again.";
   }
 }
 
 export async function getUserDocumentsAction(userId: number, limit: number = 20, offset: number = 0): Promise<ActionResult> {
   try {
-    // Validation des paramètres de pagination
+    // Pagination parameters validation
     const paginationValidation = DocumentValidator.validatePaginationParams(limit, offset);
     if (!paginationValidation.isValid) {
       return {
         success: false,
-        error: Object.values(paginationValidation.errors)[0] || "Paramètres de pagination invalides",
+        error: Object.values(paginationValidation.errors)[0] || "Invalid pagination parameters",
         documents: [],
       };
     }
 
-    // Vérifier si la base de données est configurée
+    // Check if database is configured
     if (!process.env.DATABASE_URL) {
       return {
         success: true,
@@ -132,8 +131,8 @@ export async function getUserDocumentsAction(userId: number, limit: number = 20,
           {
             id: 1,
             user_id: 1,
-            title: "Document de simulation",
-            content: "Configurez DATABASE_URL pour la persistance.",
+            title: "Simulation Document",
+            content: "Configure DATABASE_URL for persistence.",
             tags: [],
             created_at: new Date(),
             updated_at: new Date(),
@@ -141,24 +140,24 @@ export async function getUserDocumentsAction(userId: number, limit: number = 20,
             first_name: "Test",
             last_name: "User",
             sharedWith: [],
-            dossierIds: [],
+            folderIds: [],
             shared: false,
           },
         ],
       };
     }
 
-    // Initialiser les tables si elles n'existent pas
+    // Initialize tables if they don't exist
     await documentService.initializeTables();
 
-    // Récupérer les documents
+    // Retrieve documents
     const result = await documentService.getUserDocuments(userId, limit, offset);
 
     if (!result.success) {
-      console.error("❌ Erreur récupération documents:", result.error);
+      console.error("❌ Error retrieving documents:", result.error);
       return {
         success: false,
-        error: "Erreur lors de la récupération des documents.",
+        error: "Error retrieving documents.",
         documents: [],
       };
     }
@@ -168,10 +167,10 @@ export async function getUserDocumentsAction(userId: number, limit: number = 20,
       documents: result.documents || [],
     };
   } catch (error: unknown) {
-    console.error("❌ Erreur lors de la récupération des documents:", error);
+    console.error("❌ Error retrieving documents:", error);
     return {
       success: false,
-      error: "Erreur lors de la récupération des documents.",
+      error: "Error retrieving documents.",
       documents: [],
     };
   }
@@ -179,25 +178,25 @@ export async function getUserDocumentsAction(userId: number, limit: number = 20,
 
 export async function getDocumentByIdAction(documentId: number): Promise<ActionResult> {
   try {
-    // Validation de l'ID du document
+    // Document ID validation
     const idValidation = DocumentValidator.validateDocumentId(documentId);
     if (!idValidation.isValid) {
       return {
         success: false,
-        error: Object.values(idValidation.errors)[0] || "ID de document invalide",
+        error: Object.values(idValidation.errors)[0] || "Invalid document ID",
         document: undefined,
       };
     }
 
-    // Vérifier si la base de données est configurée
+    // Check if database is configured
     if (!process.env.DATABASE_URL) {
       return {
         success: true,
         document: {
           id: parseInt(documentId.toString()),
           user_id: 1,
-          title: "Document de simulation",
-          content: "Configurez DATABASE_URL pour la persistance.",
+          title: "Simulation Document",
+          content: "Configure DATABASE_URL for persistence.",
           tags: [],
           created_at: new Date(),
           updated_at: new Date(),
@@ -208,17 +207,17 @@ export async function getDocumentByIdAction(documentId: number): Promise<ActionR
       };
     }
 
-    // Initialiser les tables si elles n'existent pas
+    // Initialize tables if they don't exist
     await documentService.initializeTables();
 
-    // Récupérer le document
+    // Retrieve document
     const result = await documentService.getDocumentById(parseInt(documentId.toString()));
 
     if (!result.success) {
-      console.error("❌ Erreur récupération document:", result.error);
+      console.error("❌ Error retrieving document:", result.error);
       return {
         success: false,
-        error: "Erreur lors de la récupération du document.",
+        error: "Error retrieving document.",
         document: undefined,
       };
     }
@@ -228,10 +227,10 @@ export async function getDocumentByIdAction(documentId: number): Promise<ActionR
       document: result.document,
     };
   } catch (error: unknown) {
-    console.error("❌ Erreur lors de la récupération du document:", error);
+    console.error("❌ Error retrieving document:", error);
     return {
       success: false,
-      error: "Erreur lors de la récupération du document.",
+      error: "Error retrieving document.",
       document: undefined,
     };
   }
@@ -248,7 +247,7 @@ interface UpdateDocumentPayload {
 
 export async function updateDocumentAction(prevState: unknown, formDataOrObj: FormData | UpdateDocumentPayload): Promise<ActionResult> {
   try {
-    // Vérifier que formDataOrObj existe et est valide
+    // Verify that formDataOrObj exists and is valid
     if (!formDataOrObj) {
       return { ok: false, error: "No data provided" };
     }
@@ -260,10 +259,10 @@ export async function updateDocumentAction(prevState: unknown, formDataOrObj: Fo
     
     if (!documentId) return { ok: false, error: "Missing documentId" };
 
-    // Validation de l'ID du document
+    // Document ID validation
     const idValidation = DocumentValidator.validateDocumentId(documentId);
     if (!idValidation.isValid) {
-      return { ok: false, error: Object.values(idValidation.errors)[0] || "ID de document invalide" };
+      return { ok: false, error: Object.values(idValidation.errors)[0] || "Invalid document ID" };
     }
 
     // Try server session (if available)
@@ -319,7 +318,7 @@ export async function updateDocumentAction(prevState: unknown, formDataOrObj: Fo
       tags = [];
     }
 
-    // Validation des données
+    // Data validation
     const validation = DocumentValidator.validateDocumentData({
       title,
       content: contentStr,
@@ -327,7 +326,7 @@ export async function updateDocumentAction(prevState: unknown, formDataOrObj: Fo
     });
 
     if (!validation.isValid) {
-      return { ok: false, error: Object.values(validation.errors)[0] || "Données invalides" };
+      return { ok: false, error: Object.values(validation.errors)[0] || "Invalid data" };
     }
 
     // Actually update the document in the database
@@ -345,10 +344,10 @@ export async function updateDocumentAction(prevState: unknown, formDataOrObj: Fo
       } catch {}
     }
     if (!userEmail) {
-      return { ok: false, error: "Email utilisateur manquant pour la mise à jour." };
+      return { ok: false, error: "Missing user email for update." };
     }
 
-    // Récupérer le contenu précédent pour enregistrer un historique lisible
+    // Retrieve previous content to record readable history
     let previousContent: string | null = null;
     try {
       const existing = await documentService.getDocumentById(idNum);
@@ -359,7 +358,7 @@ export async function updateDocumentAction(prevState: unknown, formDataOrObj: Fo
       previousContent = null;
     }
 
-    // Enregistrer l'historique immédiatement pour les sauvegardes HTTP explicites
+    // Record history immediately for explicit HTTP saves
     await recordDocumentHistoryImmediate({
       documentId: idNum,
       userId: userIdToUse,
@@ -378,10 +377,10 @@ export async function updateDocumentAction(prevState: unknown, formDataOrObj: Fo
     );
 
     if (!updateResult.success) {
-      console.error("❌ Erreur mise à jour document:", updateResult.error);
+      console.error("❌ Error updating document:", updateResult.error);
       return {
         ok: false,
-        error: updateResult.error || "Erreur lors de la mise à jour du document.",
+        error: updateResult.error || "Error updating document.",
       };
     }
 
@@ -402,49 +401,49 @@ export async function deleteDocumentAction(prevState: unknown, formData: FormDat
     const userId = formData.get("userId") as string;
 
     if (!documentId || !userId) {
-      return "ID de document et utilisateur requis.";
+      return "Document and User ID required.";
     }
 
-    // Validation des IDs
+    // IDs Validation
     const documentIdValidation = DocumentValidator.validateDocumentId(documentId);
     if (!documentIdValidation.isValid) {
-      return Object.values(documentIdValidation.errors)[0] || "ID document invalide";
+      return Object.values(documentIdValidation.errors)[0] || "Invalid document ID";
     }
 
     const userIdValidation = DocumentValidator.validateUserId(userId);
     if (!userIdValidation.isValid) {
-      return Object.values(userIdValidation.errors)[0] || "ID utilisateur invalide";
+      return Object.values(userIdValidation.errors)[0] || "Invalid user ID";
     }
 
     const documentIdNumber = parseInt(documentId);
     const userIdNumber = parseInt(userId);
 
-    // Vérifier si la base de données est configurée
+    // Check if database is configured
     if (!process.env.DATABASE_URL) {
-      return "Document supprimé avec succès (mode simulation). Configurez DATABASE_URL pour la persistance.";
+      return "Document deleted successfully (simulation mode). Configure DATABASE_URL for persistence.";
     }
 
-    // Initialiser les tables si elles n'existent pas
+    // Initialize tables if they don't exist
     await documentService.initializeTables();
 
-    // Supprimer le document
+    // Delete document
     const result = await documentService.deleteDocument(documentIdNumber, userIdNumber);
 
     if (!result.success) {
-      console.error("❌ Erreur suppression document:", result.error);
+      console.error("❌ Error deleting document:", result.error);
       return result.error!;
     }
 
-    return "Document supprimé avec succès";
+    return "Document deleted successfully";
   } catch (error: unknown) {
-    console.error("❌ Erreur lors de la suppression du document:", error);
+    console.error("❌ Error deleting document:", error);
 
     if (error && typeof error === 'object' && 'code' in error && 
         (error.code === "ECONNRESET" || error.code === "ECONNREFUSED")) {
-      return "Base de données non accessible. Vérifiez la configuration PostgreSQL.";
+      return "Database not accessible. Check PostgreSQL configuration.";
     }
 
-    return "Erreur lors de la suppression du document. Veuillez réessayer.";
+    return "Error deleting document. Please try again.";
   }
 }
 
@@ -454,26 +453,26 @@ export async function deleteMultipleDocumentsAction(prevState: unknown, formData
     const idsRaw = formData.getAll("documentIds") as string[];
 
     if (!userId) {
-      return "ID utilisateur requis.";
+      return "User ID required.";
     }
 
-    // Validation de l'ID utilisateur
+    // User ID Validation
     const userIdValidation = DocumentValidator.validateUserId(userId);
     if (!userIdValidation.isValid) {
-      return Object.values(userIdValidation.errors)[0] || "ID utilisateur invalide";
+      return Object.values(userIdValidation.errors)[0] || "Invalid user ID";
     }
 
-    // Validation des IDs de documents
+    // Document IDs Validation
     const documentIdsValidation = DocumentValidator.validateDocumentIds(idsRaw);
     if (!documentIdsValidation.isValid) {
-      return Object.values(documentIdsValidation.errors)[0] || "IDs de documents invalides";
+      return Object.values(documentIdsValidation.errors)[0] || "Invalid document IDs";
     }
 
     const userIdNumber = parseInt(userId);
 
-    // Vérifier si la base de données est configurée
+    // Check if database is configured
     if (!process.env.DATABASE_URL) {
-      return `${idsRaw.length} document(s) supprimé(s) (mode simulation). Configurez DATABASE_URL pour la persistance.`;
+      return `${idsRaw.length} document(s) deleted (simulation mode). Configure DATABASE_URL for persistence.`;
     }
 
     await documentService.initializeTables();
@@ -481,17 +480,17 @@ export async function deleteMultipleDocumentsAction(prevState: unknown, formData
     const result = await documentService.deleteDocumentsBulk(userIdNumber, idsRaw);
 
     if (!result.success) {
-      return result.error || "Erreur lors de la suppression multiple.";
+      return result.error || "Error during bulk deletion.";
     }
 
-    return `${result.data?.deletedCount || 0} document(s) supprimé(s) avec succès`;
+    return `${result.data?.deletedCount || 0} document(s) deleted successfully`;
   } catch (error: unknown) {
-    console.error("❌ Erreur lors de la suppression multiple:", error);
+    console.error("❌ Error during bulk deletion:", error);
     if (error && typeof error === 'object' && 'code' in error && 
         (error.code === "ECONNRESET" || error.code === "ECONNREFUSED")) {
-      return "Base de données non accessible. Vérifiez la configuration PostgreSQL.";
+      return "Database not accessible. Check PostgreSQL configuration.";
     }
-    return "Erreur lors de la suppression multiple. Veuillez réessayer.";
+    return "Error during bulk deletion. Please try again.";
   }
 }
 
@@ -503,7 +502,7 @@ export async function fetchSharedDocumentsAction(): Promise<ActionResult> {
     const userId = session?.user?.id ? Number(session.user.id) : undefined;
 
     if (!email || !userId) {
-      return { success: false, error: "Utilisateur non authentifié", documents: [] };
+      return { success: false, error: "User not authenticated", documents: [] };
     }
 
     if (!process.env.DATABASE_URL) {
@@ -512,19 +511,19 @@ export async function fetchSharedDocumentsAction(): Promise<ActionResult> {
 
     await documentService.initializeTables();
 
-    // Récupérer les documents partagés avec l'utilisateur
+    // Retrieve documents shared with user
     const sharedWithResult = await documentService.fetchSharedWithUser(email);
     if (!sharedWithResult.success) {
-      return { success: false, error: sharedWithResult.error || "Erreur lors de la récupération des documents partagés", documents: [] };
+      return { success: false, error: sharedWithResult.error || "Error retrieving shared documents", documents: [] };
     }
 
-    // Récupérer les documents partagés par l'utilisateur
+    // Retrieve documents shared by user
     const sharedByResult = await documentService.fetchSharedByUser(userId);
     if (!sharedByResult.success) {
-      return { success: false, error: sharedByResult.error || "Erreur lors de la récupération des documents partagés", documents: [] };
+      return { success: false, error: sharedByResult.error || "Error retrieving shared documents", documents: [] };
     }
 
-    // Combiner les deux listes
+    // Combine both lists
     const allSharedDocuments = [
       ...(sharedWithResult.documents || []),
       ...(sharedByResult.documents || [])
@@ -532,8 +531,8 @@ export async function fetchSharedDocumentsAction(): Promise<ActionResult> {
 
     return { success: true, documents: allSharedDocuments };
   } catch (error: unknown) {
-    console.error("❌ Erreur fetchSharedDocumentsAction:", error);
-    return { success: false, error: "Erreur lors de la récupération des documents partagés", documents: [] };
+    console.error("❌ Error fetchSharedDocumentsAction:", error);
+    return { success: false, error: "Error retrieving shared documents", documents: [] };
   }
 }
 
@@ -541,14 +540,14 @@ export async function getSharePermissionAction(documentId: number): Promise<Acti
   try {
     const idValidation = DocumentValidator.validateDocumentId(documentId);
     if (!idValidation.isValid) {
-      return { success: false, error: Object.values(idValidation.errors)[0] || "ID de document invalide" };
+      return { success: false, error: Object.values(idValidation.errors)[0] || "Invalid document ID" };
     }
 
     const session = await getServerSession(authOptions);
     const email = session?.user?.email as string | undefined;
 
     if (!email) {
-      return { success: false, error: "Utilisateur non authentifié" };
+      return { success: false, error: "User not authenticated" };
     }
 
     if (!process.env.DATABASE_URL) {
@@ -559,13 +558,13 @@ export async function getSharePermissionAction(documentId: number): Promise<Acti
 
     const result = await documentService.getSharePermission(documentId, email);
     if (!result.success) {
-      return { success: false, error: result.error || "Permission non trouvée" };
+      return { success: false, error: result.error || "Permission not found" };
     }
 
     return { success: true, dbResult: { success: true, error: undefined, document: undefined }, data: result.data } as ActionResult;
   } catch (error: unknown) {
-    console.error("❌ Erreur getSharePermissionAction:", error);
-    return { success: false, error: "Erreur lors de la récupération de la permission" };
+    console.error("❌ Error getSharePermissionAction:", error);
+    return { success: false, error: "Error retrieving permission" };
   }
 }
 
@@ -576,7 +575,7 @@ export async function addShareAction(prevState: unknown, formData: FormData): Pr
     const permissionRaw = formData.get("permission") as string | null;
 
     if (!documentIdRaw || !targetEmail || permissionRaw === null) {
-      return { success: false, error: "documentId, email et permission sont requis" };
+      return { success: false, error: "documentId, email and permission are required" };
     }
 
     const documentId = parseInt(documentIdRaw, 10);
@@ -584,7 +583,7 @@ export async function addShareAction(prevState: unknown, formData: FormData): Pr
 
     const idValidation = DocumentValidator.validateDocumentId(documentId);
     if (!idValidation.isValid) {
-      return { success: false, error: Object.values(idValidation.errors)[0] || "ID de document invalide" };
+      return { success: false, error: Object.values(idValidation.errors)[0] || "Invalid document ID" };
     }
 
     // Auth check and ownership/admin verification
@@ -593,38 +592,38 @@ export async function addShareAction(prevState: unknown, formData: FormData): Pr
     const userEmail = session?.user?.email as string | undefined;
 
     if (!userId || !userEmail) {
-      return { success: false, error: "Utilisateur non authentifié" };
+      return { success: false, error: "User not authenticated" };
     }
 
-    // Préparer la persistance
+    // Prepare persistence
     if (!process.env.DATABASE_URL) {
-      return { success: true, message: "Partage simulé (DATABASE_URL non configurée)" };
+      return { success: true, message: "Share simulated (DATABASE_URL not configured)" };
     }
 
     await documentService.initializeTables();
 
-    // Récupérer le document pour vérifier la propriété
+    // Retrieve document to check ownership
     const docRes = await documentService.getDocumentById(documentId);
     if (!docRes.success || !docRes.document) {
-      return { success: false, error: "Document introuvable" };
+      return { success: false, error: "Document not found" };
     }
 
     const isOwner = docRes.document.user_id === userId;
     const isAdmin = session?.user?.isAdmin === true;
   // Debug logging removed
     if (!isOwner && !isAdmin) {
-      return { success: false, error: "Vous n'êtes pas autorisé à partager ce document" };
+      return { success: false, error: "You are not authorized to share this document" };
     }
 
     const addRes = await documentService.addShare(documentId, targetEmail, permission);
     if (!addRes.success) {
-      return { success: false, error: addRes.error || "Erreur lors de l'ajout du partage" };
+      return { success: false, error: addRes.error || "Error adding share" };
     }
 
-    return { success: true, message: "Partage réussi.", id: addRes.data?.id };
+    return { success: true, message: "Share successful.", id: addRes.data?.id };
   } catch (error: unknown) {
-    console.error("❌ Erreur addShareAction:", error);
-    return { success: false, error: "Erreur lors du partage" };
+    console.error("❌ Error addShareAction:", error);
+    return { success: false, error: "Error sharing" };
   }
 }
 
@@ -632,7 +631,7 @@ export async function fetchDocumentAccessListAction(documentId: number): Promise
   try {
     const idValidation = DocumentValidator.validateDocumentId(documentId);
     if (!idValidation.isValid) {
-      return { success: false, error: Object.values(idValidation.errors)[0] || 'ID de document invalide' };
+      return { success: false, error: Object.values(idValidation.errors)[0] || 'Invalid document ID' };
     }
 
     if (!process.env.DATABASE_URL) {
@@ -643,12 +642,12 @@ export async function fetchDocumentAccessListAction(documentId: number): Promise
 
     const res = await documentService.fetchDocumentAccessList(documentId);
     if (!res.success) {
-      return { success: false, error: res.error || 'Erreur lors de la récupération de la liste d\'accès' };
+      return { success: false, error: res.error || 'Error retrieving access list' };
     }
 
     return { success: true, data: res.data } as ActionResult;
   } catch (error: unknown) {
-    console.error('❌ Erreur fetchDocumentAccessListAction:', error);
-    return { success: false, error: 'Erreur lors de la récupération de la liste d\'accès' };
+    console.error('❌ Error fetchDocumentAccessListAction:', error);
+    return { success: false, error: 'Error retrieving access list' };
   }
 }

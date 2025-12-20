@@ -20,7 +20,7 @@ export default function DrawingModal({ isOpen, onClose, onFormatChange }: Drawin
   // Mount once on page load; do not clear on open/close. Users can clear manually.
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Dessiner" size="full" className="sm:max-w-4xl">
+    <Modal isOpen={isOpen} onClose={onClose} title="Draw" size="full" className="sm:max-w-4xl">
       <Modal.Content>
         <div ref={drawingModalContentRef} className="w-full max-h-[80vh] relative bg-card border border-border rounded overflow-hidden">
           <div className="relative w-full h-[50vh] sm:h-[60vh] md:h-[65vh]">
@@ -39,7 +39,7 @@ export default function DrawingModal({ isOpen, onClose, onFormatChange }: Drawin
         </div>
         <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
           <div className="flex items-center gap-3">
-            <label className="text-sm shrink-0">Couleur</label>
+            <label className="text-sm shrink-0">Color</label>
             <input
               type="color"
               value={drawingState.color}
@@ -52,7 +52,7 @@ export default function DrawingModal({ isOpen, onClose, onFormatChange }: Drawin
             />
           </div>
           <div className="flex items-center gap-3">
-            <label className="text-sm shrink-0">Taille</label>
+            <label className="text-sm shrink-0">Size</label>
             <input
               type="range"
               min={1}
@@ -68,7 +68,7 @@ export default function DrawingModal({ isOpen, onClose, onFormatChange }: Drawin
             <span className="text-xs text-muted-foreground w-8 text-right">{drawingState.size}</span>
           </div>
           <div className="flex items-center gap-3">
-            <label className="text-sm shrink-0">Opacité</label>
+            <label className="text-sm shrink-0">Opacity</label>
             <input
               type="range"
               min={0.05}
@@ -96,7 +96,7 @@ export default function DrawingModal({ isOpen, onClose, onFormatChange }: Drawin
             canvasCtrlRef.current?.clearCanvas?.();
           }}
         >
-          Effacer
+          Clear
         </button>
         <button
           type="button"
@@ -124,7 +124,7 @@ export default function DrawingModal({ isOpen, onClose, onFormatChange }: Drawin
             }
           }}
         >
-          Insérer l'image
+          Insert image
         </button>
       </Modal.Footer>
     </Modal>

@@ -15,13 +15,13 @@ export async function authenticate(prevState: unknown, formData: FormData): Prom
     const password = formData.get("password") as string;
 
     if (!email || !password) {
-      return "Email et mot de passe requis";
+      return "Email and password required";
     }
 
-    // Vérifier si l'utilisateur est banni avant la tentative de connexion
+    // Check if user is banned before login attempt
     const userResult = await userService.getUserByEmail(email);
     if (userResult.success && userResult.user?.is_banned) {
-      return "Ce compte a été banni. Contactez un administrateur pour plus d'informations.";
+      return "This account has been banned. Contact an administrator for more information.";
     }
 
     await signIn("credentials", {
@@ -32,10 +32,10 @@ export async function authenticate(prevState: unknown, formData: FormData): Prom
     return "";
   } catch (error: unknown) {
     if (error && typeof error === 'object' && 'type' in error && error.type === "CredentialsSignin") {
-      return "Email ou mot de passe incorrect, ou email non vérifié.";
+      return "Incorrect email or password, or email not verified.";
     }
 
-    return "Une erreur est survenue.";
+    return "An error occurred.";
   }
 }
 
@@ -49,47 +49,48 @@ export async function registerUser(prevState: unknown, formData: FormData): Prom
       lastName: formData.get("lastName") as string,
     };
 
-    // Vérifier l'acceptation des conditions d'utilisation
+    // Verify acceptance of terms of use
     const acceptTerms = formData.get("acceptTerms");
     if (!acceptTerms) {
-      return "Vous devez accepter les conditions d'utilisation et les mentions légales pour vous inscrire.";
+      return "You must accept the terms of use and legal notice to register.";
     }
 
-    // Validation côté serveur
+    // Server-side validation
     const validation = UserValidator.validateRegistrationData(userData);
     if (!validation.isValid) {
-      return Object.values(validation.errors)[0] || "Données invalides";
+      return Object.values(validation.errors)[0] || "Invalid data";
     }
 
-    // Vérifier si la base de données est configurée
+    // Check if database is configured
     if (!process.env.DATABASE_URL) {
-      return "Inscription réussie (mode simulation). Configurez DATABASE_URL pour la persistance.";
+      return "Registration successful (simulation mode). Configure DATABASE_URL for persistence.";
     }
 
-    // Initialiser les tables si elles n'existent pas
+    // Initialize tables if they don't exist
     await userService.initializeTables();
 
-    // Créer l'utilisateur
+    // Create user
     const result = await userService.createUser(userData);
 
     if (!result.success) {
-      return result.error || "Erreur lors de l'inscription";
+      return result.error || "Error during registration";
     }
 
-    return "Inscription réussie ! Un email de vérification a été envoyé. Vérifiez votre boîte de réception.";
+    return "Registration successful! A verification email has been sent. Check your inbox.";
   } catch (error: unknown) {
-    console.error("❌ Erreur lors de l'inscription:", error);
+    console.error("❌ Error during registration:", error);
 
-    if (error instanceof Error && (error.message.includes("déjà utilisé") || error.message.includes("existe déjà"))) {
-      return error.message;
+    if (error instanceof Error && (error.message.includes("already used") || error.message.includes("already exists"))) {
+      // return "Email or username already used."; // More generic in English
+      return error.message; 
     }
 
     if (error && typeof error === 'object' && 'code' in error && 
         (error.code === "ECONNRESET" || error.code === "ECONNREFUSED")) {
-      return "Base de données non accessible. Vérifiez la configuration PostgreSQL.";
+      return "Database not accessible. Check PostgreSQL configuration.";
     }
 
-    return "Erreur lors de l'inscription. Veuillez réessayer.";
+    return "Error during registration. Please try again.";
   }
 }
 
@@ -98,40 +99,40 @@ export async function sendPasswordResetEmailAction(prevState: unknown, formData:
     const email = formData.get("email") as string;
 
     if (!email) {
-      return "Veuillez entrer votre adresse email.";
+      return "Please enter your email address.";
     }
 
-    // Validation basique de l'email
+    // Basic email validation
     const emailValidation = UserValidator.validateEmail(email);
     if (!emailValidation.isValid) {
-      return "Veuillez entrer une adresse email valide.";
+      return "Please enter a valid email address.";
     }
 
-    // Vérifier si la base de données est configurée
+    // Check if database is configured
     if (!process.env.DATABASE_URL) {
-      return "Email de réinitialisation envoyé (mode simulation). Configurez DATABASE_URL pour la persistance.";
+      return "Reset email sent (simulation mode). Configure DATABASE_URL for persistence.";
     }
 
-    // Initialiser les tables si elles n'existent pas
+    // Initialize tables if they don't exist
     await userService.initializeTables();
 
-    // Envoyer l'email de réinitialisation
+    // Send reset email
     const result = await userService.sendPasswordResetEmail(email);
 
     if (!result.success) {
-      return result.error || "Erreur lors de l'envoi de l'email";
+      return result.error || "Error sending email";
     }
 
-    return "Si un compte existe avec cette adresse email, un lien de réinitialisation a été envoyé.";
+    return "If an account exists with this email address, a reset link has been sent.";
   } catch (error: unknown) {
-    console.error("❌ Erreur lors de l'envoi de l'email de réinitialisation:", error);
+    console.error("❌ Error sending reset email:", error);
 
     if (error && typeof error === 'object' && 'code' in error && 
         (error.code === "ECONNRESET" || error.code === "ECONNREFUSED")) {
-      return "Base de données non accessible. Vérifiez la configuration PostgreSQL.";
+      return "Database not accessible. Check PostgreSQL configuration.";
     }
 
-    return "Erreur lors de l'envoi de l'email. Veuillez réessayer.";
+    return "Error sending email. Please try again.";
   }
 }
 
@@ -142,40 +143,40 @@ export async function resetPasswordAction(prevState: unknown, formData: FormData
     const confirmPassword = formData.get("confirmPassword") as string;
 
     if (!token || !password || !confirmPassword) {
-      return "Tous les champs sont requis.";
+      return "All fields are required.";
     }
 
-    // Validation des mots de passe
+    // Password validation
     const passwordValidation = UserValidator.validatePasswordResetData(password, confirmPassword);
     if (!passwordValidation.isValid) {
-      return Object.values(passwordValidation.errors)[0] || "Données invalides";
+      return Object.values(passwordValidation.errors)[0] || "Invalid data";
     }
 
-    // Vérifier si la base de données est configurée
+    // Check if database is configured
     if (!process.env.DATABASE_URL) {
-      return "Mot de passe modifié avec succès (mode simulation). Configurez DATABASE_URL pour la persistance.";
+      return "Password changed successfully (simulation mode). Configure DATABASE_URL for persistence.";
     }
 
-    // Initialiser les tables si elles n'existent pas
+    // Initialize tables if they don't exist
     await userService.initializeTables();
 
-    // Réinitialiser le mot de passe
+    // Reset password
     const result = await userService.resetPassword(token, password);
 
     if (!result.success) {
-      return result.error || "Erreur lors de la réinitialisation du mot de passe";
+      return result.error || "Error resetting password";
     }
 
-    return "Mot de passe modifié avec succès. Vous pouvez maintenant vous connecter.";
+    return "Password changed successfully. You can now log in.";
   } catch (error: unknown) {
-    console.error("❌ Erreur lors de la réinitialisation du mot de passe:", error);
+    console.error("❌ Error resetting password:", error);
 
     if (error && typeof error === 'object' && 'code' in error && 
         (error.code === "ECONNRESET" || error.code === "ECONNREFUSED")) {
-      return "Base de données non accessible. Vérifiez la configuration PostgreSQL.";
+      return "Database not accessible. Check PostgreSQL configuration.";
     }
 
-    return "Erreur lors de la réinitialisation. Veuillez réessayer.";
+    return "Error resetting. Please try again.";
   }
 }
 
@@ -185,7 +186,7 @@ export async function updateUserProfileAction(prevState: unknown, formData: Form
     const userIdRaw = session?.user?.id;
 
     if (!userIdRaw) {
-      return "Vous devez être connecté pour modifier votre profil.";
+      return "You must be logged in to modify your profile.";
     }
 
     const email = formData.get("email") as string || undefined;
@@ -195,7 +196,7 @@ export async function updateUserProfileAction(prevState: unknown, formData: Form
     const profileImage = formData.get("profileImage") as string || undefined;
     const bannerImage = formData.get("bannerImage") as string || undefined;
 
-    // Validation des données de profil
+    // Profile data validation
     const profileData = {
       email: email?.trim(),
       username: username?.trim(),
@@ -207,7 +208,7 @@ export async function updateUserProfileAction(prevState: unknown, formData: Form
 
     const validation = UserValidator.validateProfileData(profileData);
     if (!validation.isValid) {
-      return Object.values(validation.errors)[0] || "Données invalides";
+      return Object.values(validation.errors)[0] || "Invalid data";
     }
 
     const fields: Record<string, string> = {};
@@ -219,11 +220,11 @@ export async function updateUserProfileAction(prevState: unknown, formData: Form
     if (bannerImage !== undefined) fields.bannerImage = bannerImage;
 
     if (Object.keys(fields).length === 0) {
-      return "Aucun changement détecté.";
+      return "No changes detected.";
     }
 
     if (!process.env.DATABASE_URL) {
-      return "Profil mis à jour (mode simulation). Configurez DATABASE_URL pour la persistance.";
+      return "Profile updated (simulation mode). Configure DATABASE_URL for persistence.";
     }
 
     await userService.initializeTables();
@@ -232,23 +233,23 @@ export async function updateUserProfileAction(prevState: unknown, formData: Form
     const result = await userService.updateUserProfile(userId, fields);
 
     if (!result.success) {
-      return result.error || "Erreur lors de la mise à jour du profil.";
+      return result.error || "Error updating profile.";
     }
 
-    return "Profil mis à jour avec succès !";
+    return "Profile updated successfully!";
   } catch (error: unknown) {
-    console.error("❌ Erreur mise à jour profil:", error);
+    console.error("❌ Error updating profile:", error);
     if (error && typeof error === 'object' && 'code' in error && 
         (error.code === "ECONNRESET" || error.code === "ECONNREFUSED")) {
-      return "Base de données non accessible. Vérifiez la configuration PostgreSQL.";
+      return "Database not accessible. Check PostgreSQL configuration.";
     }
-    return "Erreur lors de la mise à jour du profil. Veuillez réessayer.";
+    return "Error updating profile. Please try again.";
   }
 }
 
 export async function getUserProfileAction(userId: number): Promise<ActionResult> {
   try {
-    // Vérifier si la base de données est configurée
+    // Check if database is configured
     if (!process.env.DATABASE_URL) {
       return {
         success: true,
@@ -276,16 +277,16 @@ export async function getUserProfileAction(userId: number): Promise<ActionResult
       };
     }
 
-    // Initialiser les tables si elles n'existent pas
+    // Initialize tables if they don't exist
     await userService.initializeTables();
 
-    // Récupérer les données complètes de l'utilisateur
+    // Retrieve user profile
     const result = await userService.getUserById(userId);
 
     if (!result.success) {
       return {
         success: false,
-        error: result.error || "Utilisateur non trouvé",
+        error: result.error || "User not found",
       };
     }
 
@@ -294,34 +295,34 @@ export async function getUserProfileAction(userId: number): Promise<ActionResult
       user: result.user,
     };
   } catch (error: unknown) {
-    console.error("❌ Erreur lors de la récupération du profil utilisateur:", error);
+    console.error("❌ Error retrieving user profile:", error);
     return {
       success: false,
-      error: "Erreur lors de la récupération du profil",
+      error: "Error retrieving profile",
     };
   }
 }
 
 export async function getUserIdByEmailAction(email: string): Promise<ActionResult> {
   try {
-    // Vérifier si la base de données est configurée
+    // Check if database is configured
     if (!process.env.DATABASE_URL) {
       return {
         success: true,
-        userId: "1", // ID de simulation
+        userId: "1", // Simulation ID
       };
     }
 
-    // Initialiser les tables si elles n'existent pas
+    // Initialize tables if they don't exist
     await userService.initializeTables();
 
-    // Récupérer l'ID utilisateur par email
+    // Retrieve user ID by email
     const result = await userService.getUserByEmail(email);
 
     if (!result.success) {
       return {
         success: false,
-        error: "Utilisateur non trouvé",
+        error: "User not found",
       };
     }
 
@@ -330,10 +331,10 @@ export async function getUserIdByEmailAction(email: string): Promise<ActionResul
       userId: result.user!.id.toString(),
     };
   } catch (error: unknown) {
-    console.error("❌ Erreur lors de la récupération de l'ID utilisateur:", error);
+    console.error("❌ Error retrieving user ID:", error);
     return {
       success: false,
-      error: "Erreur lors de la récupération de l'ID utilisateur",
+      error: "Error retrieving user ID",
     };
   }
 }

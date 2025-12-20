@@ -12,12 +12,12 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
+export function ThemeProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [isDark, setIsDark] = useState(false);
   const [primaryColor, setPrimaryColor] = useState<string>("");
 
   useEffect(() => {
-    // Vérifier la préférence système au chargement
+    // Check system preference on load
     const isSystemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     const hasManualOverride = localStorage.getItem("theme");
     
@@ -30,7 +30,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         document.documentElement.classList.remove("dark");
       }
     } else {
-      // Utiliser la préférence système
+      // Use system preference
       setIsDark(isSystemDark);
       if (isSystemDark) {
         document.documentElement.classList.add("dark");
@@ -39,7 +39,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    // Écouter les changements de préférence système seulement si pas de surcharge manuelle
+    // Listen to system preference changes only if no manual override
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     const handleChange = (e: MediaQueryListEvent) => {
       if (!localStorage.getItem("theme")) {
@@ -57,7 +57,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return () => mediaQuery.removeEventListener("change", handleChange);
   }, []);
 
-  // Applique la couleur principale aux variables CSS pertinentes
+  // Applies the primary color to relevant CSS variables
   const applyPrimaryColor = (hexColor: string) => {
     const root = document.documentElement;
     root.style.setProperty("--primary", hexColor);
@@ -66,14 +66,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     root.style.setProperty("--sidebar-primary", hexColor);
   };
 
-  // Charger la couleur principale sauvegardée
+  // Load saved primary color
   useEffect(() => {
     const saved = localStorage.getItem("primaryColor");
     if (saved && /^#([0-9a-fA-F]{6})$/.test(saved)) {
       setPrimaryColor(saved);
       applyPrimaryColor(saved);
     } else {
-      // Utiliser la couleur par défaut de la palette
+      // Use default color from palette
       setPrimaryColor(DEFAULT_COLOR);
       applyPrimaryColor(DEFAULT_COLOR);
     }
@@ -89,7 +89,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const newIsDark = !isDark;
     setIsDark(newIsDark);
     
-    // Sauvegarder la préférence manuelle
+    // Save manual preference
     localStorage.setItem("theme", newIsDark ? "dark" : "light");
     
     if (newIsDark) {

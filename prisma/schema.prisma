@@ -16,7 +16,7 @@ model User {
   name                     String?
   email                    String    @unique
   
-  // Champs personnalisés de votre application
+  // Application custom fields
   username                 String?   @unique
   first_name                String?   @map("first_name")
   last_name                 String?   @map("last_name")
@@ -29,21 +29,21 @@ model User {
   created_at                DateTime  @default(now()) @map("created_at")
   updated_at                DateTime  @default(now()) @updatedAt @map("updated_at")
   
-  // Champs supplémentaires de l'application existante
+  // Additional application fields
   email_verification_token String?
   reset_token              String?
   reset_token_expiry       DateTime?
   terms_accepted_at        DateTime?
   profile_image            String?
   banner_image             String?
-
-  // Relations personnalisées
+ 
+  // Custom relations
   documents Document[]
   adminActions AdminAction[] @relation("AdminActions")
   targetUserActions AdminAction[] @relation("TargetUserActions")
   requests UserRequest[]
   validatedRequests UserRequest[] @relation("ValidatedRequests")
-  dossiers Dossier[]
+  folders Folder[]
   comments Comment[]
   syntheses Synthesis[]
   documentHistory DocumentHistory[]
@@ -58,14 +58,14 @@ model Document {
   title      String
   content    String   @default("")
   tags       String[] @default([])
-  favori     Boolean?
+  is_favorite     Boolean?
   created_at DateTime @default(now()) @map("created_at")
   updated_at DateTime @updatedAt @map("updated_at")
 
   // Relations
   user      User              @relation(fields: [user_id], references: [id], onDelete: Cascade)
   Share     Share[]
-  dossiers  DossierDocument[]
+  folder_documents  FolderDocument[]
   comments  Comment[]
   syntheses Synthesis[]
   history   DocumentHistory[]
@@ -87,7 +87,7 @@ model Share {
   id_doc     Int       @map("id_doc")
   email      String
   permission Boolean   @default(false)
-  favori     Boolean?
+  is_favorite     Boolean?
   share_at   DateTime? @default(now()) @map("share_at")
 
   document Document @relation(fields: [id_doc], references: [id], onDelete: Cascade)
@@ -101,7 +101,7 @@ model AdminAction {
   target_user_id Int      @map("target_user_id")
   action_type    String   @map("action_type") // 'ban', 'unban', 'promote_admin', 'demote_admin'
   reason         String?
-  details        Json?    // Pour stocker des informations supplémentaires
+  details        Json?    // To store additional information
   created_at     DateTime @default(now()) @map("created_at")
 
   // Relations
@@ -183,35 +183,35 @@ model UserRequest {
   @@map("user_requests")
 }
 
-model Dossier {
+model Folder {
   id         Int      @id @default(autoincrement())
   user_id    Int      @map("user_id")
-  nom        String
+  name        String
   created_at DateTime @default(now()) @map("created_at")
   updated_at DateTime @updatedAt @map("updated_at")
 
   // Relations
   user      User              @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  documents DossierDocument[]
+  documents FolderDocument[]
 
-  @@index([user_id], map: "idx_dossiers_user_id")
-  @@map("dossiers")
+  @@index([user_id], map: "idx_folders_user_id")
+  @@map("folders")
 }
 
-model DossierDocument {
+model FolderDocument {
   id          Int      @id @default(autoincrement())
-  dossier_id  Int      @map("dossier_id")
+  folder_id  Int      @map("folder_id")
   document_id Int      @map("document_id")
   created_at  DateTime @default(now()) @map("created_at")
 
   // Relations
-  dossier  Dossier  @relation(fields: [dossier_id], references: [id], onDelete: Cascade)
+  folder  Folder  @relation(fields: [folder_id], references: [id], onDelete: Cascade)
   document Document  @relation(fields: [document_id], references: [id], onDelete: Cascade)
 
-  @@unique([dossier_id, document_id], map: "idx_dossier_document_unique")
-  @@index([dossier_id], map: "idx_dossier_document_dossier_id")
-  @@index([document_id], map: "idx_dossier_document_document_id")
-  @@map("dossier_documents")
+  @@unique([folder_id, document_id], map: "idx_folder_document_unique")
+  @@index([folder_id], map: "idx_folder_document_folder_id")
+  @@index([document_id], map: "idx_folder_document_document_id")
+  @@map("folder_documents")
 }
 
 model Comment {

@@ -20,20 +20,20 @@ export async function POST(request: Request, { params }: RouteParams) {
     const { id } = await params;
     await requestService.initializeTables();
 
-    const result = await requestService.rejectRequest(parseInt(id), adminResult.userId);
+    const result = await requestService.rejectRequest(Number.parseInt(id), adminResult.userId);
 
     if (!result.success) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 500 }
       );
     }
 
     return NextResponse.json({ success: true, request: result.request });
   } catch (error) {
-    console.error("❌ Erreur rejet requête:", error);
+    console.error("❌ Error rejecting request:", error);
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 500 }
     );
   }

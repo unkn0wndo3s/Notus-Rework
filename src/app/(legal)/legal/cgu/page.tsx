@@ -4,16 +4,16 @@ import TableOfContents from "@/components/legal/TableOfContents";
 
 export default function CGUPage() {
   const sections = [
-    { id: "acceptation", title: "1. Acceptation des Conditions" },
-    { id: "description", title: "2. Description du Service" },
-    { id: "inscription", title: "3. Inscription et Compte" },
-    { id: "propriete", title: "4. Propriété Intellectuelle" },
-    { id: "donnees", title: "5. Collecte et Utilisation des Données" },
-    { id: "tiers", title: "6. Services Tiers" },
-    { id: "responsabilite", title: "7. Limitation de Responsabilité" },
-    { id: "modifications", title: "8. Modifications des CGU" },
-    { id: "resiliation", title: "9. Résiliation" },
-    { id: "loi", title: "10. Loi Applicable" }
+    { id: "acceptation", title: "1. Acceptance of Terms" },
+    { id: "description", title: "2. Description of Service" },
+    { id: "inscription", title: "3. Registration and Account" },
+    { id: "propriete", title: "4. Intellectual Property" },
+    { id: "donnees", title: "5. Data Collection and Use" },
+    { id: "tiers", title: "6. Third-Party Services" },
+    { id: "responsabilite", title: "7. Limitation of Liability" },
+    { id: "modifications", title: "8. Amendments to Terms" },
+    { id: "resiliation", title: "9. Termination" },
+    { id: "loi", title: "10. Applicable Law" }
   ];
 
   return (
@@ -22,18 +22,18 @@ export default function CGUPage() {
         {/* Header Section */}
         <header className="text-center mb-12">
           <h1 className="text-4xl font-bold text-foreground mb-4">
-            Conditions Générales d'Utilisation
+            General Terms and Conditions of Use
           </h1>
           <Badge variant="outline" className="text-sm">
-            Dernière mise à jour : 18 septembre 2025
+            Last updated: September 18, 2025
           </Badge>
         </header>
 
-        {/* Table des matières - Toujours en haut */}
+        {/* Table of Contents - Always at the top */}
         <section className="mb-8">
           <Card>
             <Card.Header>
-              <Card.Title className="text-lg text-foreground">Table des matières</Card.Title>
+              <Card.Title className="text-lg text-foreground">Table of Contents</Card.Title>
             </Card.Header>
             <Card.Content>
               <TableOfContents sections={sections} />
@@ -41,7 +41,7 @@ export default function CGUPage() {
           </Card>
         </section>
 
-        {/* Contenu principal */}
+        {/* Main Content */}
         <section className="max-w-4xl mx-auto">
           <Card>
             <Card.Content className="p-8">
@@ -49,22 +49,18 @@ export default function CGUPage() {
 
                 <div className="bg-primary/10 p-6 rounded-lg border-l-4 border-primary mb-8">
                   <p className="text-foreground leading-relaxed text-lg">
-                    Bienvenue sur Notus. Veuillez lire attentivement les présentes
-                    conditions générales d'utilisation qui régissent l'utilisation de
-                    notre application mobile.
+                    Welcome to Notus. Please read these general terms and conditions of use carefully as they govern your use of our mobile application.
                   </p>
                 </div>
 
                 <section id="acceptation" className="mb-12">
                   <h2 className="text-2xl font-bold text-foreground mb-6 pb-2 border-b border-border">
-                    1. Acceptation des Conditions
+                    1. Acceptance of Terms
                   </h2>
                   <div className="space-y-6">
                     <div className="bg-muted/30 p-6 rounded-lg">
                       <p className="text-foreground leading-relaxed">
-                        En accédant ou en utilisant Notus, vous acceptez d'être lié par
-                        ces Conditions Générales d'Utilisation. Si vous n'acceptez pas ces
-                        conditions, veuillez ne pas utiliser notre service.
+                        By accessing or using Notus, you agree to be bound by these General Terms and Conditions of Use. If you do not accept these terms, please do not use our service.
                       </p>
                     </div>
                   </div>
@@ -72,28 +68,23 @@ export default function CGUPage() {
 
                 <section id="description" className="mb-12">
                   <h2 className="text-2xl font-bold text-foreground mb-6 pb-2 border-b border-border">
-                    2. Description du Service
+                    2. Description of Service
                   </h2>
                   <div className="space-y-6">
                     <p className="text-foreground leading-relaxed">
-                      Notus est une application mobile qui permet aux utilisateurs de
-                      créer, gérer et organiser leurs documents et notes de manière
-                      collaborative et sécurisée.
+                      Notus is a mobile application that allows users to create, manage, and organize their documents and notes in a collaborative and secure manner.
                     </p>
                   </div>
                 </section>
 
                 <section id="inscription" className="mb-12">
                   <h2 className="text-2xl font-bold text-foreground mb-6 pb-2 border-b border-border">
-                    3. Inscription et Compte
+                    3. Registration and Account
                   </h2>
                   <div className="space-y-6">
                     <div className="bg-muted/30 p-6 rounded-lg">
                       <p className="text-foreground leading-relaxed">
-                        Pour utiliser certaines fonctionnalités de notre service, vous
-                        pourriez devoir créer un compte. Vous êtes responsable de
-                        maintenir la confidentialité de vos informations de connexion et
-                        de toutes les activités qui se produisent sous votre compte.
+                        To use certain features of our service, you may need to create an account. You are responsible for maintaining the confidentiality of your login information and for all activities that occur under your account.
                       </p>
                     </div>
                   </div>
@@ -101,14 +92,12 @@ export default function CGUPage() {
 
                 <section id="propriete" className="mb-12">
                   <h2 className="text-2xl font-bold text-foreground mb-6 pb-2 border-b border-border">
-                    4. Propriété Intellectuelle
+                    4. Intellectual Property
                   </h2>
                   <div className="space-y-6">
                     <div className="bg-primary/5 p-4 rounded-lg border-l-4 border-primary">
                       <p className="text-foreground leading-relaxed">
-                        Le contenu, les fonctionnalités et la disponibilité de Notus sont
-                        notre propriété exclusive et sont protégés par les lois sur la
-                        propriété intellectuelle.
+                        The content, features, and availability of Notus are our exclusive property and are protected by intellectual property laws.
                       </p>
                     </div>
                   </div>
@@ -116,7 +105,7 @@ export default function CGUPage() {
 
                 <section id="donnees" className="mb-12">
                   <h2 className="text-2xl font-bold text-foreground mb-6 pb-2 border-b border-border">
-                    5. Collecte et Utilisation des Données
+                    5. Data Collection and Use
                   </h2>
                   <div className="space-y-6">
                     <div className="bg-muted/30 p-6 rounded-lg">
@@ -124,16 +113,13 @@ export default function CGUPage() {
                         <li className="flex items-start">
                           <span className="text-primary mr-3 font-bold">•</span>
                           <span className="text-foreground">
-                            Nous collectons les données personnelles suivantes : nom, prénom, adresse email, nom d'utilisateur.
+                            We collect the following personal data: last name, first name, email address, username.
                           </span>
                         </li>
                         <li className="flex items-start">
                           <span className="text-primary mr-3 font-bold">•</span>
                           <span className="text-foreground">
-                            Ces données sont utilisées uniquement pour fournir et améliorer
-                            notre service. Nous ne vendrons ni ne louerons vos informations
-                            personnelles à des tiers sans votre consentement explicite, sauf
-                            si la loi l'exige.
+                            This data is used solely to provide and improve our service. We will not sell or rent your personal information to third parties without your explicit consent, unless required by law.
                           </span>
                         </li>
                       </ul>
@@ -143,13 +129,12 @@ export default function CGUPage() {
 
                 <section id="tiers" className="mb-12">
                   <h2 className="text-2xl font-bold text-foreground mb-6 pb-2 border-b border-border">
-                    6. Services Tiers
+                    6. Third-Party Services
                   </h2>
                   <div className="space-y-6">
                     <div className="bg-primary/5 p-4 rounded-lg border-l-4 border-primary">
                       <p className="text-foreground leading-relaxed">
-                        Notre service n'utilise aucun service tiers pour son
-                        fonctionnement. Toutes les données restent sous notre contrôle exclusif.
+                        Our service does not use any third-party services for its operation. All data remains under our exclusive control.
                       </p>
                     </div>
                   </div>
@@ -157,14 +142,12 @@ export default function CGUPage() {
 
                 <section id="responsabilite" className="mb-12">
                   <h2 className="text-2xl font-bold text-foreground mb-6 pb-2 border-b border-border">
-                    7. Limitation de Responsabilité
+                    7. Limitation of Liability
                   </h2>
                   <div className="space-y-6">
                     <div className="bg-muted/30 p-6 rounded-lg">
                       <p className="text-foreground leading-relaxed">
-                        Notus est fourni "tel quel" sans garantie d'aucune sorte. Nous ne
-                        garantissons pas que notre service sera ininterrompu, opportun,
-                        sécurisé ou sans erreur.
+                        Notus is provided "as is" without warranty of any kind. We do not guarantee that our service will be uninterrupted, timely, secure, or error-free.
                       </p>
                     </div>
                   </div>
@@ -172,27 +155,23 @@ export default function CGUPage() {
 
                 <section id="modifications" className="mb-12">
                   <h2 className="text-2xl font-bold text-foreground mb-6 pb-2 border-b border-border">
-                    8. Modifications des CGU
+                    8. Amendments to Terms
                   </h2>
                   <div className="space-y-6">
                     <p className="text-foreground leading-relaxed">
-                      Nous nous réservons le droit de modifier ces conditions à tout
-                      moment. Les modifications entrent en vigueur dès leur publication
-                      sur Notus.
+                      We reserve the right to modify these terms at any time. Changes take effect upon their publication on Notus.
                     </p>
                   </div>
                 </section>
 
                 <section id="resiliation" className="mb-12">
                   <h2 className="text-2xl font-bold text-foreground mb-6 pb-2 border-b border-border">
-                    9. Résiliation
+                    9. Termination
                   </h2>
                   <div className="space-y-6">
                     <div className="bg-muted/30 p-6 rounded-lg">
                       <p className="text-foreground leading-relaxed">
-                        Nous nous réservons le droit de résilier ou de restreindre votre
-                        accès à notre service, sans préavis, pour toute raison ou sans
-                        raison.
+                        We reserve the right to terminate or restrict your access to our service, without notice, for any reason or no reason.
                       </p>
                     </div>
                   </div>
@@ -200,23 +179,18 @@ export default function CGUPage() {
 
                 <section id="loi" className="mb-12">
                   <h2 className="text-2xl font-bold text-foreground mb-6 pb-2 border-b border-border">
-                    10. Loi Applicable
+                    10. Applicable Law
                   </h2>
                   <div className="space-y-6">
                     <div className="bg-primary/10 p-6 rounded-lg border-l-4 border-primary">
                       <p className="text-foreground leading-relaxed mb-4">
-                        Ces conditions sont régies par la loi française. Tout litige
-                        relatif à l'interprétation ou à l'exécution de ces CGU sera soumis
-                        aux tribunaux compétents de Paris, France.
+                        These terms are governed by French law. Any dispute relating to the interpretation or execution of these Terms of Use will be submitted to the competent courts of Paris, France.
                       </p>
                     </div>
                     
                     <div className="bg-muted/30 p-6 rounded-lg">
                       <p className="text-foreground leading-relaxed">
-                        Conformément à la loi "Informatique et Libertés" du 6 janvier 1978
-                        modifiée et au Règlement Général sur la Protection des Données
-                        (RGPD), vous disposez d'un droit d'accès, de rectification et de
-                        suppression de vos données personnelles.
+                        In accordance with the "Informatique et Libertés" law of January 6, 1978, as amended, and the General Data Protection Regulation (GDPR), you have a right of access, rectification, and deletion of your personal data.
                       </p>
                     </div>
                   </div>
@@ -226,14 +200,13 @@ export default function CGUPage() {
           </Card>
         </section>
 
-        {/* Footer avec bouton de retour */}
+        {/* Footer with back button */}
         <footer className="flex justify-center mt-12">
           <Button asChild className="py-2 px-4 text-lg">
-            <Link href="/">Retour à l'accueil</Link>
+            <Link href="/">Back to Home</Link>
           </Button>
         </footer>
       </div>
     </main>
   );
 }
-

@@ -5,10 +5,10 @@ import Link from "next/link";
 import { Card, Button, Alert } from "@/components/ui";
 
 const errorMessages: Record<string, string> = {
-  Configuration: "Il y a un problème avec la configuration du serveur.",
-  AccessDenied: "Vous n'avez pas la permission de vous connecter.",
-  Verification: "Le token de vérification a expiré ou a déjà été utilisé.",
-  Default: "Une erreur inattendue s'est produite.",
+  Configuration: "There is a problem with the server configuration.",
+  AccessDenied: "You do not have permission to log in.",
+  Verification: "The verification token has expired or has already been used.",
+  Default: "An unexpected error occurred.",
 };
 
 export default function AuthErrorPage() {
@@ -25,7 +25,7 @@ export default function AuthErrorPage() {
       <Card className="max-w-md w-full">
         <Card.Header className="text-center">
           <Card.Title className="text-2xl mb-4 text-destructive">
-            Erreur d'authentification
+            Authentication Error
           </Card.Title>
         </Card.Header>
 
@@ -36,7 +36,7 @@ export default function AuthErrorPage() {
 
           <div className="text-center space-y-2">
             <p className="text-muted-foreground">
-              Veuillez réessayer ou contacter le support si le problème persiste.
+              Please try again or contact support if the problem persists.
             </p>
           </div>
         </Card.Content>
@@ -44,13 +44,13 @@ export default function AuthErrorPage() {
         <Card.Footer className="flex flex-col space-y-2">
           <Button asChild className="w-full">
             <Link href="/login">
-              Retour à la connexion
+              Back to Login
             </Link>
           </Button>
 
           <Button variant="outline" asChild className="w-full">
             <Link href="/app">
-              Retour à l'accueil
+              Back to Home
             </Link>
           </Button>
         </Card.Footer>
@@ -58,4 +58,3 @@ export default function AuthErrorPage() {
     </main>
   );
 }
-

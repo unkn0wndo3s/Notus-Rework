@@ -14,7 +14,7 @@ export async function GET() {
       select: { tags: true },
     });
 
-    // Extraire tous les tags et les dédupliquer
+    // Extract all tags and deduplicate them
     const allTags = new Set<string>();
     for (const doc of documents) {
       if (Array.isArray(doc.tags)) {
@@ -27,17 +27,17 @@ export async function GET() {
       }
     }
 
-    // Trier les tags par ordre alphabétique
-    const sortedTags = Array.from(allTags).sort((a, b) => a.localeCompare(b, "fr"));
+    // Sort tags alphabetically
+    const sortedTags = Array.from(allTags).sort((a, b) => a.localeCompare(b, "en"));
 
     return NextResponse.json({
       success: true,
       tags: sortedTags,
     });
   } catch (error) {
-    console.error("❌ Erreur récupération tags:", error);
+    console.error("❌ Error retrieving tags:", error);
     return NextResponse.json(
-      { success: false, error: "Accès refusé", tags: [] },
+      { success: false, error: "Access denied", tags: [] },
       { status: 500 }
     );
   }

@@ -1,25 +1,25 @@
 import { Pool } from "pg";
 
-// Configuration de la connexion à la base de données
+// Database connection configuration
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
 });
 
-// Fonction pour vider et réinitialiser la base de données
+// Function to clear and reset the database
 async function resetDatabase(): Promise<boolean> {
   try {
     
-    // Supprimer les tables dans l'ordre inverse de création (pour éviter les contraintes de clés étrangères)
+    // Delete tables in reverse order of creation (to avoid foreign key constraints)
     await pool.query("DROP TABLE IF EXISTS documents CASCADE");
     await pool.query("DROP TABLE IF EXISTS users CASCADE");
 
-    // Supprimer les fonctions si elles existent
+    // Delete functions if they exist
     await pool.query("DROP FUNCTION IF EXISTS update_updated_at_column() CASCADE");
     await pool.query("DROP FUNCTION IF EXISTS update_users_updated_at_column() CASCADE");
     await pool.query("DROP FUNCTION IF EXISTS update_documents_updated_at_column() CASCADE");
 
-    // Recréer les tables
+    // Recreate tables
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -40,7 +40,7 @@ async function resetDatabase(): Promise<boolean> {
       CREATE TABLE IF NOT EXISTS documents (
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        title VARCHAR(255) NOT NULL DEFAULT 'Sans titre',
+        title VARCHAR(255) NOT NULL DEFAULT 'Untitled',
         content TEXT NOT NULL DEFAULT '',
         tags TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -48,7 +48,7 @@ async function resetDatabase(): Promise<boolean> {
       )
     `);
 
-    // Créer les index
+    // Create indexes
     await pool.query("CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)");
     await pool.query(
       "CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)"
@@ -60,7 +60,7 @@ async function resetDatabase(): Promise<boolean> {
       "CREATE INDEX IF NOT EXISTS idx_documents_created_at ON documents(created_at DESC)"
     );
 
-    // Créer la fonction de mise à jour automatique pour les users
+    // Create automatic update function for users
     await pool.query(`
       CREATE OR REPLACE FUNCTION update_users_updated_at_column()
       RETURNS TRIGGER AS $$
@@ -71,22 +71,22 @@ async function resetDatabase(): Promise<boolean> {
       $$ language 'plpgsql'
     `);
 
-    // Créer la fonction de mise à jour automatique pour les documents
-    // Ne met pas à jour updated_at si seul le champ favori a été modifié
+    // Create automatic update function for documents
+    // Do not update updated_at if only the is_favorite field has been modified
     await pool.query(`
       CREATE OR REPLACE FUNCTION update_documents_updated_at_column()
       RETURNS TRIGGER AS $$
       BEGIN
-        -- Ne pas mettre à jour updated_at si seul le champ favori a changé
-        IF (OLD.favori IS DISTINCT FROM NEW.favori) AND
+        -- Do not update updated_at if only the is_favorite field has changed
+        IF (OLD.is_favorite IS DISTINCT FROM NEW.is_favorite) AND
            (OLD.title IS NOT DISTINCT FROM NEW.title) AND
            (OLD.content IS NOT DISTINCT FROM NEW.content) AND
            (OLD.tags IS NOT DISTINCT FROM NEW.tags) AND
            (OLD.user_id IS NOT DISTINCT FROM NEW.user_id) THEN
-          -- Seul favori a changé, préserver updated_at
+          -- Only is_favorite has changed, preserve updated_at
           NEW.updated_at = OLD.updated_at;
         ELSE
-          -- D'autres champs ont changé, mettre à jour updated_at
+          -- Other fields have changed, update updated_at
           NEW.updated_at = CURRENT_TIMESTAMP;
         END IF;
         RETURN NEW;
@@ -94,7 +94,7 @@ async function resetDatabase(): Promise<boolean> {
       $$ language 'plpgsql'
     `);
 
-    // Créer les triggers
+    // Create triggers
     await pool.query(`
       DROP TRIGGER IF EXISTS update_users_updated_at ON users;
       CREATE TRIGGER update_users_updated_at
@@ -113,15 +113,15 @@ async function resetDatabase(): Promise<boolean> {
 
     return true;
   } catch (error) {
-    console.error("❌ Erreur lors de la réinitialisation:", error);
+    console.error("❌ Reset error:", error);
     return false;
   }
 }
 
-// Fonction pour mettre à jour les triggers sans réinitialiser la base de données
+// Function to update triggers without resetting the database
 async function updateTriggers(): Promise<boolean> {
   try {
-    // Créer la fonction de mise à jour automatique pour les users
+    // Create automatic update function for users
     await pool.query(`
       CREATE OR REPLACE FUNCTION update_users_updated_at_column()
       RETURNS TRIGGER AS $$
@@ -132,22 +132,22 @@ async function updateTriggers(): Promise<boolean> {
       $$ language 'plpgsql'
     `);
 
-    // Créer la fonction de mise à jour automatique pour les documents
-    // Ne met pas à jour updated_at si seul le champ favori a été modifié
+    // Create automatic update function for documents
+    // Do not update updated_at if only the is_favorite field has been modified
     await pool.query(`
       CREATE OR REPLACE FUNCTION update_documents_updated_at_column()
       RETURNS TRIGGER AS $$
       BEGIN
-        -- Ne pas mettre à jour updated_at si seul le champ favori a changé
-        IF (OLD.favori IS DISTINCT FROM NEW.favori) AND
+        -- Do not update updated_at if only the is_favorite field has changed
+        IF (OLD.is_favorite IS DISTINCT FROM NEW.is_favorite) AND
            (OLD.title IS NOT DISTINCT FROM NEW.title) AND
            (OLD.content IS NOT DISTINCT FROM NEW.content) AND
            (OLD.tags IS NOT DISTINCT FROM NEW.tags) AND
            (OLD.user_id IS NOT DISTINCT FROM NEW.user_id) THEN
-          -- Seul favori a changé, préserver updated_at
+          -- Only is_favorite has changed, preserve updated_at
           NEW.updated_at = OLD.updated_at;
         ELSE
-          -- D'autres champs ont changé, mettre à jour updated_at
+          -- Other fields have changed, update updated_at
           NEW.updated_at = CURRENT_TIMESTAMP;
         END IF;
         RETURN NEW;
@@ -155,7 +155,7 @@ async function updateTriggers(): Promise<boolean> {
       $$ language 'plpgsql'
     `);
 
-    // Mettre à jour le trigger pour users
+    // Update trigger for users
     await pool.query(`
       DROP TRIGGER IF EXISTS update_users_updated_at ON users;
       CREATE TRIGGER update_users_updated_at
@@ -164,7 +164,7 @@ async function updateTriggers(): Promise<boolean> {
         EXECUTE FUNCTION update_users_updated_at_column()
     `);
 
-    // Mettre à jour le trigger pour documents
+    // Update trigger for documents
     await pool.query(`
       DROP TRIGGER IF EXISTS update_documents_updated_at ON documents;
       CREATE TRIGGER update_documents_updated_at
@@ -173,12 +173,13 @@ async function updateTriggers(): Promise<boolean> {
         EXECUTE FUNCTION update_documents_updated_at_column()
     `);
 
-    console.log("✅ Triggers mis à jour avec succès");
+    console.log("✅ Triggers updated successfully");
     return true;
   } catch (error) {
-    console.error("❌ Erreur lors de la mise à jour des triggers:", error);
+    console.error("❌ Error while updating triggers:", error);
     return false;
   }
 }
 
 export { resetDatabase, updateTriggers };
+

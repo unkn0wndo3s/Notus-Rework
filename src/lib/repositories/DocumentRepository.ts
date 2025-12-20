@@ -10,12 +10,12 @@ export class DocumentRepository extends BaseRepository {
     return this.ensureInitialized(async () => {
       try {
         await this.withAdvisoryLock(async () => {
-          // Table des documents
+          // Documents table
           await this.query(`
             CREATE TABLE IF NOT EXISTS documents (
               id SERIAL PRIMARY KEY,
               user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-              title VARCHAR(255) NOT NULL DEFAULT 'Sans titre',
+              title VARCHAR(255) NOT NULL DEFAULT 'Untitled',
               content TEXT NOT NULL DEFAULT '',
               tags TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
               created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -23,7 +23,7 @@ export class DocumentRepository extends BaseRepository {
             )
           `);
 
-          // Table des partages (shares)
+          // Shares table (shares)
           await this.query(`
             CREATE TABLE IF NOT EXISTS shares (
               id SERIAL PRIMARY KEY,
@@ -34,7 +34,7 @@ export class DocumentRepository extends BaseRepository {
             )
           `);
 
-          // Table des documents supprimés (trash)
+          // Deleted documents table (trash)
           await this.query(`
             CREATE TABLE IF NOT EXISTS trash_documents (
               id SERIAL PRIMARY KEY,
@@ -49,7 +49,7 @@ export class DocumentRepository extends BaseRepository {
             )
           `);
 
-          // Table d'historique des documents (pour suivre les modifications successives)
+          // Document history table (to track successive modifications)
           await this.query(`
             CREATE TABLE IF NOT EXISTS document_history (
               id SERIAL PRIMARY KEY,
@@ -64,17 +64,17 @@ export class DocumentRepository extends BaseRepository {
             )
           `);
 
-          // Ajouter la colonne tags si base déjà existante
+          // Add tags column if table already exists
           await this.addColumnIfNotExists("documents", "tags", "TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[]");
 
-          // Créer les index
+          // Create indexes
           await this.createIndexes();
 
-          // Créer les triggers
+          // Create triggers
           await this.createTriggers();
         });
       } catch (error) {
-        console.error("❌ Erreur lors de l'initialisation des tables documents:", error);
+        console.error("❌ Error initializing document tables:", error);
         throw error;
       }
     });
@@ -84,7 +84,7 @@ export class DocumentRepository extends BaseRepository {
     try {
       await this.query(`ALTER TABLE ${tableName} ADD COLUMN IF NOT EXISTS ${columnName} ${columnDefinition}`);
     } catch (error) {
-      // Ignorer l'erreur si la colonne existe déjà
+      // Ignore error if column already exists
     }
   }
 
@@ -95,10 +95,12 @@ export class DocumentRepository extends BaseRepository {
     ];
 
     // Indexes for shares table (unique constraint for ON CONFLICT)
-    indexes.push("CREATE UNIQUE INDEX IF NOT EXISTS uq_shares_id_doc_email ON shares(id_doc, email)");
-    indexes.push("CREATE INDEX IF NOT EXISTS idx_shares_email ON shares(email)");
+    indexes.push(
+      "CREATE UNIQUE INDEX IF NOT EXISTS uq_shares_id_doc_email ON shares(id_doc, email)",
+      "CREATE INDEX IF NOT EXISTS idx_shares_email ON shares(email)"
+    );
 
-    // Indexes pour l'historique des documents
+    // Indexes for document history
     indexes.push("CREATE INDEX IF NOT EXISTS idx_document_history_document_id ON document_history(document_id)");
 
     for (const indexQuery of indexes) {
@@ -107,23 +109,23 @@ export class DocumentRepository extends BaseRepository {
   }
 
   private async createTriggers(): Promise<void> {
-    // Fonction pour mettre à jour updated_at
-    // Ne met pas à jour updated_at si seul le champ favori a été modifié
+    // Function to update updated_at
+    // Does not update updated_at if only is_favorite field was modified
     // Create function first (this is idempotent with CREATE OR REPLACE)
     await this.query(`
       CREATE OR REPLACE FUNCTION update_updated_at_column()
       RETURNS TRIGGER AS $$
       BEGIN
-        -- Ne pas mettre à jour updated_at si seul le champ favori a changé
-        IF (OLD.favori IS DISTINCT FROM NEW.favori) AND
+        -- Do not update updated_at if only is_favorite field changed
+        IF (OLD.is_favorite IS DISTINCT FROM NEW.is_favorite) AND
            (OLD.title IS NOT DISTINCT FROM NEW.title) AND
            (OLD.content IS NOT DISTINCT FROM NEW.content) AND
            (OLD.tags IS NOT DISTINCT FROM NEW.tags) AND
            (OLD.user_id IS NOT DISTINCT FROM NEW.user_id) THEN
-          -- Seul favori a changé, préserver updated_at
+          -- Only is_favorite changed, preserve updated_at
           NEW.updated_at = OLD.updated_at;
         ELSE
-          -- D'autres champs ont changé, mettre à jour updated_at
+          -- Other fields changed, update updated_at
           NEW.updated_at = CURRENT_TIMESTAMP;
         END IF;
         RETURN NEW;
@@ -131,7 +133,7 @@ export class DocumentRepository extends BaseRepository {
       $$ language 'plpgsql'
     `);
 
-    // Trigger pour documents
+    // Trigger for documents
     // Use a single transaction-safe approach: drop if exists, then create
     // The advisory lock ensures this is serialized, preventing deadlocks
     await this.query(`
@@ -157,8 +159,8 @@ export class DocumentRepository extends BaseRepository {
       const document = result.rows[0];
       return { success: true, document };
     } catch (error) {
-      console.error("❌ Erreur création document:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error creating document:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -171,7 +173,7 @@ export class DocumentRepository extends BaseRepository {
             d.title,
             d.content,
             d.tags,
-            d.favori,
+            d.is_favorite,
             d.created_at,
             d.updated_at,
             u.username,
@@ -184,15 +186,15 @@ export class DocumentRepository extends BaseRepository {
               '[]'
             ) AS shared_with,
             COALESCE(
-              json_agg(DISTINCT dd.dossier_id) FILTER (WHERE dd.dossier_id IS NOT NULL),
+              json_agg(DISTINCT dd.folder_id) FILTER (WHERE dd.folder_id IS NOT NULL),
               '[]'
-            ) AS dossier_ids
+            ) AS folder_ids
          FROM documents d
          JOIN users u ON d.user_id = u.id
          LEFT JOIN shares s ON s.id_doc = d.id
-         LEFT JOIN dossier_documents dd ON dd.document_id = d.id
+         LEFT JOIN folder_documents dd ON dd.document_id = d.id
          WHERE d.user_id = $1
-         GROUP BY d.id, d.user_id, d.title, d.content, d.tags, d.favori, d.created_at, d.updated_at, u.username, u.first_name, u.last_name
+         GROUP BY d.id, d.user_id, d.title, d.content, d.tags, d.is_favorite, d.created_at, d.updated_at, u.username, u.first_name, u.last_name
          ORDER BY d.updated_at DESC
          LIMIT $2 OFFSET $3`,
         [userId, limit, offset]
@@ -233,9 +235,9 @@ export class DocumentRepository extends BaseRepository {
         username?: string | null;
         first_name?: string | null;
         last_name?: string | null;
-        favori?: boolean | null;
+        is_favorite?: boolean | null;
         shared_with: unknown;
-        dossier_ids: unknown;
+        folder_ids: unknown;
       }
 
       const documents: Document[] = (result.rows as DatabaseRow[]).map((row) => {
@@ -254,8 +256,8 @@ export class DocumentRepository extends BaseRepository {
           })
           .filter((entry) => Boolean(entry.email)) as { email: string; permission: boolean }[];
 
-        const dossierIds = parseJsonArray(row.dossier_ids)
-          .map((id) => Number(id))
+        const folderIds = parseJsonArray(row.folder_ids)
+          .map(Number)
           .filter((id) => !Number.isNaN(id));
 
         return {
@@ -269,17 +271,16 @@ export class DocumentRepository extends BaseRepository {
           username: row.username ?? undefined,
           first_name: row.first_name ?? undefined,
           last_name: row.last_name ?? undefined,
-          sharedWith,
-          dossierIds,
-          favori: row.favori ?? null,
+          folderIds,
+          is_favorite: row.is_favorite ?? null,
           shared: sharedWith.length > 0,
         } as Document;
       });
 
       return { success: true, documents };
     } catch (error) {
-      console.error("❌ Erreur récupération documents:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error retrieving documents:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -294,13 +295,13 @@ export class DocumentRepository extends BaseRepository {
       );
 
       if (result.rows.length === 0) {
-        return { success: false, error: "Document non trouvé" };
+        return { success: false, error: "Document not found" };
       }
 
       return { success: true, document: result.rows[0] };
     } catch (error) {
-      console.error("❌ Erreur récupération document:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error retrieving document:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -317,13 +318,13 @@ export class DocumentRepository extends BaseRepository {
       );
 
       if (result.rows.length === 0) {
-        return { success: false, error: "Document non trouvé ou vous n'êtes pas autorisé à le modifier" };
+        return { success: false, error: "Document not found or you are not authorized to edit it" };
       }
 
       return { success: true, document: result.rows[0] };
     } catch (error) {
-      console.error("❌ Erreur mise à jour document:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error updating document:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -346,7 +347,7 @@ export class DocumentRepository extends BaseRepository {
 
         let whereClause = `WHERE id = $${values.length - 1} AND user_id = $${values.length}`;
 
-        // Si un email est fourni, vérifier aussi les permissions de partage
+        // If an email is provided, also check share permissions
         if (userEmail) {
           whereClause = `WHERE id = $${values.length - 1} AND (
             user_id = $${values.length} OR 
@@ -369,7 +370,7 @@ export class DocumentRepository extends BaseRepository {
         );
 
         if (result.rows.length === 0) {
-          return { success: false, error: "Document non trouvé ou vous n'êtes pas autorisé à le modifier" };
+          return { success: false, error: "Document not found or you are not authorized to edit it" };
         }
 
         return { success: true, document: result.rows[0] };
@@ -384,8 +385,8 @@ export class DocumentRepository extends BaseRepository {
         return { success: true, document: result.rows[0] };
       }
     } catch (error) {
-      console.error("❌ Erreur création/mise à jour document par ID:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error creating/updating document by ID:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -397,19 +398,19 @@ export class DocumentRepository extends BaseRepository {
       );
 
       if (document.rows.length === 0) {
-        return { success: false, error: "Document non trouvé ou vous n'êtes pas autorisé à le supprimer" };
+        return { success: false, error: "Document not found or you are not authorized to delete it" };
       }
 
       const doc = document.rows[0];
 
-      // 2. Insérer dans la table de corbeille
+      // 2. Insert into trash table
       await this.query(
         `INSERT INTO trash_documents (user_id, title, content, tags, created_at, updated_at, deleted_at, original_id)
        VALUES ($1, $2, $3, $4, $5, $6, NOW(), $7)`,
         [doc.user_id, doc.title, doc.content, doc.tags, doc.created_at, doc.updated_at, doc.id]
       );
 
-      // 3. Supprimer de la table principale
+      // 3. Delete from main table
       const result = await this.query<{ id: number }>(
         `DELETE FROM documents 
          WHERE id = $1 AND user_id = $2
@@ -420,27 +421,27 @@ export class DocumentRepository extends BaseRepository {
 
       return { success: true, data: result.rows[0] };
     } catch (error) {
-      console.error("❌ Erreur suppression document:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error deleting document:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
   async deleteDocumentsBulk(userId: number, documentIds: (string | number)[]): Promise<DocumentRepositoryResult<{ deletedIds: number[]; deletedCount: number }>> {
     try {
       if (!Array.isArray(documentIds) || documentIds.length === 0) {
-        return { success: false, error: "Aucun document sélectionné" };
+        return { success: false, error: "No document selected" };
       }
 
-      // Forcer le typage en entiers et retirer les valeurs invalides
+      // Force type as integers and remove invalid values
       const ids = documentIds
-        .map((id) => parseInt(id.toString()))
-        .filter((id) => !isNaN(id) && id > 0);
+        .map((id) => Number.parseInt(id.toString()))
+        .filter((id) => !Number.isNaN(id) && id > 0);
 
       if (ids.length === 0) {
-        return { success: false, error: "Identifiants de documents invalides" };
+        return { success: false, error: "Invalid document identifiers" };
       }
 
-      // 1. Récupérer tous les documents avant suppression
+      // 1. Retrieve all documents before deletion
       const documents = await this.query<Document>(
         `SELECT * FROM documents 
          WHERE user_id = $1 AND id = ANY($2::int[])`,
@@ -448,10 +449,10 @@ export class DocumentRepository extends BaseRepository {
       );
 
       if (documents.rows.length === 0) {
-        return { success: false, error: "Aucun document trouvé ou vous n'êtes pas autorisé à les supprimer" };
+        return { success: false, error: "No document found or you are not authorized to delete them" };
       }
 
-      // 2. Insérer tous les documents dans la table de corbeille en une seule requête
+      // 2. Insert all documents into trash table in a single query
       const trashValues = documents.rows.map((doc, index) =>
         `($${index * 8 + 1}, $${index * 8 + 2}, $${index * 8 + 3}, $${index * 8 + 4}, $${index * 8 + 5}, $${index * 8 + 6}, NOW(), $${index * 8 + 7})`
       ).join(', ');
@@ -475,7 +476,7 @@ export class DocumentRepository extends BaseRepository {
         trashParams
       );
 
-      // 3. Supprimer de la table principale
+      // 3. Delete from main table
       const result = await this.query<{ id: number }>(
         `DELETE FROM documents
          WHERE user_id = $1 AND id = ANY($2::int[])
@@ -491,31 +492,28 @@ export class DocumentRepository extends BaseRepository {
         },
       };
     } catch (error) {
-      console.error("❌ Erreur suppression multiple documents:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error deleting multiple documents:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
   async fetchSharedWithUser(email: string): Promise<DocumentRepositoryResult<Document[]>> {
     try {
-      const result = await this.query<Document & { favori: boolean | null }>(
+      const result = await this.query<Document>(
         `SELECT d.id, d.title, d.content, d.tags, d.created_at, d.updated_at, u.username, u.first_name, u.last_name, d.user_id,
-                s.favori as favori
+                s.is_favorite as is_favorite
            FROM documents d
            JOIN users u ON d.user_id = u.id
            JOIN shares s ON s.id_doc = d.id
            WHERE lower(trim(s.email)) = lower(trim($1))`,
         [email]
       );
-      // Inject favori from share link
-      interface SharedDocumentRow extends Document {
-        favori: boolean | null;
-      }
-      const docs: Document[] = result.rows.map((r: SharedDocumentRow) => ({ ...r, favori: r.favori ?? null }));
+      // Inject is_favorite from share link
+      const docs: Document[] = result.rows.map((r: Document) => ({ ...r, is_favorite: r.is_favorite ?? null }));
       return { success: true, documents: docs };
     } catch (error) {
-      console.error("❌ Erreur récupération documents partagés:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error retrieving shared documents:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -533,7 +531,7 @@ export class DocumentRepository extends BaseRepository {
         [userId]
       );
 
-      // Transformer les résultats pour inclure les informations de partage
+      // Transform results to include sharing information
       interface SharedByUserRow {
         id: number;
         user_id: number;
@@ -551,8 +549,13 @@ export class DocumentRepository extends BaseRepository {
 
       const transformedDocuments: Document[] = (result.rows as SharedByUserRow[]).map((doc) => {
         // Parse arrays if they come as strings from PostgreSQL
-        const sharedEmails = Array.isArray(doc.shared_emails) ? doc.shared_emails : (typeof doc.shared_emails === 'string' ? [doc.shared_emails] : []);
-        const sharedPermissions = Array.isArray(doc.shared_permissions) ? doc.shared_permissions : (typeof doc.shared_permissions === 'boolean' ? [doc.shared_permissions] : []);
+        const sharedEmails = Array.isArray(doc.shared_emails) 
+          ? doc.shared_emails 
+          : (typeof doc.shared_emails === 'string' ? [doc.shared_emails] : []);
+        
+        const sharedPermissions = Array.isArray(doc.shared_permissions) 
+          ? doc.shared_permissions 
+          : (typeof doc.shared_permissions === 'boolean' ? [doc.shared_permissions] : []);
         
         return {
           id: doc.id,
@@ -574,8 +577,8 @@ export class DocumentRepository extends BaseRepository {
 
       return { success: true, documents: transformedDocuments };
     } catch (error) {
-      console.error("❌ Erreur récupération documents partagés par utilisateur:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error retrieving documents shared by user:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -589,13 +592,13 @@ export class DocumentRepository extends BaseRepository {
       );
 
       if (result.rows.length === 0) {
-        return { success: false, error: "Permission non trouvée" };
+        return { success: false, error: "Permission not found" };
       }
 
       return { success: true, data: { permission: result.rows[0].permission } };
     } catch (error) {
-      console.error("❌ Erreur récupération permission de partage:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error retrieving sharing permission:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -612,8 +615,8 @@ export class DocumentRepository extends BaseRepository {
 
       return { success: true, data: { updatedCount: result.rows.length } };
     } catch (error) {
-      console.error("❌ Erreur mise à jour permission de partage:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error updating sharing permission:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -628,13 +631,13 @@ export class DocumentRepository extends BaseRepository {
       );
 
       if (result.rows.length === 0) {
-        return { success: false, error: 'Partage introuvable' };
+        return { success: false, error: 'Share not found' };
       }
 
       return { success: true, data: { share: result.rows[0] } };
     } catch (error) {
-      console.error('❌ Erreur recherche partage:', error);
-      return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+      console.error('❌ Error searching share:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 
@@ -651,8 +654,8 @@ export class DocumentRepository extends BaseRepository {
 
       return { success: true, data: { ownerId: result.rows[0].user_id ?? null } };
     } catch (error) {
-      console.error('❌ Erreur récupération ownerId pour document:', error);
-      return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+      console.error('❌ Error retrieving ownerId for document:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 
@@ -677,13 +680,13 @@ export class DocumentRepository extends BaseRepository {
       );
 
       if (insertRes.rows.length === 0) {
-        return { success: false, error: "Erreur lors de l'ajout du partage" };
+        return { success: false, error: "Error adding share" };
       }
 
       return { success: true, data: { id: insertRes.rows[0].id } };
     } catch (error) {
-      console.error("❌ Erreur ajout partage:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error adding share:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -755,12 +758,12 @@ export class DocumentRepository extends BaseRepository {
         });
       }
       if (accessList.length === 0) {
-        return { success: false, error: 'Document non trouvé ou aucun accès' };
+        return { success: false, error: 'Document not found or no access' };
       }
       return { success: true, data: { accessList } };
     } catch (error) {
-      console.error('❌ Erreur récupération access list:', error);
-      return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+      console.error('❌ Error retrieving access list:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 
@@ -774,8 +777,8 @@ export class DocumentRepository extends BaseRepository {
       );
       return { success: true, data: { deletedCount: result.rows.length } };
     } catch (error) {
-      console.error("❌ Erreur suppression partage:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error deleting share:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 }  

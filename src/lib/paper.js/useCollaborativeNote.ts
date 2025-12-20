@@ -190,14 +190,14 @@ export function useCollaborativeNote({
       title?: string;
       tags?: string[];
     }) => {
-      // Éviter les appels multiples simultanés
+      // Avoid multiple simultaneous calls
       if (isFlushingRef.current) {
         return Promise.resolve();
       }
       
       const candidateMarkdown = typeof override?.markdown === "string" ? override.markdown : pendingMarkdownRef.current;
       
-      // Ne rien faire si le contenu n'a pas changé depuis le dernier flush
+      // Do nothing if content hasn't changed since last flush
       if (candidateMarkdown === lastFlushedContentRef.current) {
         return Promise.resolve();
       }
@@ -346,13 +346,13 @@ export function useCollaborativeNote({
         isFlushingRef.current = false;
         return;
       }
-      // Créer le snapshot en utilisant le candidateMarkdown si pas de snapshot fourni
+      // Create snapshot using candidateMarkdown if no snapshot provided
       let snapshot = override?.contentSnapshot;
       if (!snapshot && candidateMarkdown) {
-        // Utiliser getContentSnapshot si disponible, sinon créer un snapshot avec le candidateMarkdown
+        // Use getContentSnapshot if available, otherwise create a snapshot with candidateMarkdown
         if (metadata?.getContentSnapshot) {
           snapshot = metadata.getContentSnapshot();
-          // S'assurer que le snapshot contient bien le dernier contenu
+          // Ensure snapshot contains the latest content
           if (snapshot && snapshot.text !== candidateMarkdown) {
             snapshot = { text: candidateMarkdown, timestamp: Date.now() };
           }
@@ -378,7 +378,7 @@ export function useCollaborativeNote({
         return;
       }
       
-      // S'assurer que le snapshot contient bien le contenu actuel
+      // Ensure snapshot contains current content
       if (snapshot && snapshot.text !== contentString) {
         snapshot = { text: contentString, timestamp: Date.now() };
       }
@@ -387,7 +387,7 @@ export function useCollaborativeNote({
         updateStatus('unsynchronized');
         lastFlushedContentRef.current = contentString;
         isFlushingRef.current = false;
-        // Sauvegarder localement quand offline
+        // Save locally when offline
         if (metadata?.documentId && typeof window !== 'undefined') {
           try {
             const key = `notus:offline-doc:${metadata.documentId}`;
@@ -488,7 +488,7 @@ export function useCollaborativeNote({
 
       const cursor = getCursorSnapshot?.();
 
-      // S'assurer qu'on a toujours un snapshot valide si on a du contenu et qu'on veut persister
+      // Ensure we always have a valid snapshot if we have content and want to persist
       const finalSnapshot = snapshot || (contentString.length > 0 && metadata?.documentId && metadata?.userId && metadata?.userEmail
         ? {
             text: contentString,
@@ -530,11 +530,11 @@ export function useCollaborativeNote({
             setSyncDisabled(false);
             pendingCharsRef.current = 0;
             
-            // Tout est OK - synchronisé
+            // Everything is OK - synchronized
             updateStatus('synchronized');
-            // Marquer le contenu comme flushé
+            // Mark content as flushed
             lastFlushedContentRef.current = contentString;
-            // Appeler onPersisted si on a un snapshot
+            // Call onPersisted if we have a snapshot
             if (payload.persistSnapshot) {
               onPersisted?.({
                 snapshot: payload.persistSnapshot,
@@ -865,7 +865,7 @@ export function useCollaborativeNote({
         socket.io.opts.reconnection = false;
         socket.io.opts.autoConnect = false;
       }
-      // Sauvegarder immédiatement le contenu actuel en local
+      // Immediately save current content locally
       if (metadata?.documentId && typeof window !== 'undefined') {
         try {
           const key = `notus:offline-doc:${metadata.documentId}`;
@@ -907,7 +907,7 @@ export function useCollaborativeNote({
       if (socket.connected) {
         socket.disconnect();
       }
-      // Sauvegarder immédiatement le contenu actuel en local
+      // Immediately save current content locally
       if (metadata?.documentId && typeof window !== 'undefined') {
         try {
           const key = `notus:offline-doc:${metadata.documentId}`;
@@ -951,7 +951,7 @@ export function useCollaborativeNote({
     (markdown: string) => {
       if (!roomId) return;
       
-      // Ne rien faire si le contenu n'a pas changé depuis le dernier flush
+      // Do nothing if content hasn't changed since last flush
       if (markdown === lastFlushedContentRef.current && isFlushingRef.current) {
         return;
       }
@@ -962,7 +962,7 @@ export function useCollaborativeNote({
       pendingCharsRef.current += positiveDiff;
       lastObservedMarkdownRef.current = markdown;
       
-      // Ne mettre à jour le statut que si on n'est pas déjà en train de flusher
+      // Only update status if we're not already flushing
       if (!isFlushingRef.current) {
         updateStatus('unsynchronized');
       }
@@ -1030,17 +1030,17 @@ export function useCollaborativeNote({
 
       const endsWithWordBoundary = /[A-Za-zÀ-ÖØ-öø-ÿ]+\s$/u.test(markdown);
       
-      // Annuler le timeout précédent
+      // Cancel previous timeout
       if (flushTimeoutRef.current) {
         clearTimeout(flushTimeoutRef.current);
         flushTimeoutRef.current = null;
       }
       
-      // Flush immédiat si on a assez de caractères ou si on termine un mot
+      // Immediate flush if we have enough characters or if we finish a word
       if (pendingCharsRef.current >= 10 || endsWithWordBoundary) {
         flushPendingChanges({ markdown }).catch(() => {});
       } else {
-        // Sinon, flush après un délai
+        // Otherwise, flush after a delay
         flushTimeoutRef.current = setTimeout(() => {
           flushPendingChanges({ markdown }).catch(() => {});
           flushTimeoutRef.current = null;
@@ -1050,20 +1050,20 @@ export function useCollaborativeNote({
     [flushPendingChanges, socket, roomId, updateStatus, buildContentSnapshot, metadata, syncDisabled, isOffline, checkOfflineMode, isConnected]
   );
 
-  // Flush final au démontage et sur beforeunload/blur pour s'assurer que le dernier contenu est enregistré
+  // Final flush on unmount and on beforeunload/blur to ensure last content is saved
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
     const currentClientId = clientIdRef.current;
     
     const flushPending = () => {
-      // Annuler le timeout en cours
+      // Cancel current timeout
       if (flushTimeoutRef.current) {
         clearTimeout(flushTimeoutRef.current);
         flushTimeoutRef.current = null;
       }
       
-      // Flusher le dernier contenu si on a du contenu en attente
+      // Flush last content if we have pending content
       if (pendingMarkdownRef.current && socket && socket.connected && isConnected && !syncDisabled && !isOffline) {
         flushPendingChanges({ markdown: pendingMarkdownRef.current }).catch(() => {
           // Silent fail
@@ -1072,29 +1072,29 @@ export function useCollaborativeNote({
     };
     
     const handleBeforeUnload = () => {
-      // Quitter la room avant de quitter la page
+      // Leave room before leaving page
       if (socket && roomId && socket.connected) {
         leaveRoom(roomId, currentClientId);
       }
       flushPending();
     };
     
-    // Flusher quand l'utilisateur quitte la page
+    // Flush when user leaves the page
     window.addEventListener('beforeunload', handleBeforeUnload);
-    // Flusher quand la fenêtre perd le focus (utilisateur change d'onglet)
+    // Flush when window loses focus (user changes tab)
     window.addEventListener('blur', flushPending);
     
     return () => {
-      // Nettoyer les listeners
+      // Clean up listeners
       window.removeEventListener('beforeunload', handleBeforeUnload);
       window.removeEventListener('blur', flushPending);
       
-      // Quitter la room au démontage
+      // Leave room on unmount
       if (socket && roomId && socket.connected) {
         leaveRoom(roomId, currentClientId);
       }
       
-      // Flusher le dernier contenu au démontage
+      // Flush last content on unmount
       if (flushTimeoutRef.current) {
         clearTimeout(flushTimeoutRef.current);
         flushTimeoutRef.current = null;
@@ -1102,7 +1102,7 @@ export function useCollaborativeNote({
       
       if (pendingMarkdownRef.current && socket && socket.connected && isConnected && !syncDisabled && !isOffline) {
         flushPendingChanges({ markdown: pendingMarkdownRef.current }).catch(() => {
-          // Silent fail - on ne peut pas attendre en démontage
+          // Silent fail - cannot wait during unmount
         });
       }
     };

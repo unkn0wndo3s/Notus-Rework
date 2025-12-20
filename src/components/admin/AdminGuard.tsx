@@ -3,44 +3,42 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { signOut } from "next-auth/react";
 import BannedUserModal from "@/components/auth/BannedUserModal";
 
 interface AdminGuardProps {
   children: React.ReactNode;
 }
 
-export default function AdminGuard({ children }: AdminGuardProps) {
+export default function AdminGuard({ children }: Readonly<AdminGuardProps>) {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [showBannedModal, setShowBannedModal] = useState(false);
   const [banReason, setBanReason] = useState<string>("");
 
   useEffect(() => {
-    if (status === "loading") return; // Attendre que la session soit chargée
+    if (status === "loading") return; // Wait for the session to be loaded
 
     if (!session?.user) {
-      // Utilisateur non connecté, rediriger vers la page de connexion
+      // User not logged in, redirect to login page
       router.push("/login");
       return;
     }
 
-    // Vérifier si l'utilisateur est banni
+    // Check if user is banned
     if (session.user.isBanned) {
-      setBanReason("Votre compte a été suspendu par un administrateur.");
+      setBanReason("Your account has been suspended by an administrator.");
       setShowBannedModal(true);
       return;
     }
 
-    // Vérifier si l'utilisateur est admin
+    // Check if user is admin
     if (!session.user.isAdmin) {
-      // Utilisateur connecté mais pas admin, rediriger vers l'application
+      // User logged in but not admin, redirect to application
       router.push("/app");
-      return;
     }
   }, [session, status, router]);
 
-  // Afficher un loader pendant la vérification
+  // Show loader during verification
   if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -49,7 +47,7 @@ export default function AdminGuard({ children }: AdminGuardProps) {
     );
   }
 
-  // Si l'utilisateur est banni, afficher le modal
+  // If user is banned, show modal
   if (showBannedModal) {
     return (
       <BannedUserModal
@@ -60,13 +58,11 @@ export default function AdminGuard({ children }: AdminGuardProps) {
     );
   }
 
-  // Si l'utilisateur n'est pas admin ou pas connecté, ne rien afficher
-  if (!session?.user || !session.user.isAdmin) {
+  // If user is not admin or not logged in, show nothing
+  if (!session?.user?.isAdmin) {
     return null;
   }
 
-  // Utilisateur admin connecté, afficher le contenu
+  // Admin user logged in, show content
   return <>{children}</>;
 }
-
-

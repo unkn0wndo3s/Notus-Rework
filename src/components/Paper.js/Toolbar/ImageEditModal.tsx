@@ -18,7 +18,7 @@ export default function ImageEditModal({
   onFormatChange, 
   canEditImage, 
   imageInfo 
-}: ImageEditModalProps) {
+}: Readonly<ImageEditModalProps>) {
   const imageRef = useRef<HTMLImageElement>(null);
   const cropContainerRef = useRef<HTMLDivElement>(null);
   const [isCropping, setIsCropping] = useState(false);
@@ -87,7 +87,7 @@ export default function ImageEditModal({
     if (isOpen && imageInfo) {
       const styleWidth = imageInfo.styleWidth || "";
       if (styleWidth.includes("%")) {
-        const parsed = parseFloat(styleWidth);
+        const parsed = Number.parseFloat(styleWidth);
         if (!Number.isNaN(parsed)) {
           setWidthPercent(Math.max(1, Math.min(100, Math.round(parsed))));
           return;
@@ -103,7 +103,8 @@ export default function ImageEditModal({
     try {
       onFormatChange('setImageWidth', JSON.stringify({ widthPercent }));
       onClose();
-    } catch (_e) {
+    } catch (err) {
+      console.error("ImageEditModal: error setting image width", err);
       onFormatChange('setImageWidth', String(widthPercent));
       onClose();
     }
@@ -111,7 +112,6 @@ export default function ImageEditModal({
 
   const applyCropAndReplace = async () => {
     if (!imageInfo || !imageRef.current || !cropContainerRef.current) return;
-    const imgEl = imageRef.current;
     const dispRect = cropContainerRef.current.getBoundingClientRect();
     const sel = cropRect && cropRect.width > 0 && cropRect.height > 0
       ? cropRect
@@ -134,30 +134,40 @@ export default function ImageEditModal({
     tmpImg.crossOrigin = 'anonymous';
     await new Promise<void>((resolve, reject) => {
       tmpImg.onload = () => resolve();
-      tmpImg.onerror = () => reject();
+      tmpImg.onerror = () => reject(new Error("Failed to load image for cropping"));
       tmpImg.src = imageInfo.src;
-    }).catch(() => {});
+    }).catch((err) => {
+      console.error("ImageEditModal: error loading image", err);
+    });
     try {
       ctx.drawImage(tmpImg, sx, sy, sw, sh, 0, 0, sw, sh);
       const dataUrl = canvas.toDataURL('image/png');
       onFormatChange('replaceSelectedImage', JSON.stringify({ src: dataUrl, widthPercent }));
       onClose();
-    } catch (_e) {
+    } catch (err) {
+      console.error("ImageEditModal: error cropping image", err);
       // Fallback: just set width
       applyResizeOnly();
     }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Modifier l'image" size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} title="Edit image" size="lg">
       <Modal.Content>
         {imageInfo ? (
           <div className="space-y-4">
-            <div
+            <section
               ref={cropContainerRef}
               onMouseDown={handleCropMouseDown}
               onMouseMove={handleCropMouseMove}
               onMouseUp={handleCropMouseUp}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  resetCrop();
+                }
+              }}
+              tabIndex={0}
+              aria-label="Image cropping area"
               className="relative w-full max-h-[60vh] overflow-hidden bg-muted border border-border rounded"
               style={{ aspectRatio: `${imageInfo.naturalWidth}/${imageInfo.naturalHeight}` } as React.CSSProperties}
             >
@@ -174,12 +184,13 @@ export default function ImageEditModal({
                   style={{ left: `${cropRect.x}px`, top: `${cropRect.y}px`, width: `${cropRect.width}px`, height: `${cropRect.height}px` }}
                 />
               )}
-            </div>
+            </section>
 
               <div className="space-y-2">
-              <label className="text-sm">Largeur d'affichage</label>
+              <label htmlFor="image-width-slider" className="text-sm">Display width</label>
               <div className="flex items-center gap-3">
                 <input
+                  id="image-width-slider"
                   type="range"
                   min={1}
                   max={100}
@@ -199,12 +210,12 @@ export default function ImageEditModal({
             </div>
 
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span>Astuce: cliquez-glissez sur l'image pour définir la zone à recadrer.</span>
-              <button type="button" className="underline" onClick={resetCrop}>Sélection complète</button>
+              <span>Tip: click and drag on the image to define the crop area.</span>
+              <button type="button" className="underline" onClick={resetCrop}>Full selection</button>
             </div>
           </div>
         ) : (
-          <div className="text-sm text-muted-foreground">Aucune image sélectionnée.</div>
+          <div className="text-sm text-muted-foreground">No image selected.</div>
         )}
       </Modal.Content>
       <Modal.Footer>
@@ -213,7 +224,7 @@ export default function ImageEditModal({
           className="px-3 py-2 rounded bg-muted hover:bg-muted/80"
           onClick={onClose}
         >
-          Annuler
+          Cancel
         </button>
         <button
           type="button"
@@ -221,7 +232,7 @@ export default function ImageEditModal({
           onClick={applyResizeOnly}
           disabled={!canEditImage}
         >
-          Appliquer la largeur
+          Apply width
         </button>
         <button
           type="button"
@@ -229,7 +240,7 @@ export default function ImageEditModal({
           onClick={applyCropAndReplace}
           disabled={!canEditImage}
         >
-          Recadrer et remplacer
+          Crop and replace
         </button>
       </Modal.Footer>
     </Modal>

@@ -36,7 +36,7 @@ export function useEditorEffects({
   handleEditorChange,
   isUpdatingFromMarkdown,
   isLocalChange
-}: EditorEffectsProps) {
+}: Readonly<EditorEffectsProps>) {
   // Note: Initialization is handled in the main component
   const draggedAttachmentRef = useRef<HTMLElement | null>(null);
 
@@ -266,7 +266,7 @@ export function useEditorEffects({
               const adjustedEnd = adjustCursorPositionForTextChange(oldTextContent, newTextContent, prevSelection.end);
               
               // Debug logging (can be removed in production)
-              console.log('🔄 Ajustement du curseur:', {
+              console.log('🔄 Cursor adjustment:', {
                 oldTextLength: oldTextContent.length,
                 newTextLength: newTextContent.length,
                 oldCursor: prevSelection.start,
@@ -405,13 +405,13 @@ export function useEditorEffects({
       const fileName =
         sourceElement.getAttribute('data-file-name') ||
         fileContainer?.getAttribute('data-file-name') ||
-        'fichier';
+        'file';
       const fileData =
         sourceElement.getAttribute('data-file-data') ||
         fileContainer?.getAttribute('data-file-data');
 
       if (!fileData || !fileData.startsWith('data:')) {
-        console.warn('Aucune donnée de fichier valide pour le téléchargement');
+        console.warn('No valid file data for download');
         return;
       }
 
@@ -421,7 +421,7 @@ export function useEditorEffects({
       link.click();
     };
 
-    // Empêcher complètement l'édition du nom des fichiers joints
+    // Completely prevent editing of attachment file names
     const preventFileEdit = (e: Event) => {
       const target = e.target as HTMLElement;
       const fileContainer = target.closest('.wysiwyg-file-attachment') as HTMLElement;
@@ -429,13 +429,13 @@ export function useEditorEffects({
         e.preventDefault();
         e.stopPropagation();
         e.stopImmediatePropagation();
-        // Restaurer immédiatement le nom du fichier
+        // Immediately restore file name
         const fileName = fileContainer.getAttribute('data-file-name');
         const fileLink = fileContainer.querySelector('.wysiwyg-file-link') as HTMLElement;
         if (fileName && fileLink) {
           fileLink.textContent = fileName;
         }
-        // Empêcher le focus sur les éléments de fichier
+        // Prevent focus on file elements
         if (document.activeElement && fileContainer.contains(document.activeElement)) {
           (document.activeElement as HTMLElement).blur();
         }
@@ -443,7 +443,7 @@ export function useEditorEffects({
       }
     };
 
-    // Empêcher le focus sur les fichiers joints
+    // Prevent focus on attachments
     const preventFileFocus = (e: FocusEvent) => {
       const target = e.target as HTMLElement;
       const fileContainer = target.closest('.wysiwyg-file-attachment') as HTMLElement;
@@ -451,7 +451,7 @@ export function useEditorEffects({
         e.preventDefault();
         e.stopPropagation();
         (target as HTMLElement).blur();
-        // Déplacer le curseur après le fichier
+        // Move cursor after file
         const selection = window.getSelection();
         if (selection && fileContainer.parentNode) {
           const range = document.createRange();
@@ -468,20 +468,20 @@ export function useEditorEffects({
     if (editor) {
       editor.addEventListener('click', handleFileClick);
       
-      // Empêcher complètement l'édition des fichiers joints
+      // Completely prevent editing of attachments
       editor.addEventListener('beforeinput', preventFileEdit, true); // capture phase
       editor.addEventListener('input', preventFileEdit, true);
       editor.addEventListener('focusin', preventFileFocus, true);
       editor.addEventListener('focus', preventFileFocus, true);
       
-      // Empêcher toutes les touches dans les fichiers joints
+      // Prevent all keys in attachments
       editor.addEventListener('keydown', (e: KeyboardEvent) => {
         const target = e.target as HTMLElement;
         const fileContainer = target.closest('.wysiwyg-file-attachment') as HTMLElement;
         if (fileContainer) {
-          // Permettre seulement Delete/Backspace pour supprimer le fichier entier (si sélectionné)
+          // Only allow Delete/Backspace to delete the entire file (if selected)
           if (e.key === 'Delete' || e.key === 'Backspace') {
-            // Vérifier si le fichier est sélectionné, sinon empêcher
+            // Check if file is selected, otherwise prevent
             if (!fileContainer.hasAttribute('data-selected-file')) {
               e.preventDefault();
               e.stopPropagation();
@@ -489,7 +489,7 @@ export function useEditorEffects({
               return false;
             }
           } else {
-            // Empêcher toute autre touche
+            // Prevent any other key
             e.preventDefault();
             e.stopPropagation();
             e.stopImmediatePropagation();
@@ -498,7 +498,7 @@ export function useEditorEffects({
         }
       }, true); // capture phase
       
-      // Surveiller les changements de contenu et restaurer immédiatement le nom
+      // Monitor content changes and immediately restore name
       const restoreFileName = () => {
         if (!editorRef.current) return;
         const fileContainers = editorRef.current.querySelectorAll('.wysiwyg-file-attachment');
@@ -507,11 +507,11 @@ export function useEditorEffects({
           const fileName = fileContainer.getAttribute('data-file-name');
           const fileLink = fileContainer.querySelector('.wysiwyg-file-link') as HTMLElement;
           if (fileName && fileLink) {
-            // Forcer le contenu à être exactement le nom du fichier
+            // Force content to be exactly the file name
             if (fileLink.textContent !== fileName) {
               fileLink.textContent = fileName;
             }
-            // S'assurer que contenteditable est false
+            // Ensure contenteditable is false
             fileLink.setAttribute('contenteditable', 'false');
             fileContainer.setAttribute('contenteditable', 'false');
           }

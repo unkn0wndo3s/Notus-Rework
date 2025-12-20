@@ -43,7 +43,7 @@ export default function WysiwygNotepad({
   initialData = { text: "" },
   onContentChange,
   onRemoteContentChange,
-  placeholder = "Commencez à écrire votre document...",
+  placeholder = "Start writing your document...",
   className = "",
   showDebug = false,
   readOnly = false,

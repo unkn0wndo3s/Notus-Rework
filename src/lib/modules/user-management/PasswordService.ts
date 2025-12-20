@@ -2,95 +2,96 @@ import { UserService } from "../../services/UserService";
 import { UserValidator } from "../../validators/UserValidator";
 
 export class PasswordService {
-  private userService: UserService;
+  private readonly userService: UserService;
 
   constructor() {
     this.userService = new UserService();
   }
 
-  async sendPasswordResetEmail(prevState: unknown, formData: FormData): Promise<string> {
+  async sendPasswordResetEmail(_prevState: unknown, formData: FormData): Promise<string> {
     try {
       const email = formData.get("email") as string;
 
       if (!email) {
-        return "Veuillez entrer votre adresse email.";
+        return "Please enter your email address.";
       }
 
-      // Validation basique de l'email
+      // Basic email validation
       const emailValidation = UserValidator.validateEmail(email);
       if (!emailValidation.isValid) {
-        return "Veuillez entrer une adresse email valide.";
+        return "Please enter a valid email address.";
       }
 
-      // Vérifier si la base de données est configurée
+      // Check if database is configured
       if (!process.env.DATABASE_URL) {
-        return "Email de réinitialisation envoyé (mode simulation). Configurez DATABASE_URL pour la persistance.";
+        return "Reset email sent (simulation mode). Configure DATABASE_URL for persistence.";
       }
 
-      // Initialiser les tables si elles n'existent pas
+      // Initialize tables if they don't exist
       await this.userService.initializeTables();
 
-      // Envoyer l'email de réinitialisation
+      // Send reset email
       const result = await this.userService.sendPasswordResetEmail(email);
 
       if (!result.success) {
-        return result.error || "Erreur lors de l'envoi de l'email";
+        return result.error || "Error while sending email";
       }
 
-      return "Si un compte existe avec cette adresse email, un lien de réinitialisation a été envoyé.";
+      return "If an account exists with this email address, a reset link has been sent.";
     } catch (error: unknown) {
-      console.error("❌ Erreur lors de l'envoi de l'email de réinitialisation:", error);
+      console.error("❌ Error while sending reset email:", error);
 
       if (error && typeof error === 'object' && 'code' in error && 
           (error.code === "ECONNRESET" || error.code === "ECONNREFUSED")) {
-        return "Base de données non accessible. Vérifiez la configuration PostgreSQL.";
+        return "Database not accessible. Check PostgreSQL configuration.";
       }
 
-      return "Erreur lors de l'envoi de l'email. Veuillez réessayer.";
+      return "Error while sending email. Please try again.";
     }
   }
 
-  async resetPassword(prevState: unknown, formData: FormData): Promise<string> {
+  async resetPassword(_prevState: unknown, formData: FormData): Promise<string> {
     try {
       const token = formData.get("token") as string;
       const password = formData.get("password") as string;
       const confirmPassword = formData.get("confirmPassword") as string;
 
       if (!token || !password || !confirmPassword) {
-        return "Tous les champs sont requis.";
+        return "All fields are required.";
       }
 
-      // Validation des mots de passe
+      // Password validation
       const passwordValidation = UserValidator.validatePasswordResetData(password, confirmPassword);
       if (!passwordValidation.isValid) {
-        return Object.values(passwordValidation.errors)[0] || "Données invalides";
+        return Object.values(passwordValidation.errors)[0] || "Invalid data";
       }
 
-      // Vérifier si la base de données est configurée
+      // Check if database is configured
       if (!process.env.DATABASE_URL) {
-        return "Mot de passe modifié avec succès (mode simulation). Configurez DATABASE_URL pour la persistance.";
+        return "Password changed successfully (simulation mode). Configure DATABASE_URL for persistence.";
       }
 
-      // Initialiser les tables si elles n'existent pas
+      // Initialize tables if they don't exist
       await this.userService.initializeTables();
 
-      // Réinitialiser le mot de passe
+      // Reset password
       const result = await this.userService.resetPassword(token, password);
 
       if (!result.success) {
-        return result.error || "Erreur lors de la réinitialisation du mot de passe";
+        return result.error || "Error while resetting password";
       }
 
-      return "Mot de passe modifié avec succès. Vous pouvez maintenant vous connecter.";
+      return "Password changed successfully. You can now log in.";
     } catch (error: unknown) {
-      console.error("❌ Erreur lors de la réinitialisation du mot de passe:", error);
+      console.error("❌ Error while resetting password:", error);
 
       if (error && typeof error === 'object' && 'code' in error && 
           (error.code === "ECONNRESET" || error.code === "ECONNREFUSED")) {
-        return "Base de données non accessible. Vérifiez la configuration PostgreSQL.";
+        return "Database not accessible. Check PostgreSQL configuration.";
       }
 
-      return "Erreur lors de la réinitialisation. Veuillez réessayer.";
+      return "Error while resetting. Please try again.";
     }
   }
 }
+

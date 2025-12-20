@@ -14,23 +14,23 @@ export default function OfflinePopin() {
   const isEditingDocument = /^\/documents\/(\d+)/.test(pathname || "");
 
   const handleOnline = useCallback(() => {
-    console.log(`[OfflinePopin] Événement 'online' détecté`);
+    console.log(`[OfflinePopin] 'online' event detected`);
     setIsOffline(false);
     setIsDismissed(false);
-    // Masquer toute popin offline affichée lors de la reconnexion
+    // Hide any offline popin shown during reconnection
     setForceShow(false);
     setOverrideMessage(null);
   }, []);
 
   const handleOffline = useCallback(() => {
-    console.log(`[OfflinePopin] Événement 'offline' détecté`);
+    console.log(`[OfflinePopin] 'offline' event detected`);
     setIsOffline(true);
   }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     const initialOffline = !navigator.onLine;
-    console.log(`[OfflinePopin] État initial: ${initialOffline ? "hors ligne" : "en ligne"}`);
+    console.log(`[OfflinePopin] Initial state: ${initialOffline ? "offline" : "online"}`);
     setIsOffline(initialOffline);
 
     window.addEventListener("online", handleOnline);
@@ -48,7 +48,7 @@ export default function OfflinePopin() {
     const handler = (e: Event) => {
       const custom = e as CustomEvent<{ message?: string; durationMs?: number }>;
       const message = custom.detail?.message || null;
-      console.log(`[OfflinePopin] Événement reçu - message: "${message}"`);
+      console.log(`[OfflinePopin] Event received - message: "${message}"`);
       setOverrideMessage(message);
       setIsDismissed(false);
       setForceShow(true);
@@ -72,14 +72,14 @@ export default function OfflinePopin() {
 
     const checkConnection = () => {
       const online = navigator.onLine;
-      console.log(`[OfflinePopin] Vérification locale pour le document ${documentId}: ${online ? "en ligne" : "hors ligne"}`);
+      console.log(`[OfflinePopin] Local check for document ${documentId}: ${online ? "online" : "offline"}`);
       if (cancelled) return;
       setIsOffline((previous) => {
         const next = !online;
         return previous !== next ? next : previous;
       });
       if (online) {
-        // Masquer la popin si la connexion est rétablie via polling
+        // Hide popin if connection is restored via polling
         setForceShow(false);
         setOverrideMessage(null);
       }
@@ -102,16 +102,16 @@ export default function OfflinePopin() {
           <WifiOff className="h-5 w-5" />
         </div>
         <div>
-          <h4 className="font-semibold mb-1">Vous êtes hors ligne</h4>
+          <h4 className="font-semibold mb-1">You are offline</h4>
           <p className="text-sm leading-5">
             {overrideMessage || (isEditingDocument
-              ? "Votre connexion semble interrompue. Les changements effectués seront enregistrés si vous êtes seul à en faire, sinon ils seront écrasés."
-              : "Votre connexion internet semble interrompue. Vous pourrez avoir accès aux différentes fonctionnalités une fois la connexion rétablie.")}
+              ? "Your connection seems interrupted. Changes made will be saved if you are the only one making them, otherwise they will be overwritten."
+              : "Your internet connection seems interrupted. You will be able to access the various features once the connection is restored.")}
           </p>
         </div>
         <button
           type="button"
-          aria-label="Fermer l'alerte hors ligne"
+          aria-label="Close offline alert"
           className="absolute top-2 right-2 rounded-xs p-1 text-destructive/80 hover:text-destructive focus:outline-hidden focus:ring-2 focus:ring-ring"
           onClick={() => setIsDismissed(true)}
         >
@@ -121,6 +121,3 @@ export default function OfflinePopin() {
     </div>
   );
 }
-
-
-

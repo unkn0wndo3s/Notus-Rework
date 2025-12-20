@@ -23,7 +23,7 @@ export class NotificationRepository extends BaseRepository {
                 await this.query(`CREATE INDEX IF NOT EXISTS idx_notifications_receiver ON notifications(id_receiver)`);
                 await this.query(`CREATE INDEX IF NOT EXISTS idx_notifications_send_date ON notifications(send_date DESC)`);
             } catch (error) {
-                console.error("❌ Erreur lors de l'initialisation des tables notifications:", error);
+                console.error("❌ Error initializing notification tables:", error);
                 throw error;
             }
         });
@@ -47,8 +47,8 @@ export class NotificationRepository extends BaseRepository {
 
             return { success: true, data: row };
         } catch (error) {
-            console.error("❌ Erreur création notification:", error);
-            return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+            console.error("❌ Error creating notification:", error);
+            return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
         }
     }
 
@@ -87,8 +87,8 @@ export class NotificationRepository extends BaseRepository {
 
             return { success: true, data: rows };
         } catch (error) {
-            console.error("❌ Erreur récupération notifications:", error);
-            return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+            console.error("❌ Error retrieving notifications:", error);
+            return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
         }
     }
 
@@ -101,8 +101,8 @@ export class NotificationRepository extends BaseRepository {
             const count = result.rows[0] ? parseInt(result.rows[0].count, 10) : 0;
             return { success: true, data: count };
         } catch (error) {
-            console.error("❌ Erreur countUnread:", error);
-            return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+            console.error("❌ Error countUnread:", error);
+            return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
         }
     }
 
@@ -113,12 +113,12 @@ export class NotificationRepository extends BaseRepository {
                 [notificationId]
             );
             if (!result.rows || result.rows.length === 0) {
-                return { success: false, error: "Notification non trouvée ou accès refusé" };
+                return { success: false, error: "Notification not found or access denied" };
             }
             return { success: true, data: { id: result.rows[0].id } };
         } catch (error) {
-            console.error("❌ Erreur markAsRead:", error);
-            return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+            console.error("❌ Error markAsRead:", error);
+            return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
         }
     }
 
@@ -127,8 +127,8 @@ export class NotificationRepository extends BaseRepository {
             await this.query(`UPDATE notifications SET read_date = CURRENT_TIMESTAMP WHERE id_receiver = $1 AND read_date IS NULL`, [id_receiver]);
             return { success: true };
         } catch (error) {
-            console.error("❌ Erreur markAllAsRead:", error);
-            return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+            console.error("❌ Error markAllAsRead:", error);
+            return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
         }
     }
 
@@ -136,12 +136,12 @@ export class NotificationRepository extends BaseRepository {
         try {
             const result = await this.query<{ id: number }>(`DELETE FROM notifications WHERE id = $1 RETURNING id`, [notificationId]);
             if (result.rows.length === 0) {
-                return { success: false, error: "Notification non trouvée ou accès refusé" };
+                return { success: false, error: "Notification not found or access denied" };
             }
             return { success: true, data: { id: result.rows[0].id } };
         } catch (error) {
-            console.error("❌ Erreur deleteNotification:", error);
-            return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+            console.error("❌ Error deleteNotification:", error);
+            return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
         }
     }
 }

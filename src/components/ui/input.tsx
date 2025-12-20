@@ -91,10 +91,10 @@ function Input({
           <button
             type="button"
             onClick={() => setIsPasswordVisible((v) => !v)}
-            aria-label={isPasswordVisible ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+            aria-label={isPasswordVisible ? "Hide password" : "Show password"}
             className="absolute inset-y-0 right-2 flex items-center text-muted-foreground hover:text-foreground text-xs"
           >
-            {isPasswordVisible ? "Masquer" : "Afficher"}
+            {isPasswordVisible ? "Hide" : "Show"}
           </button>
         )}
         {hasEndAdornment && (

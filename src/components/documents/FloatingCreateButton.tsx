@@ -59,7 +59,7 @@ export default function FloatingCreateButton({ serverSession }: FloatingCreateBu
         const docs = raw ? JSON.parse(raw) : [];
         const newDoc = {
           id: localId,
-          title: "Sans titre",
+          title: "Untitled",
           content: { text: "", timestamp: Date.now() },
           created_at: nowIso,
           updated_at: nowIso,
@@ -73,7 +73,7 @@ export default function FloatingCreateButton({ serverSession }: FloatingCreateBu
     }
 
     const fd = new FormData();
-    fd.set("title", "Nouvelle note");
+    fd.set("title", "New note");
     fd.set("content", "");
     if (userId) fd.set("userId", String(userId));
     startTransition(() => { createAction(fd); });
@@ -87,9 +87,9 @@ export default function FloatingCreateButton({ serverSession }: FloatingCreateBu
             type="button"
             onClick={handleCreate}
             className="whitespace-nowrap bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer px-4 py-4 md:py-2 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 group inline-flex items-center gap-3"
-            title="Créer une note"
+            title="Create a note"
           >
-            <span className="font-title text-xl md:flex hidden">Créer une note</span>
+            <span className="font-title text-xl md:flex hidden">Create a note</span>
             <Icon name="plus" className="w-6 h-6" />
           </button>
         </div>

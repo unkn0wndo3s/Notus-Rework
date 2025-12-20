@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
 import { clearUserSession } from "@/lib/session-utils";
 import BannedUserModal from "@/components/auth/BannedUserModal";
 
@@ -11,7 +10,7 @@ interface UserStatusGuardProps {
   children: React.ReactNode;
 }
 
-export default function UserStatusGuard({ children }: UserStatusGuardProps) {
+export default function UserStatusGuard({ children }: Readonly<UserStatusGuardProps>) {
   const { data: session, status } = useSession();
   const router = useRouter();
   const pathname = usePathname();
@@ -20,55 +19,55 @@ export default function UserStatusGuard({ children }: UserStatusGuardProps) {
   const [hasShownModal, setHasShownModal] = useState(false);
 
   useEffect(() => {
-    if (status === "loading") return; // Attendre que la session soit chargée
+    if (status === "loading") return; // Wait for the session to be loaded
 
-    // Si l'utilisateur n'est pas connecté, nettoyer sa userSession
+    // If user is not logged in, clear their userSession
     if (status === "unauthenticated") {
-      if (typeof window !== "undefined") {
-        const userSession = localStorage.getItem("userSession");
+      if (globalThis.window !== undefined) {
+        const userSession = globalThis.window.localStorage.getItem("userSession");
         if (userSession) {
-          console.log("🧹 Utilisateur non connecté détecté, nettoyage de userSession...");
+          console.log("🧹 Unauthenticated user detected, clearing userSession...");
           clearUserSession();
         }
       }
       return;
     }
 
-    // Vérifier si l'utilisateur est connecté et banni
+    // Check if user is logged in and banned
     if (session?.user?.isBanned && !hasShownModal) {
-      // Déconnecter immédiatement l'utilisateur banni
+      // Immediately disconnect banned user
       const handleBannedUser = async () => {
         try {
-          // Supprimer la session du localStorage et sessionStorage
+          // Remove session from localStorage and sessionStorage
           clearUserSession();
           
-          // Vérifier que le localStorage est bien nettoyé
-          if (typeof window !== "undefined") {
-            const userSession = localStorage.getItem("userSession");
-            const currentUserId = localStorage.getItem("currentUserId");
-            console.log("🧹 Nettoyage localStorage - userSession:", userSession ? "présent" : "supprimé");
-            console.log("🧹 Nettoyage localStorage - currentUserId:", currentUserId ? "présent" : "supprimé");
+          // Verify that localStorage is cleared
+          if (globalThis.window !== undefined) {
+            const userSession = globalThis.window.localStorage.getItem("userSession");
+            const currentUserId = globalThis.window.localStorage.getItem("currentUserId");
+            console.log("🧹 Clearing localStorage - userSession:", userSession ? "present" : "removed");
+            console.log("🧹 Clearing localStorage - currentUserId:", currentUserId ? "present" : "removed");
             
             if (userSession) {
-              console.log("⚠️ userSession encore présent, suppression forcée...");
-              localStorage.removeItem("userSession");
+              console.log("⚠️ userSession still present, forcing removal...");
+              globalThis.window.localStorage.removeItem("userSession");
             }
             if (currentUserId) {
-              console.log("⚠️ currentUserId encore présent, suppression forcée...");
-              localStorage.removeItem("currentUserId");
+              console.log("⚠️ currentUserId still present, forcing removal...");
+              globalThis.window.localStorage.removeItem("currentUserId");
             }
           }
           
-          // Déconnecter l'utilisateur
+          // Disconnect the user
           await signOut({ redirect: false });
           
-          // Afficher le modal de notification
-          setBanReason("Votre compte a été suspendu par un administrateur.");
+          // Show notification modal
+          setBanReason("Your account has been suspended by an administrator.");
           setShowBannedModal(true);
           setHasShownModal(true);
         } catch (error) {
-          console.error("Erreur lors de la déconnexion de l'utilisateur banni:", error);
-          setBanReason("Votre compte a été suspendu par un administrateur.");
+          console.error("Error during banned user logout:", error);
+          setBanReason("Your account has been suspended by an administrator.");
           setShowBannedModal(true);
           setHasShownModal(true);
         }
@@ -78,21 +77,20 @@ export default function UserStatusGuard({ children }: UserStatusGuardProps) {
       return;
     }
 
-    // Si l'utilisateur n'est pas banni mais essaie d'accéder à /banned, rediriger vers l'application
+    // If user is not banned but tries to access /banned, redirect to application
     if (pathname === "/banned" && session?.user && !session.user.isBanned) {
       router.push("/app");
-      return;
     }
   }, [session, status, pathname, router, hasShownModal]);
 
-  // Si l'utilisateur est banni, afficher le modal
+  // If user is banned, show modal
   if (showBannedModal) {
     return (
       <BannedUserModal
         isOpen={showBannedModal}
         onClose={() => {
           setShowBannedModal(false);
-          // Rediriger vers la landing page après fermeture du modal
+          // Redirect to landing page after closing modal
           router.push("/");
         }}
         reason={banReason}
@@ -100,8 +98,6 @@ export default function UserStatusGuard({ children }: UserStatusGuardProps) {
     );
   }
 
-  // Sinon, afficher le contenu normal
+  // Otherwise, show normal content
   return <>{children}</>;
 }
-
-

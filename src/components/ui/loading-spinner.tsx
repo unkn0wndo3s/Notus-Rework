@@ -30,7 +30,7 @@ export interface LoadingPageProps extends React.ComponentProps<"div"> {
 }
 
 const LoadingPage: React.FC<LoadingPageProps> = ({
-  message = "Chargement...",
+  message = "Loading...",
   className = "",
   ...props
 }) => (
@@ -49,7 +49,7 @@ const LoadingPage: React.FC<LoadingPageProps> = ({
 );
 
 const LoadingCard: React.FC<LoadingPageProps> = ({
-  message = "Chargement...",
+  message = "Loading...",
   className = "",
   ...props
 }) => (
@@ -70,4 +70,3 @@ LoadingSpinner.Card = LoadingCard;
 
 export default LoadingSpinner;
 export { LoadingPage, LoadingCard };
-

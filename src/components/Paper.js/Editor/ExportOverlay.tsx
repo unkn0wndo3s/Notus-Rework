@@ -1123,7 +1123,7 @@ export default function ExportOverlay({
   onClose,
   markdown,
   getRichHtml,
-}: ExportOverlayProps) {
+}: Readonly<ExportOverlayProps>) {
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -1162,9 +1162,9 @@ export default function ExportOverlay({
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="fixed inset-0 bg-black/40" onClick={() => onClose?.()} />
       <div className="relative bg-card border border-border rounded-lg shadow-lg p-4 w-[320px]">
-        <h3 className="text-lg font-semibold mb-2">Exporter la note</h3>
+        <h3 className="text-lg font-semibold mb-2">Export note</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Choisissez un format pour exporter votre note (entièrement côté client).
+          Choose a format to export your note (fully client-side).
         </p>
 
         <div className="space-y-3">
@@ -1174,11 +1174,11 @@ export default function ExportOverlay({
               disabled={isExporting}
               onClick={() => handleExport("pdf")}
             >
-              <span>Exporter en PDF</span>
+              <span>Export as PDF</span>
               <span className="text-sm opacity-90">📄</span>
             </button>
             <p className="mt-1 text-xs text-muted-foreground">
-              Génère un PDF côté client — capture HTML → canvas → PDF.
+              Generates a PDF client-side — HTML capture → canvas → PDF.
             </p>
           </div>
 
@@ -1188,11 +1188,11 @@ export default function ExportOverlay({
               disabled={isExporting}
               onClick={() => handleExport("docx")}
             >
-              <span>Exporter en Word (.docx)</span>
+              <span>Export as Word (.docx)</span>
               <span className="text-sm opacity-90">📝</span>
             </button>
             <p className="mt-1 text-xs text-muted-foreground">
-              Convertit la structure (titres, listes, blocs de code) en .docx. Styles simples conservés.
+              Converts structure (headings, lists, code blocks) to .docx. Simple styles preserved.
             </p>
           </div>
 
@@ -1202,19 +1202,19 @@ export default function ExportOverlay({
               disabled={isExporting}
               onClick={() => handleExport("txt")}
             >
-              <span>Exporter en texte (.txt)</span>
+              <span>Export as text (.txt)</span>
               <span className="text-sm opacity-90">📋</span>
             </button>
             <p className="mt-1 text-xs text-muted-foreground">
-              Télécharge le texte brut (Markdown/HTML nettoyé), sans mise en forme.
+              Downloads raw text (cleaned Markdown/HTML), without formatting.
             </p>
           </div>
 
-          {error && <p className="text-sm text-destructive mt-1">Erreur: {error}</p>}
+          {error && <p className="text-sm text-destructive mt-1">Error: {error}</p>}
 
           <div className="flex justify-end mt-2">
             <button className="px-3 py-1 text-sm" onClick={() => onClose?.()} disabled={isExporting}>
-              Annuler
+              Cancel
             </button>
           </div>
         </div>

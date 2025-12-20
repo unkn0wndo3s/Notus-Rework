@@ -1,4 +1,4 @@
-// Types centralisés pour l'application
+// Centralized types for the application
 
 export interface User {
   id: number;
@@ -28,7 +28,7 @@ export interface Document {
   title: string;
   content: string;
   tags: string[];
-  favori?: boolean | null;
+  is_favorite?: boolean | null;
   created_at: Date;
   updated_at: Date;
   username?: string;
@@ -38,8 +38,8 @@ export interface Document {
     email: string;
     permission: boolean;
   }[];
-  favori_share?: boolean | null;
-  dossierIds?: number[];
+  is_favorite_share?: boolean | null;
+  folderIds?: number[];
   shared?: boolean;
 }
 
@@ -56,7 +56,7 @@ export interface QueryResult<T = unknown> {
   rowCount: number | null;
 }
 
-// Types pour les réponses d'actions
+// Types for action responses
 export interface ActionResult {
   success?: boolean;
   message?: string;
@@ -72,7 +72,7 @@ export interface ActionResult {
   dbResult?: { success: boolean; error?: string; document?: Document };
 }
 
-// Types pour les services
+// Types for services
 export interface CreateUserData {
   email: string;
   username: string;
@@ -106,20 +106,20 @@ export interface UpdateDocumentData {
   tags: string[];
 }
 
-// Types pour la validation
+// Types for validation
 export interface ValidationResult {
   isValid: boolean;
   errors: Record<string, string>;
 }
 
-// Types pour les emails
+// Types for emails
 export interface EmailResult {
   success: boolean;
   messageId?: string;
   error?: string;
 }
 
-// Types pour les réponses de base de données
+// Types for database responses
 export interface DatabaseResult<T = unknown> {
   success: boolean;
   error?: string;
@@ -131,7 +131,8 @@ export interface UserRepositoryResult<T = unknown> extends DatabaseResult<T> {
   users?: User[];
 }
 
-export interface DocumentRepositoryResult<T = unknown> extends DatabaseResult<T> {
+export interface DocumentRepositoryResult<T = unknown>
+  extends DatabaseResult<T> {
   document?: Document;
   documents?: Document[];
 }
@@ -146,7 +147,7 @@ export interface DocumentHistoryEntry {
   diff_added?: string | null;
   diff_removed?: string | null;
   created_at: Date;
-  // Informations utilisateur jointes (optionnelles)
+  // Joined user information (optional)
   user?: {
     id: number;
     username?: string | null;
@@ -169,7 +170,7 @@ export interface TrashDocument {
   deleted_at: Date;
 }
 
-// Interface pour les documents locaux (localStorage) qui ont des types différents
+// Interface for local documents (localStorage) which have different types
 export interface LocalDocument {
   id: string;
   title?: string;
@@ -181,7 +182,7 @@ export interface LocalDocument {
   [key: string]: any;
 }
 
-// Union type pour gérer les deux types de documents
+// Union type to handle both document types
 export type AnyDocument = Document | LocalDocument;
 
 export interface MenuItemProps {

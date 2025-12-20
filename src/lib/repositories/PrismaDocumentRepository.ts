@@ -18,10 +18,10 @@ export class PrismaDocumentRepository {
         document,
       };
     } catch (error: unknown) {
-      console.error('❌ Erreur création document:', error);
+      console.error('❌ Error creating document:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Erreur inconnue',
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -44,18 +44,18 @@ export class PrismaDocumentRepository {
       if (!document) {
         return {
           success: false,
-          error: 'Document non trouvé',
+          error: 'Document not found',
         };
       }
 
-      // Transformer le document pour correspondre à notre interface
+      // Transform the document to match our interface
       const transformedDocument: Document = {
         id: document.id,
         user_id: document.user_id,
         title: document.title,
         content: document.content,
         tags: document.tags,
-        favori: (document as any).favori ?? null,
+        is_favorite: (document as any).is_favorite ?? null,
         created_at: document.created_at,
         updated_at: document.updated_at,
         username: document.user.username || undefined,
@@ -68,10 +68,10 @@ export class PrismaDocumentRepository {
         document: transformedDocument,
       };
     } catch (error: unknown) {
-      console.error('❌ Erreur récupération document:', error);
+      console.error('❌ Error retrieving document:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Erreur inconnue',
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -94,14 +94,14 @@ export class PrismaDocumentRepository {
         skip: offset,
       });
 
-      // Transformer les documents pour correspondre à notre interface
+      // Transform the documents to match our interface
       const transformedDocuments: Document[] = documents.map((doc: {
         id: number;
         user_id: number;
         title: string;
         content: string;
         tags: string[];
-        favori?: boolean | null;
+        is_favorite?: boolean | null;
         created_at: Date;
         updated_at: Date;
         user: {
@@ -115,7 +115,7 @@ export class PrismaDocumentRepository {
         title: doc.title,
         content: doc.content,
         tags: doc.tags,
-        favori: (doc as any).favori ?? null,
+        is_favorite: (doc as any).is_favorite ?? null,
         created_at: doc.created_at,
         updated_at: doc.updated_at,
         username: doc.user.username ?? undefined,
@@ -128,10 +128,10 @@ export class PrismaDocumentRepository {
         documents: transformedDocuments,
       };
     } catch (error: unknown) {
-      console.error('❌ Erreur récupération documents utilisateur:', error);
+      console.error('❌ Error retrieving user documents:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Erreur inconnue',
+        error: error instanceof Error ? error.message : 'Unknown error',
         documents: [],
       };
     }
@@ -157,22 +157,22 @@ export class PrismaDocumentRepository {
         },
       });
 
-      // Vérifier que le document appartient à l'utilisateur
+      // Verify that the document belongs to the user
       if (document.user_id !== userId) {
         return {
           success: false,
-          error: 'Vous n\'êtes pas autorisé à modifier ce document',
+          error: 'You are not authorized to modify this document',
         };
       }
 
-      // Transformer le document pour correspondre à notre interface
+      // Transform the document to match our interface
       const transformedDocument: Document = {
         id: document.id,
         user_id: document.user_id,
         title: document.title,
         content: document.content,
         tags: document.tags,
-        favori: (document as any).favori ?? null,
+        is_favorite: (document as any).is_favorite ?? null,
         created_at: document.created_at,
         updated_at: document.updated_at,
         username: document.user.username || undefined,
@@ -185,17 +185,17 @@ export class PrismaDocumentRepository {
         document: transformedDocument,
       };
     } catch (error: unknown) {
-      console.error('❌ Erreur mise à jour document:', error);
+      console.error('❌ Error updating document:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Erreur inconnue',
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
 
   async deleteDocument(id: number, userId: number): Promise<DocumentRepositoryResult<boolean>> {
     try {
-      // Vérifier que le document appartient à l'utilisateur
+      // Verify that the document belongs to the user
       const document = await prisma.document.findUnique({
         where: { id },
         select: { 
@@ -212,18 +212,18 @@ export class PrismaDocumentRepository {
       if (!document) {
         return {
           success: false,
-          error: 'Document non trouvé',
+          error: 'Document not found',
         };
       }
 
       if (document.user_id !== userId) {
         return {
           success: false,
-          error: 'Vous n\'êtes pas autorisé à supprimer ce document',
+          error: 'You are not authorized to delete this document',
         };
       }
 
-      // 2. Insérer dans la table de corbeille
+      // 2. Insert into trash table
     await prisma.trashDocument.create({
       data: {
         user_id: document.user_id,
@@ -237,7 +237,7 @@ export class PrismaDocumentRepository {
       },
     });
 
-    // 3. Supprimer de la table principale
+    // 3. Delete from main table
       await prisma.document.delete({
         where: { id },
       });
@@ -247,26 +247,26 @@ export class PrismaDocumentRepository {
         data: true,
       };
     } catch (error: unknown) {
-      console.error('❌ Erreur suppression document:', error);
+      console.error('❌ Error deleting document:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Erreur inconnue',
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
 
   async deleteDocumentsBulk(userId: number, documentIds: string[]): Promise<DocumentRepositoryResult<{ deletedCount: number }>> {
     try {
-      const ids = documentIds.map(id => parseInt(id)).filter(id => !isNaN(id));
+      const ids = documentIds.map(id => Number.parseInt(id)).filter(id => !Number.isNaN(id));
 
       if (ids.length === 0) {
         return {
           success: false,
-          error: 'Aucun ID de document valide fourni',
+          error: 'No valid document ID provided',
         };
       }
 
-      // Vérifier que tous les documents appartiennent à l'utilisateur
+      // Verify that all documents belong to the user
       const documents = await prisma.document.findMany({
         where: {
           id: { in: ids },
@@ -286,11 +286,11 @@ export class PrismaDocumentRepository {
       if (documents.length !== ids.length) {
         return {
           success: false,
-          error: 'Certains documents n\'appartiennent pas à cet utilisateur',
+          error: 'Some documents do not belong to this user',
         };
       }
 
-      // 2. Insérer tous les documents dans la table de corbeille
+      // 2. Insert all documents into trash table
       const trashDocuments = documents.map((doc: {
         id: number;
         user_id: number;
@@ -314,7 +314,7 @@ export class PrismaDocumentRepository {
         data: trashDocuments,
       });
 
-      // 3. Supprimer tous les documents de la table principale
+      // 3. Delete all documents from main table
       const result = await prisma.document.deleteMany({
         where: {
           id: { in: ids },
@@ -327,17 +327,17 @@ export class PrismaDocumentRepository {
         data: { deletedCount: result.count },
       };
     } catch (error: unknown) {
-      console.error('❌ Erreur suppression multiple documents:', error);
+      console.error('❌ Error bulk deleting documents:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Erreur inconnue',
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
 
   async createOrUpdateDocumentById(id: number, userId: number, title: string, content: string, tags: string[], userEmail?: string): Promise<DocumentRepositoryResult<Document>> {
     try {
-      // Essayer de mettre à jour d'abord
+      // Try to update first
       const existingDocument = await prisma.document.findUnique({
         where: { id },
         include: {
@@ -353,12 +353,12 @@ export class PrismaDocumentRepository {
       });
 
       if (existingDocument) {
-        // Vérifier que le document appartient à l'utilisateur OU qu'il a des permissions de partage
+        // Verify that the document belongs to the user OR has sharing permissions
         const isOwner = existingDocument.user_id === userId;
         let hasSharePermission = false;
         
         if (!isOwner && userEmail) {
-          // Vérifier les permissions de partage
+          // Check sharing permissions
           hasSharePermission = existingDocument.Share.some(
             share => share.email.toLowerCase().trim() === userEmail.toLowerCase().trim() && share.permission === true
           );
@@ -367,11 +367,11 @@ export class PrismaDocumentRepository {
         if (!isOwner && !hasSharePermission) {
           return {
             success: false,
-            error: 'Vous n\'êtes pas autorisé à modifier ce document',
+            error: 'You are not authorized to modify this document',
           };
         }
 
-        // Mettre à jour le document existant
+        // Update existing document
         const updatedDocument = await prisma.document.update({
           where: { id },
           data: {
@@ -390,14 +390,14 @@ export class PrismaDocumentRepository {
           },
         });
 
-        // Transformer le document pour correspondre à notre interface
+        // Transform document to match our interface
         const transformedDocument: Document = {
           id: updatedDocument.id,
           user_id: updatedDocument.user_id,
           title: updatedDocument.title,
           content: updatedDocument.content,
           tags: updatedDocument.tags,
-          favori: (updatedDocument as any).favori ?? null,
+          is_favorite: (updatedDocument as any).is_favorite ?? null,
           created_at: updatedDocument.created_at,
           updated_at: updatedDocument.updated_at,
           username: updatedDocument.user.username ?? undefined,
@@ -410,7 +410,7 @@ export class PrismaDocumentRepository {
           document: transformedDocument,
         };
       } else {
-        // Créer un nouveau document
+        // Create new document
         const newDocument = await prisma.document.create({
           data: {
             id,
@@ -430,14 +430,14 @@ export class PrismaDocumentRepository {
           },
         });
 
-        // Transformer le document pour correspondre à notre interface
+        // Transform document to match our interface
         const transformedDocument: Document = {
           id: newDocument.id,
           user_id: newDocument.user_id,
           title: newDocument.title,
           content: newDocument.content,
           tags: newDocument.tags,
-          favori: (newDocument as any).favori ?? null,
+          is_favorite: (newDocument as any).is_favorite ?? null,
           created_at: newDocument.created_at,
           updated_at: newDocument.updated_at,
           username: newDocument.user.username ?? undefined,
@@ -451,10 +451,10 @@ export class PrismaDocumentRepository {
         };
       }
     } catch (error: unknown) {
-      console.error('❌ Erreur création/mise à jour document:', error);
+      console.error('❌ Error creating/updating document:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Erreur inconnue',
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -481,10 +481,10 @@ export class PrismaDocumentRepository {
 
       return { success: true, documents: mapped as unknown as any } as any;
     } catch (error: unknown) {
-      console.error('❌ Erreur récupération corbeille:', error);
+      console.error('❌ Error retrieving trash:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Erreur inconnue',
+        error: error instanceof Error ? error.message : 'Unknown error',
         documents: [],
       } as any;
     }
@@ -492,16 +492,16 @@ export class PrismaDocumentRepository {
 
   async restoreDocumentFromTrash(trashId: number, userId: number): Promise<DocumentRepositoryResult<{ id: number }>> {
     try {
-      // Vérifier le document en corbeille et sa propriété
+      // Verify document in trash and ownership
       const trashed = await prisma.trashDocument.findUnique({ where: { id: trashId } });
       if (!trashed) {
-        return { success: false, error: 'Élément introuvable dans la corbeille' };
+        return { success: false, error: 'Item not found in trash' };
       }
       if (trashed.user_id !== userId) {
-        return { success: false, error: "Vous n'êtes pas autorisé à restaurer cet élément" };
+        return { success: false, error: "You are not authorized to restore this item" };
       }
 
-      // Restaurer en recréant un document (nouvel id)
+      // Restore by recreating a document (new id)
       const created = await prisma.document.create({
         data: {
           user_id: trashed.user_id,
@@ -513,13 +513,13 @@ export class PrismaDocumentRepository {
         },
       });
 
-      // Supprimer l'entrée de corbeille
+      // Delete trash entry
       await prisma.trashDocument.delete({ where: { id: trashed.id } });
 
       return { success: true, data: { id: created.id } };
     } catch (error: unknown) {
-      console.error('❌ Erreur restauration corbeille:', error);
-      return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+      console.error('❌ Error restoring trash:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
   async fetchSharedWithUser(email: string): Promise<DocumentRepositoryResult<Document[]>> {
@@ -542,21 +542,21 @@ export class PrismaDocumentRepository {
           },
           Share: {
             where: { email: email },
-            select: ({ email: true, permission: true, favori: true } as any),
+            select: ({ email: true, permission: true, is_favorite: true } as any),
           },
         },
         orderBy: { updated_at: 'desc' },
       });
 
-      // Transformer les documents pour correspondre à notre interface
+      // Transform the documents to match our interface
       const transformedDocuments: Document[] = documents.map((doc: any) => ({
         id: doc.id,
         user_id: doc.user_id,
         title: doc.title,
         content: doc.content,
         tags: doc.tags,
-        // pour les documents partagés, utiliser le favori du lien de partage
-        favori: (doc.Share && doc.Share[0] ? doc.Share[0].favori : null),
+        // for shared documents, use the is_favorite from the share link
+        is_favorite: doc.Share?.[0]?.is_favorite ?? null,
         created_at: doc.created_at,
         updated_at: doc.updated_at,
         username: doc.user.username ?? undefined,
@@ -569,10 +569,10 @@ export class PrismaDocumentRepository {
         documents: transformedDocuments,
       };
     } catch (error: unknown) {
-      console.error('❌ Erreur récupération documents partagés avec utilisateur:', error);
+      console.error('❌ Error retrieving documents shared with user:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Erreur inconnue',
+        error: error instanceof Error ? error.message : 'Unknown error',
         documents: [],
       };
     }
@@ -599,27 +599,27 @@ export class PrismaDocumentRepository {
             select: ({
               email: true,
               permission: true,
-              favori: true,
+              is_favorite: true,
             } as any),
           },
         },
         orderBy: { updated_at: 'desc' },
       });
 
-      // Transformer les documents pour correspondre à notre interface
+      // Transform documents to match our interface
       const transformedDocuments: Document[] = documents.map((doc: any) => ({
         id: doc.id,
         user_id: doc.user_id,
         title: doc.title,
         content: doc.content,
         tags: doc.tags,
-        favori: (doc as any).favori ?? null,
+        is_favorite: (doc as any).is_favorite ?? null,
         created_at: doc.created_at,
         updated_at: doc.updated_at,
         username: doc.user.username ?? undefined,
         first_name: doc.user.first_name ?? undefined,
         last_name: doc.user.last_name ?? undefined,
-        // Ajouter les informations de partage
+        // Add sharing information
         sharedWith: doc.Share.map((share: any) => ({
           email: share.email,
           permission: share.permission,
@@ -631,10 +631,10 @@ export class PrismaDocumentRepository {
         documents: transformedDocuments,
       };
     } catch (error: unknown) {
-      console.error('❌ Erreur récupération documents partagés par utilisateur:', error);
+      console.error('❌ Error retrieving documents shared by user:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Erreur inconnue',
+        error: error instanceof Error ? error.message : 'Unknown error',
         documents: [],
       };
     }
@@ -644,45 +644,45 @@ export class PrismaDocumentRepository {
     documentId: number,
     userId: number,
     value: boolean | null
-  ): Promise<DocumentRepositoryResult<{ id: number; favori: boolean | null }>> {
+  ): Promise<DocumentRepositoryResult<{ id: number; is_favorite: boolean | null }>> {
     try {
       const doc = await prisma.document.findUnique({ where: { id: documentId }, select: { id: true, user_id: true } });
-      if (!doc) return { success: false, error: 'Document non trouvé' };
-      if (doc.user_id !== userId) return { success: false, error: "Vous n'êtes pas autorisé à modifier ce favori" };
+      if (!doc) return { success: false, error: 'Document not found' };
+      if (doc.user_id !== userId) return { success: false, error: "You are not authorized to modify this favorite" };
 
-      // Utiliser une requête SQL brute pour mettre à jour uniquement favori
-      // Désactiver temporairement le trigger pour éviter la mise à jour de updated_at
-      // puis réactiver le trigger après la mise à jour
+      // Use raw SQL query to update only is_favorite
+      // Temporarily disable the trigger to avoid updating updated_at
+      // then re-enable the trigger after update
       await prisma.$executeRaw`SET session_replication_role = replica;`;
       
       try {
         await prisma.$executeRaw`
           UPDATE documents 
-          SET favori = ${value}
+          SET is_favorite = ${value}
           WHERE id = ${documentId} AND user_id = ${userId}
         `;
       } finally {
-        // Toujours réactiver le trigger, même en cas d'erreur
+        // Always re-enable trigger, even on error
         await prisma.$executeRaw`SET session_replication_role = DEFAULT;`;
       }
 
-      // Récupérer le document mis à jour pour retourner le résultat
+      // Retrieve the updated document to return result
       const updated = await prisma.document.findUnique({ 
         where: { id: documentId }, 
-        select: { id: true, favori: true } 
+        select: { id: true, is_favorite: true } 
       });
       
       if (!updated) {
-        return { success: false, error: 'Erreur lors de la récupération du document mis à jour' };
+        return { success: false, error: 'Error retrieving updated document' };
       }
 
-      return { success: true, data: { id: updated.id, favori: (updated as any).favori ?? null } };
+      return { success: true, data: { id: updated.id, is_favorite: (updated as any).is_favorite ?? null } };
     } catch (e: unknown) {
-      // S'assurer que le trigger est réactivé même en cas d'erreur
+      // Ensure trigger is re-enabled even on error
       try {
         await prisma.$executeRaw`SET session_replication_role = DEFAULT;`;
       } catch {}
-      return { success: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
+      return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
     }
   }
 
@@ -690,21 +690,21 @@ export class PrismaDocumentRepository {
     documentId: number,
     email: string,
     value: boolean | null
-  ): Promise<DocumentRepositoryResult<{ id: number; favori: boolean | null }>> {
+  ): Promise<DocumentRepositoryResult<{ id: number; is_favorite: boolean | null }>> {
     try {
       const share = await prisma.share.findFirst({ where: { id_doc: documentId, email: email } });
-      if (!share) return { success: false, error: 'Partage introuvable pour cet utilisateur' };
-      const updated = await prisma.share.update({ where: { id: share.id }, data: ({ favori: value } as any) });
-      return { success: true, data: { id: updated.id, favori: (updated as any).favori ?? null } };
+      if (!share) return { success: false, error: 'Share not found for this user' };
+      const updated = await prisma.share.update({ where: { id: share.id }, data: ({ is_favorite: value } as any) });
+      return { success: true, data: { id: updated.id, is_favorite: (updated as any).is_favorite ?? null } };
     } catch (e: unknown) {
-      return { success: false, error: e instanceof Error ? e.message : 'Erreur inconnue' };
+      return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
     }
   }
 
   async getFavorites(userId: number, email: string): Promise<DocumentRepositoryResult<Document[]>> {
     try {
       const own = await prisma.document.findMany({
-        where: ({ user_id: userId, favori: true } as any),
+        where: ({ user_id: userId, is_favorite: true } as any),
         include: {
           user: { select: { username: true, first_name: true, last_name: true } },
         },
@@ -712,10 +712,10 @@ export class PrismaDocumentRepository {
       });
 
       const shared = await prisma.document.findMany({
-        where: ({ Share: { some: { email: email, favori: true } } } as any),
+        where: ({ Share: { some: { email: email, is_favorite: true } } } as any),
         include: {
           user: { select: { username: true, first_name: true, last_name: true } },
-          Share: ({ where: { email: email }, select: { favori: true } } as any),
+          Share: ({ where: { email: email }, select: { is_favorite: true } } as any),
         },
         orderBy: { updated_at: 'desc' },
       });
@@ -726,7 +726,7 @@ export class PrismaDocumentRepository {
         title: d.title,
         content: d.content,
         tags: d.tags,
-        favori: d.favori ?? null,
+        is_favorite: d.is_favorite ?? null,
         created_at: d.created_at,
         updated_at: d.updated_at,
         username: d.user?.username ?? undefined,
@@ -740,7 +740,7 @@ export class PrismaDocumentRepository {
         title: d.title,
         content: d.content,
         tags: d.tags,
-        favori: d.Share?.[0]?.favori ?? null,
+        is_favorite: d.Share?.[0]?.is_favorite ?? null,
         created_at: d.created_at,
         updated_at: d.updated_at,
         username: d.user?.username ?? undefined,
@@ -752,14 +752,13 @@ export class PrismaDocumentRepository {
       [...mappedOwn, ...mappedShared].forEach(doc => { byId.set(doc.id, doc); });
       return { success: true, documents: Array.from(byId.values()) };
     } catch (e: unknown) {
-      return { success: false, error: e instanceof Error ? e.message : 'Erreur inconnue', documents: [] };
+      return { success: false, error: e instanceof Error ? e.message : 'Unknown error', documents: [] };
     }
   }
 
   async initializeTables(): Promise<void> {
-    // Prisma gère automatiquement la création des tables via les migrations
-    // Cette méthode est conservée pour la compatibilité
-    return Promise.resolve();
+    // Prisma automatically handles table creation via migrations
+    // This method is kept for compatibility
+    return;
   }
-
 }

@@ -21,7 +21,7 @@ export default function AdminSettingsPage() {
   const [savingOllama, setSavingOllama] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Charger les settings au montage
+  // Load settings on mount
   useEffect(() => {
     const loadSettings = async () => {
       try {
@@ -37,12 +37,12 @@ export default function AdminSettingsPage() {
           setOllamaUrl(url);
           const model = data.settings["ollama_model"] || "llama3.2";
           setOllamaModel(model);
-          // Le token n'est jamais renvoyé pour des raisons de sécurité
-          // On laisse le champ vide et l'utilisateur peut le modifier s'il le souhaite
+          // Token is never sent back for security reasons
+          // Field is left empty and user can modify if wanted
         }
       } catch (e) {
-        console.error("Erreur lors du chargement des settings:", e);
-        setError("Impossible de charger les paramètres");
+        console.error("Error loading settings:", e);
+        setError("Unable to load settings");
       } finally {
         setLoading(false);
       }
@@ -63,17 +63,17 @@ export default function AdminSettingsPage() {
         body: JSON.stringify({
           key: "ai_synthesis_enabled",
           value: String(newValue),
-          description: "Active ou désactive la fonctionnalité de synthèse IA",
+          description: "Enables or disables the AI synthesis feature",
         }),
       });
       const data = await res.json();
       if (data.success) {
         setAiSynthesisEnabled(newValue);
       } else {
-        setError(data.error || "Erreur lors de la mise à jour");
+        setError(data.error || "Error during update");
       }
     } catch (e) {
-      setError("Erreur lors de la mise à jour");
+      setError("Error during update");
     } finally {
       setSaving(false);
     }
@@ -82,7 +82,7 @@ export default function AdminSettingsPage() {
   const handleSaveTokenLimit = async () => {
     const limit = parseInt(tokenLimit, 10);
     if (isNaN(limit) || limit < 0) {
-      setError("La limite doit être un nombre positif");
+      setError("Limit must be a positive number");
       return;
     }
     setSavingTokenLimit(true);
@@ -96,15 +96,15 @@ export default function AdminSettingsPage() {
         body: JSON.stringify({
           key: "ai_token_limit_per_day",
           value: String(limit),
-          description: "Limite de tokens par utilisateur par jour pour la synthèse IA",
+          description: "Token limit per user per day for AI synthesis",
         }),
       });
       const data = await res.json();
       if (!data.success) {
-        setError(data.error || "Erreur lors de la mise à jour");
+        setError(data.error || "Error during update");
       }
     } catch (e) {
-      setError("Erreur lors de la mise à jour");
+      setError("Error during update");
     } finally {
       setSavingTokenLimit(false);
     }
@@ -112,11 +112,11 @@ export default function AdminSettingsPage() {
 
   const handleSaveOllamaConfig = async () => {
     if (!ollamaUrl || ollamaUrl.trim().length === 0) {
-      setError("L'URL Ollama est requise");
+      setError("Ollama URL is required");
       return;
     }
     if (!ollamaModel || ollamaModel.trim().length === 0) {
-      setError("Le modèle Ollama est requis");
+      setError("Ollama model is required");
       return;
     }
     setSavingOllama(true);
@@ -126,21 +126,21 @@ export default function AdminSettingsPage() {
         {
           key: "ollama_url",
           value: ollamaUrl.trim(),
-          description: "URL de l'API Ollama",
+          description: "Ollama API URL",
         },
         {
           key: "ollama_model",
           value: ollamaModel.trim(),
-          description: "Modèle Ollama à utiliser pour les synthèses",
+          description: "Ollama model to use for syntheses",
         },
       ];
 
-      // Si un token est fourni, l'ajouter aussi
+      // If token is provided, add it too
       if (ollamaToken.trim().length > 0) {
         updates.push({
           key: "ollama_token",
           value: ollamaToken.trim(),
-          description: "Token d'authentification Ollama (optionnel)",
+          description: "Ollama authentication token (optional)",
         });
       }
 
@@ -159,14 +159,14 @@ export default function AdminSettingsPage() {
       const allSuccess = results.every((data) => data.success);
 
       if (!allSuccess) {
-        setError("Erreur lors de la mise à jour de la configuration Ollama");
+        setError("Error during update of Ollama configuration");
       } else {
-        // Réinitialiser le champ token après sauvegarde pour la sécurité
+        // Reset token field after save for security
         setOllamaToken("");
         setShowToken(false);
       }
     } catch (e) {
-      setError("Erreur lors de la mise à jour");
+      setError("Error during update");
     } finally {
       setSavingOllama(false);
     }
@@ -176,10 +176,10 @@ export default function AdminSettingsPage() {
     <main className="space-y-6">
       <header className="text-center pt-10">
         <h1 className="text-3xl font-bold text-foreground">
-          Paramètres administrateur
+          Admin Settings
         </h1>
         <p className="mt-2 text-muted-foreground">
-          Gérez les paramètres de l'application Notus
+          Manage your Notus application settings
         </p>
       </header>
 
@@ -187,21 +187,21 @@ export default function AdminSettingsPage() {
         <Card className="bg-background">
           <Card.Header>
             <Card.Title className="text-foreground text-2xl font-semibold">
-              Apparence
+              Appearance
             </Card.Title>
           </Card.Header>
           <Card.Content className="flex items-center justify-between gap-4 p-6">
             <div>
-              <p className="text-foreground font-medium">Thème</p>
+              <p className="text-foreground font-medium">Theme</p>
               <p className="text-muted-foreground text-sm">
-                Basculez entre le mode clair et sombre.
+                Switch between light and dark mode.
               </p>
             </div>
             <button
               type="button"
               role="switch"
               aria-checked={isDark}
-              aria-label={isDark ? "Passer au mode clair" : "Passer au mode sombre"}
+              aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
               onClick={toggleTheme}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
@@ -214,7 +214,7 @@ export default function AdminSettingsPage() {
                 isDark ? "bg-primary" : "bg-muted"
               )}
             >
-              <span className="sr-only">Basculer le thème</span>
+              <span className="sr-only">Toggle theme</span>
               <span
                 className={cn(
                   "absolute left-1 h-8 w-8 rounded-full bg-background shadow-sm ring-1 ring-border transition-transform duration-300 ease-out flex items-center justify-center",
@@ -236,14 +236,14 @@ export default function AdminSettingsPage() {
         <Card className="bg-background">
           <Card.Header>
             <Card.Title className="text-foreground text-2xl font-semibold">
-              Couleur principale
+              Primary Color
             </Card.Title>
           </Card.Header>
           <Card.Content className="p-6">
             <div className="mb-4">
-              <p className="text-foreground font-medium">Couleur de l'interface</p>
+              <p className="text-foreground font-medium">Interface Color</p>
               <p className="text-muted-foreground text-sm">
-                Choisissez une couleur parmi la palette pour personnaliser l'interface.
+                Choose a color from the palette to customize the interface.
               </p>
             </div>
             <ColorPicker selectedColor={primaryColor} onColorChange={setPrimaryColor} />
@@ -255,18 +255,18 @@ export default function AdminSettingsPage() {
         <Card className="bg-background">
           <Card.Header>
             <Card.Title className="text-foreground text-2xl font-semibold">
-              Fonctionnalités IA
+              AI Features
             </Card.Title>
           </Card.Header>
           <Card.Content className="flex items-center justify-between gap-4 p-6">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
                 <Icon name="sparkles" className="w-5 h-5 text-foreground" />
-                <p className="text-foreground font-medium">Synthèse IA</p>
+                <p className="text-foreground font-medium">AI Synthesis</p>
               </div>
               <p className="text-muted-foreground text-sm">
-                Active ou désactive la fonctionnalité de génération de synthèses IA pour les documents.
-                {loading && <span className="ml-2">Chargement...</span>}
+                Enables or disables the AI synthesis generation feature for documents.
+                {loading && <span className="ml-2">Loading...</span>}
               </p>
               {error && (
                 <p className="text-red-500 text-sm mt-2">{error}</p>
@@ -276,7 +276,7 @@ export default function AdminSettingsPage() {
               type="button"
               role="switch"
               aria-checked={aiSynthesisEnabled}
-              aria-label={aiSynthesisEnabled ? "Désactiver la synthèse IA" : "Activer la synthèse IA"}
+              aria-label={aiSynthesisEnabled ? "Disable AI synthesis" : "Enable AI synthesis"}
               onClick={handleToggleAiSynthesis}
               disabled={loading || saving}
               onKeyDown={(e) => {
@@ -293,7 +293,7 @@ export default function AdminSettingsPage() {
                 (loading || saving) && "opacity-50 cursor-not-allowed"
               )}
             >
-              <span className="sr-only">Basculer la synthèse IA</span>
+              <span className="sr-only">Toggle AI synthesis</span>
               <span
                 className={cn(
                   "absolute left-1 h-8 w-8 rounded-full bg-background shadow-sm ring-1 ring-border transition-transform duration-300 ease-out flex items-center justify-center",
@@ -317,17 +317,17 @@ export default function AdminSettingsPage() {
         <Card className="bg-background">
           <Card.Header>
             <Card.Title className="text-foreground text-2xl font-semibold">
-              Limite de tokens
+              Token Limit
             </Card.Title>
           </Card.Header>
           <Card.Content className="p-6">
             <div className="mb-4">
               <div className="flex items-center gap-2 mb-2">
                 <Icon name="sparkles" className="w-5 h-5 text-foreground" />
-                <p className="text-foreground font-medium">Limite quotidienne par utilisateur</p>
+                <p className="text-foreground font-medium">Daily limit per user</p>
               </div>
               <p className="text-muted-foreground text-sm mb-4">
-                Définissez le nombre maximum de tokens qu'un utilisateur peut utiliser par jour pour générer des synthèses IA.
+                Define the maximum number of tokens a user can use per day to generate AI syntheses.
               </p>
               <div className="flex items-center gap-4">
                 <input
@@ -338,7 +338,7 @@ export default function AdminSettingsPage() {
                   disabled={savingTokenLimit}
                   className="px-3 py-2 border border-border rounded-md bg-background text-foreground w-32 focus:outline-none focus:ring-2 focus:ring-ring"
                 />
-                <span className="text-muted-foreground text-sm">tokens/jour</span>
+                <span className="text-muted-foreground text-sm">tokens/day</span>
                 <Button
                   onClick={handleSaveTokenLimit}
                   disabled={savingTokenLimit}
@@ -348,10 +348,10 @@ export default function AdminSettingsPage() {
                   {savingTokenLimit ? (
                     <>
                       <Icon name="spinner" className="w-4 h-4 mr-2 animate-spin" />
-                      Enregistrement...
+                      Saving...
                     </>
                   ) : (
-                    "Enregistrer"
+                    "Save"
                   )}
                 </Button>
               </div>
@@ -367,13 +367,13 @@ export default function AdminSettingsPage() {
         <Card className="bg-background">
           <Card.Header>
             <Card.Title className="text-foreground text-2xl font-semibold">
-              Configuration Ollama
+              Ollama Configuration
             </Card.Title>
           </Card.Header>
           <Card.Content className="p-6 space-y-4">
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
-                URL de l'API Ollama
+                Ollama API URL
               </label>
               <input
                 type="url"
@@ -384,13 +384,13 @@ export default function AdminSettingsPage() {
                 className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                URL complète de l'API Ollama (ex: http://localhost:11434 ou https://api.ollama.com)
+                Full Ollama API URL (e.g., http://localhost:11434 or https://api.ollama.com)
               </p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
-                Modèle Ollama
+                Ollama Model
               </label>
               <input
                 type="text"
@@ -401,21 +401,21 @@ export default function AdminSettingsPage() {
                 className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Nom du modèle Ollama à utiliser (ex: llama3.2, mistral, etc.)
+                Ollama model name to use (e.g., llama3.2, mistral, etc.)
               </p>
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="block text-sm font-medium text-foreground">
-                  Token d'authentification (optionnel)
+                  Authentication token (optional)
                 </label>
                 <button
                   type="button"
                   onClick={() => setShowToken(!showToken)}
                   className="text-xs text-muted-foreground hover:text-foreground"
                 >
-                  {showToken ? "Masquer" : "Afficher"}
+                  {showToken ? "Hide" : "Show"}
                 </button>
               </div>
               <input
@@ -423,11 +423,11 @@ export default function AdminSettingsPage() {
                 value={ollamaToken}
                 onChange={(e) => setOllamaToken(e.target.value)}
                 disabled={savingOllama}
-                placeholder="Laissez vide pour ne pas modifier"
+                placeholder="Leave blank to not modify"
                 className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Token d'authentification Ollama si nécessaire. Laissez vide pour conserver la valeur actuelle.
+                Ollama authentication token if necessary. Leave blank to keep current value.
               </p>
             </div>
 
@@ -441,10 +441,10 @@ export default function AdminSettingsPage() {
                 {savingOllama ? (
                   <>
                     <Icon name="spinner" className="w-4 h-4 mr-2 animate-spin" />
-                    Enregistrement...
+                    Saving...
                   </>
                 ) : (
-                  "Enregistrer la configuration"
+                  "Save configuration"
                 )}
               </Button>
             </div>
@@ -458,4 +458,3 @@ export default function AdminSettingsPage() {
     </main>
   );
 }
-

@@ -18,18 +18,18 @@ export default function AdminNavigation() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navigation: NavItem[] = [
-    { name: "Utilisateurs", href: "/admin/users", icon: "users" },
-    { name: "Requêtes", href: "/admin/requests", icon: "alert" },
+    { name: "Users", href: "/admin/users", icon: "users" },
+    { name: "Requests", href: "/admin/requests", icon: "alert" },
     { name: "Stats", href: "/admin/stats", icon: "chartBar" },
-    { name: "Paramètres", href: "/admin/settings", icon: "gear" },
+    { name: "Settings", href: "/admin/settings", icon: "gear" },
   ];
 
-  // Fermer le menu mobile lors du changement de route
+  // Close the mobile menu on route change
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [pathname]);
 
-  // Fermer le menu mobile lors du clic en dehors (optionnel)
+  // Close the mobile menu on click outside (optional)
   useEffect(() => {
     if (!isMobileMenuOpen) return;
 
@@ -95,7 +95,7 @@ export default function AdminNavigation() {
                 "transition-colors hover:bg-[var(--muted)]"
               )}
             >
-              Retour à l'app
+              Back to app
             </Link>
           </div>
 
@@ -110,7 +110,7 @@ export default function AdminNavigation() {
                 "focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--ring)]",
                 "transition-colors"
               )}
-              aria-label={isMobileMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+              aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
               aria-expanded={isMobileMenuOpen}
             >
               {isMobileMenuOpen ? (
@@ -167,7 +167,7 @@ export default function AdminNavigation() {
                   className="w-5 h-5 mr-3" 
                   aria-hidden="true"
                 />
-                Retour à l'app
+                Back to app
               </div>
             </Link>
           </div>

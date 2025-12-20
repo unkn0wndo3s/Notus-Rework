@@ -9,18 +9,18 @@ export default async function EditProfilePage() {
   const session = await auth();
   const userId = session?.user?.id ? Number(session.user.id) : undefined;
 
-  // Charger le profil complet pour récupérer les images (profile_image, banner_image)
+  // Load full profile to retrieve images (profile_image, banner_image)
   const profileResult = userId
     ? await getUserProfileAction(userId)
     : { success: true, user: null };
   const userProfile = profileResult.success ? profileResult.user : null;
 
-  // Mapper vers les propriétés attendues par le client (camelCase)
+  // Map to properties expected by the client (camelCase)
   const user = {
     ...session?.user,
     id:
       session?.user?.id ||
-      (userProfile?.id != null ? String(userProfile.id) : undefined),
+      (userProfile?.id !== null && userProfile?.id !== undefined ? String(userProfile.id) : undefined),
     email: userProfile?.email ?? session?.user?.email ?? "",
     username: userProfile?.username ?? session?.user?.username ?? "",
     firstName: userProfile?.first_name ?? session?.user?.firstName ?? "",
@@ -43,7 +43,7 @@ export default async function EditProfilePage() {
           >
             <Icon name="arrowLeft" className="h-6 w-6 mr-2" />
           </Link>
-          <h2 className="font-title text-4xl font-regular">Modifier le profil</h2>
+          <h2 className="font-title text-4xl font-regular">Edit profile</h2>
         </div>
       </div>
 

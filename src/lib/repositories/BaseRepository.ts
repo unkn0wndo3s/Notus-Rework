@@ -6,23 +6,23 @@ type InitializationState = {
   promise: Promise<void> | null;
 };
 
-// Configuration de la connexion à la base de données
+// Database connection configuration
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
 });
 
-// Test de connexion
+// Connection test
 pool.on("connect", () => {});
 
 pool.on("error", (err: Error) => {
-  console.error("❌ Erreur de connexion PostgreSQL:", err);
+  console.error("❌ PostgreSQL connection error:", err);
   process.exit(-1);
 });
 
 const repositoryInitialization = new Map<string, InitializationState>();
 
-// Classe de base pour les repositories
+// Base class for repositories
 export abstract class BaseRepository {
   protected pool = pool;
 
@@ -41,12 +41,12 @@ export abstract class BaseRepository {
         // Retry on deadlock (PostgreSQL error code 40P01)
         if (error?.code === '40P01' && attempt < retries - 1) {
           const backoffMs = Math.min(100 * Math.pow(2, attempt), 1000);
-          console.warn(`⚠️ Deadlock détecté, nouvelle tentative dans ${backoffMs}ms (tentative ${attempt + 1}/${retries})`);
+          console.warn(`⚠️ Deadlock detected, retrying in ${backoffMs}ms (attempt ${attempt + 1}/${retries})`);
           await new Promise(resolve => setTimeout(resolve, backoffMs));
           continue;
         }
         
-        console.error("❌ Erreur de requête:", error);
+        console.error("❌ Query error:", error);
         throw error;
       }
     }
@@ -126,7 +126,7 @@ export abstract class BaseRepository {
     return Math.abs(hash) + 1000000;
   }
 
-  // Méthode pour initialiser les tables (à implémenter dans les repositories spécialisés)
+  // Method to initialize tables (to be implemented in specialized repositories)
   abstract initializeTables(): Promise<void>;
 }
 

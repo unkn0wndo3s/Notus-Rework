@@ -23,13 +23,13 @@ interface TagsManagerProps {
 export default function TagsManager({
   tags,
   onTagsChange,
-  placeholder = "Ajouter un tag...",
+  placeholder = "Add tag...",
   maxTags = 20,
   className = "",
   disabled = false,
   currentUserId,
   requireAuth = false,
-}: TagsManagerProps) {
+}: Readonly<TagsManagerProps>) {
   const [isAdding, setIsAdding] = useState(false);
   const [newTag, setNewTag] = useState("");
   const [isValid, setIsValid] = useState(true);
@@ -59,7 +59,10 @@ export default function TagsManager({
     if (isValid && trimmedTag) { onTagsChange([...tags, trimmedTag]); setNewTag(""); setIsAdding(false); }
   };
 
-  const removeTag = (tagToRemove: string) => { if (disabled) return; onTagsChange(tags.filter(tag => tag !== tagToRemove)); };
+  const removeTag = (tagToRemove: string) => {
+    if (disabled) return;
+    onTagsChange(tags.filter(tag => tag !== tagToRemove));
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && isValid) { e.preventDefault(); addTag(); }
@@ -80,7 +83,7 @@ export default function TagsManager({
         {isAdding && (
           <div className="flex items-center gap-1 flex-shrink-0">
             <div className="relative">
-              <Input ref={inputRef} value={newTag} onChange={(e) => setNewTag(e.target.value)} placeholder={placeholder} className={`h-7 text-sm w-32 ${!isValid ? "border-none" : ""}`} onKeyDown={(e) => { if (e.key === "Tab" || e.key === "ArrowRight") { if (suggested) { e.preventDefault(); setNewTag(suggested); return; } } handleKeyDown(e); }} />
+              <Input ref={inputRef} value={newTag} onChange={(e) => setNewTag(e.target.value)} placeholder={placeholder} className={`h-7 text-sm w-32 ${isValid ? "" : "border-none"}`} onKeyDown={(e) => { if (e.key === "Tab" || e.key === "ArrowRight") { if (suggested) { e.preventDefault(); setNewTag(suggested); return; } } handleKeyDown(e); }} />
               {suggested && suggested.toLowerCase().startsWith(newTag.trim().toLowerCase()) && suggested.toLowerCase() !== newTag.trim().toLowerCase() && (
                 <div className="pointer-events-none absolute inset-0 flex items-center px-3 text-sm">
                   <span className="invisible">{newTag}</span>
@@ -88,16 +91,16 @@ export default function TagsManager({
                 </div>
               )}
             </div>
-            <Button variant="primary" size="icon-sm" onClick={addTag} disabled={!isValid} className="bg-primary hover:bg-primary/90 disabled:opacity-50" aria-label="Confirmer l'ajout du tag">
+            <Button variant="primary" size="icon-sm" onClick={addTag} disabled={!isValid} className="bg-primary hover:bg-primary/90 disabled:opacity-50" aria-label="Confirm adding tag">
               <Icon name="check" className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon-sm" onClick={cancelAdding} className="text-muted-foreground hover:text-foreground" aria-label="Annuler l'ajout du tag">
+            <Button variant="ghost" size="icon-sm" onClick={cancelAdding} className="text-muted-foreground hover:text-foreground" aria-label="Cancel adding tag">
               <Icon name="x" className="h-4 w-4" />
             </Button>
           </div>
         )}
         {!isAdding && (
-          <Button variant="secondary" size="icon-sm" onClick={startAdding} className="flex-shrink-0 bg-primary/10 hover:bg-primary/20 text-primary border-primary/20" aria-label="Ajouter un tag">
+          <Button variant="secondary" size="icon-sm" onClick={startAdding} className="flex-shrink-0 bg-primary/10 hover:bg-primary/20 text-primary border-primary/20" aria-label="Add tag">
             <Icon name="tagPlus" className="h-4 w-4" />
           </Button>
         )}
@@ -111,11 +114,11 @@ export default function TagsManager({
               e.stopPropagation();
               filterByTag(tag);
             }}
-            title={`Filtrer par tag: ${tag}`}
-            aria-label={`Filtrer par tag: ${tag}`}
+            title={`Filter by tag: ${tag}`}
+            aria-label={`Filter by tag: ${tag}`}
           >
             <span className="mr-1 max-w-[200px] truncate" title={tag}>{tag}</span>
-            <button type="button" className="ml-1 inline-flex items-center justify-center w-5 h-5 rounded-md text-accent hover:bg-accent/20 transition-colors" aria-label={`Supprimer le tag ${tag}`} onClick={(e) => { e.stopPropagation(); removeTag(tag); }}>
+            <button type="button" className="ml-1 inline-flex items-center justify-center w-5 h-5 rounded-md text-accent hover:bg-accent/20 transition-colors" aria-label={`Remove tag ${tag}`} onClick={(e) => { e.stopPropagation(); removeTag(tag); }}>
               <Icon name="x" className="h-4 w-4" />
             </button>
           </Badge>
@@ -123,10 +126,14 @@ export default function TagsManager({
       </div>
       {isAdding && !isValid && newTag.trim() && (
         <div className="mt-1 text-xs text-destructive">
-          {tags.length >= maxTags ? `Maximum ${maxTags} tags autorisés` : tags.includes(newTag.trim()) ? "Ce tag existe déjà" : "Tag trop long (max 50 caractères)"}
+          {(() => {
+            if (tags.length >= maxTags) return `Maximum ${maxTags} tags allowed`;
+            if (tags.includes(newTag.trim())) return "This tag already exists";
+            return "Tag too long (max 50 characters)";
+          })()}
         </div>
       )}
-      <LoginRequiredModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} message="Vous devez être connecté pour gérer les tags de ce document." />
+      <LoginRequiredModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} message="You must be logged in to manage this document's tags." />
     </div>
   );
 }

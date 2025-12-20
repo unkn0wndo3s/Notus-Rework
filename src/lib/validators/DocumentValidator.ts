@@ -5,12 +5,12 @@ export class DocumentValidator {
     const errors: Record<string, string> = {};
 
     if (!title || title.trim().length === 0) {
-      errors.title = "Le titre du document est requis";
+      errors.title = "Document title is required";
       return { isValid: false, errors };
     }
 
     if (title.length > 255) {
-      errors.title = "Le titre ne peut pas dépasser 255 caractères";
+      errors.title = "Title cannot exceed 255 characters";
       return { isValid: false, errors };
     }
 
@@ -21,12 +21,12 @@ export class DocumentValidator {
     const errors: Record<string, string> = {};
 
     if (!Array.isArray(tags)) {
-      errors.tags = "Les tags doivent être un tableau";
+      errors.tags = "Tags must be an array";
       return { isValid: false, errors };
     }
 
     if (tags.length > 20) {
-      errors.tags = "Vous ne pouvez pas avoir plus de 20 tags";
+      errors.tags = "You cannot have more than 20 tags";
       return { isValid: false, errors };
     }
 
@@ -34,24 +34,24 @@ export class DocumentValidator {
       const tag = tags[i];
       
       if (typeof tag !== 'string') {
-        errors.tags = `Le tag à l'index ${i} doit être une chaîne de caractères`;
+        errors.tags = `Tag at index ${i} must be a string`;
         return { isValid: false, errors };
       }
 
       if (tag.trim().length === 0) {
-        errors.tags = `Le tag à l'index ${i} ne peut pas être vide`;
+        errors.tags = `Tag at index ${i} cannot be empty`;
         return { isValid: false, errors };
       }
 
       if (tag.length > 50) {
-        errors.tags = `Le tag à l'index ${i} ne peut pas dépasser 50 caractères`;
+        errors.tags = `Tag at index ${i} cannot exceed 50 characters`;
         return { isValid: false, errors };
       }
 
-      // Vérifier que le tag ne contient que des caractères autorisés
+      // Check that tag only contains authorized characters
       const tagRegex = /^[a-zA-Z0-9À-ÿ\s_-]+$/;
       if (!tagRegex.test(tag)) {
-        errors.tags = `Le tag à l'index ${i} contient des caractères non autorisés`;
+        errors.tags = `Tag at index ${i} contains unauthorized characters`;
         return { isValid: false, errors };
       }
     }
@@ -66,19 +66,19 @@ export class DocumentValidator {
   }): ValidationResult {
     const errors: Record<string, string> = {};
 
-    // Valider le titre
+    // Validate title
     const titleValidation = this.validateTitle(data.title);
     if (!titleValidation.isValid) {
       Object.assign(errors, titleValidation.errors);
     }
 
-    // Valider les tags
+    // Validate tags
     const tagsValidation = this.validateTags(data.tags);
     if (!tagsValidation.isValid) {
       Object.assign(errors, tagsValidation.errors);
     }
 
-    // Valider les fichiers joints dans le contenu
+    // Validate file attachments in content
     const fileValidation = this.validateFileAttachments(data.content);
     if (!fileValidation.isValid) {
       Object.assign(errors, fileValidation.errors);
@@ -93,10 +93,10 @@ export class DocumentValidator {
   static validateDocumentId(documentId: string | number): ValidationResult {
     const errors: Record<string, string> = {};
 
-    const id = typeof documentId === 'string' ? parseInt(documentId) : documentId;
+    const id = typeof documentId === 'string' ? Number(documentId) : documentId;
 
-    if (isNaN(id) || id <= 0) {
-      errors.documentId = "L'ID du document doit être un nombre positif valide";
+    if (Number.isNaN(id) || id <= 0) {
+      errors.documentId = "Document ID must be a valid positive number";
       return { isValid: false, errors };
     }
 
@@ -106,10 +106,10 @@ export class DocumentValidator {
   static validateUserId(userId: string | number): ValidationResult {
     const errors: Record<string, string> = {};
 
-    const id = typeof userId === 'string' ? parseInt(userId) : userId;
+    const id = typeof userId === 'string' ? Number(userId) : userId;
 
-    if (isNaN(id) || id <= 0) {
-      errors.userId = "L'ID de l'utilisateur doit être un nombre positif valide";
+    if (Number.isNaN(id) || id <= 0) {
+      errors.userId = "User ID must be a valid positive number";
       return { isValid: false, errors };
     }
 
@@ -120,25 +120,25 @@ export class DocumentValidator {
     const errors: Record<string, string> = {};
 
     if (!Array.isArray(documentIds)) {
-      errors.documentIds = "Les IDs des documents doivent être un tableau";
+      errors.documentIds = "Document IDs must be an array";
       return { isValid: false, errors };
     }
 
     if (documentIds.length === 0) {
-      errors.documentIds = "Aucun document sélectionné";
+      errors.documentIds = "No document selected";
       return { isValid: false, errors };
     }
 
     if (documentIds.length > 100) {
-      errors.documentIds = "Vous ne pouvez pas sélectionner plus de 100 documents à la fois";
+      errors.documentIds = "You cannot select more than 100 documents at once";
       return { isValid: false, errors };
     }
 
     for (let i = 0; i < documentIds.length; i++) {
-      const id = parseInt(String(documentIds[i]));
+      const id = Number(String(documentIds[i]));
       
-      if (isNaN(id) || id <= 0) {
-        errors.documentIds = `L'ID du document à l'index ${i} n'est pas valide`;
+      if (Number.isNaN(id) || id <= 0) {
+        errors.documentIds = `Document ID at index ${i} is not valid`;
         return { isValid: false, errors };
       }
     }
@@ -151,15 +151,15 @@ export class DocumentValidator {
 
     if (limit !== undefined) {
       if (!Number.isInteger(limit) || limit < 1) {
-        errors.limit = "La limite doit être un nombre entier positif";
+        errors.limit = "Limit must be a positive integer";
       } else if (limit > 100) {
-        errors.limit = "La limite ne peut pas dépasser 100";
+        errors.limit = "Limit cannot exceed 100";
       }
     }
 
     if (offset !== undefined) {
       if (!Number.isInteger(offset) || offset < 0) {
-        errors.offset = "L'offset doit être un nombre entier positif ou zéro";
+        errors.offset = "Offset must be a positive integer or zero";
       }
     }
 
@@ -169,13 +169,14 @@ export class DocumentValidator {
     };
   }
 
-  static validateFileAttachments(content: string): ValidationResult {
-    // Les fichiers sont maintenant stockés dans une table séparée
-    // La validation de taille est faite lors de l'upload
-    // On vérifie juste que les références sont valides (optionnel)
+  static validateFileAttachments(_content: string): ValidationResult {
+    // Files are now stored in a separate table
+    // Size validation is done during upload
+    // We just check that references are valid (optional)
     return {
       isValid: true,
       errors: {}
     };
   }
 }
+

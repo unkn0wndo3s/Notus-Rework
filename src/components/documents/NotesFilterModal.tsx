@@ -15,15 +15,15 @@ interface NotesFilterModalProps {
   onClose: () => void;
 }
 
-interface DossierOption {
+interface FolderOption {
   id: number;
-  nom: string;
+  name: string;
 }
 
 const sharedOptions: Array<{ value: NoteFilters["shared"] | undefined; label: string }> = [
-  { value: undefined, label: "Toutes les notes" },
-  { value: "shared", label: "Notes partagées" },
-  { value: "private", label: "Notes privées" },
+  { value: undefined, label: "All notes" },
+  { value: "shared", label: "Shared notes" },
+  { value: "private", label: "Private notes" },
 ];
 
 const normalizeFilters = (filters: NoteFilters): NoteFilters => ({
@@ -41,27 +41,27 @@ export default function NotesFilterModal({ isOpen, onClose }: NotesFilterModalPr
     defaultFilters,
   } = useSearch();
   const [localFilters, setLocalFilters] = useState<NoteFilters>(normalizeFilters(filters));
-  const [dossiers, setDossiers] = useState<DossierOption[]>([]);
-  const [isLoadingDossiers, setIsLoadingDossiers] = useState(false);
-  const [dossiersError, setDossiersError] = useState<string | null>(null);
-  const [hasLoadedDossiers, setHasLoadedDossiers] = useState(false);
+  const [folders, setFolders] = useState<FolderOption[]>([]);
+  const [isLoadingFolders, setIsLoadingFolders] = useState(false);
+  const [foldersError, setFoldersError] = useState<string | null>(null);
+  const [hasLoadedFolders, setHasLoadedFolders] = useState(false);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [isLoadingTags, setIsLoadingTags] = useState(false);
   const [tagsError, setTagsError] = useState<string | null>(null);
 
   const isAuthenticated = Boolean(session?.user?.id);
   
-  // Essayer d'utiliser le TagsContext d'abord, sinon récupérer via API
+  // Try to use TagsContext first, otherwise fetch via API
   const tagsContext = useTagsContext();
   const contextTags = tagsContext.getAllTags();
 
   useEffect(() => {
     if (isOpen) {
       setLocalFilters(normalizeFilters(filters));
-      if (isAuthenticated && !hasLoadedDossiers && !isLoadingDossiers) {
-        void fetchDossiers();
+      if (isAuthenticated && !hasLoadedFolders && !isLoadingFolders) {
+        void fetchFolders();
       }
-      // Si on a des tags depuis le contexte, les utiliser, sinon récupérer via API
+      // If we have tags from context, use them, otherwise fetch via API
       if (contextTags.length > 0) {
         setAvailableTags(contextTags);
       } else if (isAuthenticated && availableTags.length === 0 && !isLoadingTags) {
@@ -71,25 +71,25 @@ export default function NotesFilterModal({ isOpen, onClose }: NotesFilterModalPr
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, filters, isAuthenticated, contextTags]);
 
-  const fetchDossiers = async () => {
+  const fetchFolders = async () => {
     if (!isAuthenticated) return;
     try {
-      setIsLoadingDossiers(true);
-      setDossiersError(null);
-      const response = await fetch("/api/dossiers", { credentials: "include" });
+      setIsLoadingFolders(true);
+      setFoldersError(null);
+      const response = await fetch("/api/folders", { credentials: "include" });
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        setDossiersError(data.error || "Impossible de charger les dossiers.");
-        setDossiers([]);
+        setFoldersError(data.error || "Failed to load folders.");
+        setFolders([]);
         return;
       }
       const data = await response.json();
-      setDossiers(Array.isArray(data.dossiers) ? data.dossiers : []);
-      setHasLoadedDossiers(true);
+      setFolders(Array.isArray(data.folders) ? data.folders : []);
+      setHasLoadedFolders(true);
     } catch (error) {
-      setDossiersError("Impossible de charger les dossiers.");
+      setFoldersError("Failed to load folders.");
     } finally {
-      setIsLoadingDossiers(false);
+      setIsLoadingFolders(false);
     }
   };
 
@@ -101,14 +101,14 @@ export default function NotesFilterModal({ isOpen, onClose }: NotesFilterModalPr
       const response = await fetch("/api/tags", { credentials: "include" });
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        setTagsError(data.error || "Impossible de charger les tags.");
+        setTagsError(data.error || "Failed to load tags.");
         setAvailableTags([]);
         return;
       }
       const data = await response.json();
       setAvailableTags(Array.isArray(data.tags) ? data.tags : []);
     } catch (error) {
-      setTagsError("Impossible de charger les tags.");
+      setTagsError("Failed to load tags.");
       setAvailableTags([]);
     } finally {
       setIsLoadingTags(false);
@@ -156,14 +156,14 @@ export default function NotesFilterModal({ isOpen, onClose }: NotesFilterModalPr
     <FilterModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Filtrer mes notes"
+      title="Filter my notes"
     >
       <div className="space-y-6">
         <section className="space-y-2">
-          <h3 className="text-base font-semibold text-[var(--foreground)]">Date de mise à jour</h3>
+          <h3 className="text-base font-semibold text-[var(--foreground)]">Updated date</h3>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <div className="flex flex-col gap-1">
-              <label htmlFor="filter-date-from" className="text-sm text-[var(--muted-foreground)]">À partir du</label>
+              <label htmlFor="filter-date-from" className="text-sm text-[var(--muted-foreground)]">From</label>
               <Input
                 id="filter-date-from"
                 type="date"
@@ -172,7 +172,7 @@ export default function NotesFilterModal({ isOpen, onClose }: NotesFilterModalPr
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label htmlFor="filter-date-to" className="text-sm text-[var(--muted-foreground)]">Jusqu&apos;au</label>
+              <label htmlFor="filter-date-to" className="text-sm text-[var(--muted-foreground)]">To</label>
               <Input
                 id="filter-date-to"
                 type="date"
@@ -184,9 +184,9 @@ export default function NotesFilterModal({ isOpen, onClose }: NotesFilterModalPr
         </section>
 
         <section className="space-y-2">
-          <h3 className="text-base font-semibold text-[var(--foreground)]">Auteur</h3>
+          <h3 className="text-base font-semibold text-[var(--foreground)]">Author</h3>
           <Input
-            placeholder="Nom, prénom ou pseudo"
+            placeholder="First name, last name or username"
             value={localFilters.author ?? ""}
             onChange={(e) => updateFilter("author", e.target.value || undefined)}
           />
@@ -195,7 +195,7 @@ export default function NotesFilterModal({ isOpen, onClose }: NotesFilterModalPr
         <section className="space-y-2">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <div className="flex flex-col gap-1">
-              <h3 className="text-base font-semibold text-[var(--foreground)]">Partage</h3>
+              <h3 className="text-base font-semibold text-[var(--foreground)]">Sharing</h3>
               <select
                 className="w-full rounded-md border border-[var(--input)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)]"
                 value={localFilters.shared ?? ""}
@@ -204,34 +204,34 @@ export default function NotesFilterModal({ isOpen, onClose }: NotesFilterModalPr
               >
                 {sharedOptions.map((option) => (
                   <option key={option.label} value={option.value ?? ""}>
-                    {option.label}{!isAuthenticated && option.value ? " (connexion requise)" : ""}
+                    {option.label}{!isAuthenticated && option.value ? " (login required)" : ""}
                   </option>
                 ))}
               </select>
               {!isAuthenticated && (
-                <p className="text-xs text-[var(--muted-foreground)]">Connectez-vous pour filtrer par statut de partage.</p>
+                <p className="text-xs text-[var(--muted-foreground)]">Log in to filter by sharing status.</p>
               )}
             </div>
             <div className="flex flex-col gap-1">
-              <h3 className="text-base font-semibold text-[var(--foreground)]">Dossier</h3>
+              <h3 className="text-base font-semibold text-[var(--foreground)]">Folder</h3>
               <select
                 className="w-full rounded-md border border-[var(--input)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)]"
-                value={localFilters.dossierId ?? ""}
+                value={localFilters.folderId ?? ""}
                 onChange={(e) => {
                   const value = e.target.value;
-                  updateFilter("dossierId", value ? Number(value) : undefined);
+                  updateFilter("folderId", value ? Number(value) : undefined);
                 }}
-                disabled={!isAuthenticated || isLoadingDossiers}
+                disabled={!isAuthenticated || isLoadingFolders}
               >
-                <option value="">Tous les dossiers</option>
-                {dossiers.map((dossier) => (
-                  <option key={dossier.id} value={dossier.id}>
-                    {dossier.nom}
+                <option value="">All folders</option>
+                {folders.map((folder) => (
+                  <option key={folder.id} value={folder.id}>
+                    {folder.name}
                   </option>
                 ))}
               </select>
-              {dossiersError && (
-                <p className="text-xs text-[var(--destructive)]">{dossiersError}</p>
+              {foldersError && (
+                <p className="text-xs text-[var(--destructive)]">{foldersError}</p>
               )}
             </div>
           </div>
@@ -255,7 +255,7 @@ export default function NotesFilterModal({ isOpen, onClose }: NotesFilterModalPr
                         type="button"
                         onClick={() => handleToggleTag(tag)}
                         className="rounded-full p-0.5 hover:bg-[var(--primary)]/20 transition-colors ml-0.5"
-                        aria-label={`Retirer le tag ${tag}`}
+                        aria-label={`Remove tag ${tag}`}
                       >
                         <Icon name="x" className="h-3 w-3 text-[var(--primary)]" />
                       </button>
@@ -266,7 +266,7 @@ export default function NotesFilterModal({ isOpen, onClose }: NotesFilterModalPr
               {isLoadingTags ? (
                 <div className="text-sm text-[var(--muted-foreground)] py-4 text-center">
                   <Icon name="spinner" className="w-5 h-5 animate-spin inline-block mr-2 text-[var(--primary)]" />
-                  Chargement des tags...
+                  Loading tags...
                 </div>
               ) : tagsError ? (
                 <div className="p-3 bg-[var(--destructive)]/10 border border-[var(--destructive)]/20 rounded-md">
@@ -276,8 +276,8 @@ export default function NotesFilterModal({ isOpen, onClose }: NotesFilterModalPr
                 <div className="p-3 border border-[var(--border)] rounded-md bg-[var(--muted)]/30">
                   <p className="text-sm text-[var(--muted-foreground)]">
                     {availableTags.length === 0
-                      ? "Aucun tag disponible."
-                      : "Tous les tags sont déjà sélectionnés."}
+                      ? "No tag available."
+                      : "All tags selected."}
                   </p>
                 </div>
               ) : (
@@ -292,7 +292,7 @@ export default function NotesFilterModal({ isOpen, onClose }: NotesFilterModalPr
                     }
                   }}
                 >
-                  <option value="">Sélectionner un tag...</option>
+                  <option value="">Select a tag...</option>
                   {availableTagsForSelect.map((tag) => (
                     <option key={tag} value={tag}>
                       {tag}
@@ -304,14 +304,14 @@ export default function NotesFilterModal({ isOpen, onClose }: NotesFilterModalPr
           )}
           {!isAuthenticated && (
             <div className="p-3 bg-[var(--muted)]/30 border border-[var(--border)] rounded-md">
-              <p className="text-xs text-[var(--muted-foreground)]">Connectez-vous pour filtrer par tags.</p>
+              <p className="text-xs text-[var(--muted-foreground)]">Log in to filter by tags.</p>
             </div>
           )}
         </section>
 
         <footer className="flex flex-col gap-3 border-t border-[var(--border)] pt-4 md:flex-row md:items-center md:justify-between flex-shrink-0">
           <div className="text-sm text-[var(--muted-foreground)]">
-            {hasActiveFilters ? "Des filtres sont appliqués." : "Aucun filtre appliqué."}
+            {hasActiveFilters ? "Filters applied." : "No filter applied."}
           </div>
           <div className="flex flex-col gap-2 md:flex-row">
             <Button
@@ -323,7 +323,7 @@ export default function NotesFilterModal({ isOpen, onClose }: NotesFilterModalPr
                 setLocalFilters(normalizeFilters(defaultFilters));
               }}
             >
-              Réinitialiser
+              Reset
             </Button>
             <Button 
               type="button" 
@@ -332,7 +332,7 @@ export default function NotesFilterModal({ isOpen, onClose }: NotesFilterModalPr
               onClick={handleApply} 
               disabled={!hasChanges && !hasActiveFilters}
             >
-              Appliquer les filtres
+              Apply filters
             </Button>
           </div>
         </footer>

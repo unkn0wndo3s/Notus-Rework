@@ -250,7 +250,7 @@ export default function WysiwygToolbar({ onFormatChange, showDebug = false, onTo
           type="button"
           onClick={onOpenSynthesis}
           className="p-2 rounded transition-colors bg-muted hover:bg-muted/80 text-foreground"
-          title="Synthèse IA"
+          title="AI Summary"
         >
           <Icon name="sparkles" className="h-5 w-5" /> IA
         </button>

@@ -27,26 +27,28 @@ export default function RequestHistoryCard({
 }: RequestHistoryCardProps) {
   const [isResponseExpanded, setIsResponseExpanded] = useState(false);
 
-  // Extraire uniquement le message personnalisé, sans la mention du changement de statut
+  // Extract only the custom message, removing status change mention
   const getCustomMessage = (message: string): string | null => {
-    // Si le message contient "\n\n", prendre seulement la partie après (message personnalisé)
+    // If message contains "\n\n", take only the part after (custom message)
     if (message.includes("\n\n")) {
       const parts = message.split("\n\n");
       const customMessage = parts.slice(1).join("\n\n").trim();
       return customMessage || null;
     }
     
-    // Si le message commence par "Le statut de votre requête" ou "Votre requête", 
-    // c'est juste un changement de statut sans message personnalisé
+    // If message starts with "The status of your request" or "Your request", 
+    // it is just a status change without custom message
     if (
-      message.startsWith("Le statut de votre requête") ||
-      message.startsWith("Votre requête") ||
-      message.startsWith("Mise à jour de votre requête")
+      message.startsWith("The status of your request") ||
+      message.startsWith("Your request") ||
+      message.startsWith("mise à jour") || // Legacy French match
+      message.startsWith("Update on your request") ||
+      message.startsWith("Request update")
     ) {
       return null;
     }
     
-    // Sinon, c'est un message personnalisé sans changement de statut
+    // Otherwise, it is a custom message without status change text
     return message.trim() || null;
   };
 
@@ -72,7 +74,7 @@ export default function RequestHistoryCard({
       </div>
       <div className="space-y-2">
         <div>
-          <p className="text-sm font-medium text-foreground mb-1">Description :</p>
+          <p className="text-sm font-medium text-foreground mb-1">Description:</p>
           <p className={cn("text-sm text-muted-foreground whitespace-pre-wrap break-words")}>
             {request.description}
           </p>
@@ -85,7 +87,7 @@ export default function RequestHistoryCard({
               className="flex items-center gap-2 w-full text-left"
               aria-expanded={isResponseExpanded}
             >
-              <p className="text-sm font-medium text-foreground">Réponse :</p>
+              <p className="text-sm font-medium text-foreground">Response:</p>
               <Icon
                 name="chevronDown"
                 className={cn(
@@ -105,4 +107,3 @@ export default function RequestHistoryCard({
     </article>
   );
 }
-

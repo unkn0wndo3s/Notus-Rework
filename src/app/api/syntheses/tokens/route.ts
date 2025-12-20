@@ -4,20 +4,20 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/../lib/auth";
 
-// Récupérer la limite de tokens par jour depuis les settings
+// Get daily token limit from settings
 async function getTokenLimit(): Promise<number> {
   try {
     const setting = await (prisma as any).appSetting.findUnique({
       where: { key: "ai_token_limit_per_day" },
     });
-    return setting ? parseInt(setting.value, 10) : 10000; // Par défaut 10000
+    return setting ? parseInt(setting.value, 10) : 10000; // Default 10000
   } catch (error) {
-    console.error("❌ Erreur lors de la récupération de la limite:", error);
+    console.error("❌ Error retrieving limit:", error);
     return 10000;
   }
 }
 
-// Récupérer l'utilisation de tokens pour un utilisateur aujourd'hui
+// Get token usage for a user today
 async function getTodayTokenUsage(userId: number): Promise<number> {
   try {
     const today = new Date();
@@ -34,12 +34,12 @@ async function getTodayTokenUsage(userId: number): Promise<number> {
     
     return usage?.tokens_used || 0;
   } catch (error) {
-    console.error("❌ Erreur lors de la récupération de l'utilisation:", error);
+    console.error("❌ Error retrieving usage:", error);
     return 0;
   }
 }
 
-// Incrémenter l'utilisation de tokens pour un utilisateur aujourd'hui
+// Increment token usage for a user today
 async function incrementTokenUsage(userId: number, tokens: number): Promise<void> {
   try {
     const today = new Date();
@@ -64,12 +64,12 @@ async function incrementTokenUsage(userId: number, tokens: number): Promise<void
       },
     });
   } catch (error) {
-    console.error("❌ Erreur lors de l'incrémentation des tokens:", error);
+    console.error("❌ Error incrementing tokens:", error);
     throw error;
   }
 }
 
-// GET - Récupérer l'utilisation actuelle et la limite
+// GET - Get current usage and limit
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
 
     if (!userId) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 401 }
       );
     }
@@ -93,15 +93,15 @@ export async function GET(request: NextRequest) {
       remaining,
     });
   } catch (error) {
-    console.error("❌ Erreur GET /api/syntheses/tokens:", error);
+    console.error("❌ Error GET /api/syntheses/tokens:", error);
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 500 }
     );
   }
 }
 
-// POST - Vérifier si l'utilisateur peut utiliser des tokens et les incrémenter
+// POST - Check if the user can use tokens and increment them
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
 
     if (!userId) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 401 }
       );
     }
@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => null);
     if (!body || typeof body !== "object") {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
 
     if (tokensToUse <= 0) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: "Accès refusé",
+          error: "Access denied",
           limit,
           used,
           remaining,
@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Incrémenter l'utilisation
+    // Increment usage
     await incrementTokenUsage(userId, tokensToUse);
 
     const newUsed = used + tokensToUse;
@@ -162,9 +162,9 @@ export async function POST(request: NextRequest) {
       remaining: newRemaining,
     });
   } catch (error) {
-    console.error("❌ Erreur POST /api/syntheses/tokens:", error);
+    console.error("❌ Error POST /api/syntheses/tokens:", error);
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 500 }
     );
   }

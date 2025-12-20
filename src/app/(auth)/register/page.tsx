@@ -28,7 +28,7 @@ function RegisterPageClient({ serverSession }: RegisterPageClientProps) {
     undefined
   );
 
-  // Validation en temps réel (sans contrôler visuellement les champs)
+  // Real-time validation
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [username, setUsername] = useState("");
@@ -59,60 +59,60 @@ function RegisterPageClient({ serverSession }: RegisterPageClientProps) {
     validConfirm &&
     acceptTerms;
 
-  // Indicateurs de progression pour le mot de passe
+  // Password progress indicators
   const passwordRemaining = useMemo(() => {
     const items: string[] = [];
-    if (!passMin) items.push("Au moins 8 caractères");
-    if (!passUpper) items.push("Une majuscule");
-    if (!passLower) items.push("Une minuscule");
-    if (!passDigit) items.push("Un chiffre");
-    if (!passSpecial) items.push("Un caractère spécial");
+    if (!passMin) items.push("At least 8 characters");
+    if (!passUpper) items.push("One uppercase letter");
+    if (!passLower) items.push("One lowercase letter");
+    if (!passDigit) items.push("One number");
+    if (!passSpecial) items.push("One special character");
     return items;
   }, [passMin, passUpper, passLower, passDigit, passSpecial]);
 
   const passwordSatisfied = 5 - passwordRemaining.length;
   const passwordProgress = Math.round((passwordSatisfied / 5) * 100);
 
-  // Redirection si déjà connecté
+  // Redirect if already logged in
   useEffect(() => {
     if (!loading && isLoggedIn) {
       router.push("/app");
     }
   }, [isLoggedIn, loading, router]);
 
-  // Affichage du loading pendant la vérification
+  // Show loading while verifying
   if (loading) {
     return (
       <main className="min-h-screen bg-background flex items-center justify-center p-4">
         <LoadingSpinner.Card
-          message="Vérification..."
+          message="Verifying..."
           className="max-w-md w-full"
         />
       </main>
     );
   }
 
-  // Ne pas afficher le formulaire si déjà connecté
+  // Do not show form if already logged in
   if (isLoggedIn) {
     return null;
   }
 
-  if (message && message.includes("réussie")) {
+  if (message && message.includes("successful")) {
     return (
       <main className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="max-w-md w-full text-center">
-          <StatusCircle variant="success" className="mb-6" label="Inscription réussie">
+          <StatusCircle variant="success" className="mb-6" label="Registration successful">
             <span className="text-2xl">✓</span>
           </StatusCircle>
           <Card.Title className="text-2xl mb-4">
-            Inscription réussie !
+            Registration successful!
           </Card.Title>
           <Card.Description className="mb-6">
-            Un email de vérification a été envoyé à votre adresse email.
-            Veuillez cliquer sur le lien dans l'email pour activer votre compte.
+            A verification email has been sent to your email address.
+            Please click the link in the email to activate your account.
           </Card.Description>
           <Button asChild>
-            <Link href="/login">Se connecter</Link>
+            <Link href="/login">Login</Link>
           </Button>
         </Card>
       </main>
@@ -124,33 +124,33 @@ function RegisterPageClient({ serverSession }: RegisterPageClientProps) {
       <Card className="max-w-md w-full">
         <Card.Header className="text-center">
           <Logo />
-          <Card.Title className="text-3xl mb-2">Créer un compte</Card.Title>
-          <Card.Description>Rejoignez notre communauté</Card.Description>
+          <Card.Title className="text-3xl mb-2">Create an account</Card.Title>
+          <Card.Description>Join our community</Card.Description>
         </Card.Header>
 
-        {/* Bouton Google */}
+        {/* Google Button */}
         <div className="mb-6">
-          <GoogleSignInButton text="S'inscrire avec Google" />
+          <GoogleSignInButton text="Sign up with Google" />
         </div>
 
-        {/* Séparateur */}
+        {/* Separator */}
         <div className="relative mb-6">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-border" />
           </div>
           <div className="relative flex justify-center text-sm">
             <span className="px-2 bg-background text-muted-foreground">
-              ou
+              or
             </span>
           </div>
         </div>
 
         <Card.Content>
           <form action={formAction} className="space-y-6">
-            {/* Prénom et Nom */}
+            {/* First and Last Name */}
             <div className="grid grid-cols-2 gap-4">
               <Input
-                label="Prénom *"
+                label="First Name *"
                 type="text"
                 id="firstName"
                 name="firstName"
@@ -158,11 +158,11 @@ function RegisterPageClient({ serverSession }: RegisterPageClientProps) {
                 minLength={4}
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
-                placeholder="Votre prénom"
+                placeholder="Your first name"
               />
 
               <Input
-                label="Nom *"
+                label="Last Name *"
                 type="text"
                 id="lastName"
                 name="lastName"
@@ -170,7 +170,7 @@ function RegisterPageClient({ serverSession }: RegisterPageClientProps) {
                 minLength={4}
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
-                placeholder="Votre nom"
+                placeholder="Your last name"
               />
             </div>
 
@@ -183,12 +183,12 @@ function RegisterPageClient({ serverSession }: RegisterPageClientProps) {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="votre@email.com"
+              placeholder="your@email.com"
             />
 
-            {/* Nom d'utilisateur */}
+            {/* Username */}
             <Input
-              label="Nom d'utilisateur *"
+              label="Username *"
               type="text"
               id="username"
               name="username"
@@ -197,12 +197,12 @@ function RegisterPageClient({ serverSession }: RegisterPageClientProps) {
               pattern="[a-zA-Z0-9_]+"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="nom_utilisateur"
+              placeholder="username"
             />
 
-            {/* Mot de passe */}
+            {/* Password */}
             <Input
-              label="Mot de passe *"
+              label="Password *"
               type="password"
               id="password"
               name="password"
@@ -210,11 +210,11 @@ function RegisterPageClient({ serverSession }: RegisterPageClientProps) {
               minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Votre mot de passe"
+              placeholder="Your password"
               enablePasswordToggle
             />
 
-            {/* Indicateur de conditions du mot de passe */}
+            {/* Password requirements indicator */}
             <div className="-mt-4">
               <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
                 <div
@@ -234,25 +234,25 @@ function RegisterPageClient({ serverSession }: RegisterPageClientProps) {
               )}
             </div>
 
-            {/* Confirmation du mot de passe */}
+            {/* Password confirmation */}
             <Input
-              label="Confirmer le mot de passe *"
+              label="Confirm Password *"
               type="password"
               id="confirmPassword"
               name="confirmPassword"
               required
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Répétez votre mot de passe"
+              placeholder="Repeat your password"
               error={
                 confirmPassword && confirmPassword !== password
-                  ? "Les mots de passe ne correspondent pas"
+                  ? "Passwords do not match"
                   : undefined
               }
               enablePasswordToggle
             />
 
-            {/* Acceptation des conditions d'utilisation */}
+            {/* Terms of use acceptance */}
             <div className="flex items-start">
               <div className="flex items-center h-5">
                 <input
@@ -280,35 +280,35 @@ function RegisterPageClient({ serverSession }: RegisterPageClientProps) {
                   htmlFor="acceptTerms"
                   className="text-muted-foreground"
                 >
-                  Je confirme avoir lu et accepté les{" "}
+                  I confirm that I have read and accepted the{" "}
                   <Link
                     href="/legal/cgu"
                     target="_blank"
                     className="text-primary hover:text-primary/90 underline"
                   >
-                    conditions générales d&apos;utilisation
+                    terms of use
                   </Link>{" "}
-                  et les{" "}
+                  and the{" "}
                   <Link
                     href="/legal/rgpd"
                     target="_blank"
                     className="text-primary hover:text-primary/90 underline"
                   >
-                    mentions légales RGPD
+                    GDPR legal notice
                   </Link>
                   . *
                 </label>
               </div>
             </div>
 
-            {/* Message d'erreur */}
-            {message && !message.includes("réussie") && (
+            {/* Error message */}
+            {message && !message.includes("successful") && (
               <Alert variant="error">
                 <Alert.Description>{message}</Alert.Description>
               </Alert>
             )}
 
-            {/* Bouton de soumission */}
+            {/* Submit button */}
             <Button
               type="submit"
               disabled={isPending || !allValid}
@@ -316,17 +316,17 @@ function RegisterPageClient({ serverSession }: RegisterPageClientProps) {
               className="w-full"
               size="lg"
             >
-              {isPending ? "Création du compte..." : "Créer mon compte"}
+              {isPending ? "Creating account..." : "Create my account"}
             </Button>
           </form>
         </Card.Content>
 
         <Card.Footer className="text-center">
           <p className="text-muted-foreground">
-            Déjà un compte ?{" "}
+            Already have an account?{" "}
             <Button variant="link" asChild>
               <Link className="text-primary" href="/login">
-                Se connecter
+                Login
               </Link>
             </Button>
           </p>

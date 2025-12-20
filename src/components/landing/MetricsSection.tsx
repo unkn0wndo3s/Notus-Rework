@@ -1,9 +1,9 @@
 import SectionHeading from "./SectionHeading";
 
 const metrics = [
-  { label: "Temps gagné par semaine", value: "2 min", detail: "sur la préparation et le partage de documents" },
-  { label: "Documents collaboratifs/mois", value: "8+", detail: "créés par nos utilisateurs actifs" },
-  { label: "Réduction des erreurs", value: "-10%", detail: "grâce à l’historique et la validation intégrée" },
+  { label: "Time saved per week", value: "2 min", detail: "on document preparation and sharing" },
+  { label: "Collaborative documents/month", value: "8+", detail: "created by our active users" },
+  { label: "Error reduction", value: "-10%", detail: "thanks to history and integrated validation" },
 ];
 
 export default function MetricsSection() {
@@ -11,9 +11,9 @@ export default function MetricsSection() {
     <section id="metrics" className="py-20 bg-card/40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionHeading
-          eyebrow="Impact mesuré"
-          title="Des résultats tangibles dès le premier mois"
-          description="Notus apporte de la clarté et supprime les frictions liées à la documentation."
+          eyebrow="Measured impact"
+          title="Tangible results from the first month"
+          description="Notus brings clarity and removes documentation-related friction."
         />
         <dl className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6">
           {metrics.map((metric) => (

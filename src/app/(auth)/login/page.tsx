@@ -10,7 +10,6 @@ import {
   Button,
   Input,
   Card,
-  Alert,
   LoadingSpinner,
   Logo,
   Dialog,
@@ -21,7 +20,11 @@ import {
   DialogFooter,
 } from "@/components/ui";
 
-function LoginPageClient({ serverSession }: { serverSession: any }) {
+interface LoginPageClientProps {
+  serverSession: any;
+}
+
+function LoginPageClient({ serverSession }: Readonly<LoginPageClientProps>) {
   const { isLoggedIn, loading } = useLocalSession(serverSession);
   const router = useRouter();
   const [errorMessage, setErrorMessage] = useState("");
@@ -39,26 +42,26 @@ function LoginPageClient({ serverSession }: { serverSession: any }) {
     }
   }, [errorMessage]);
 
-  // Redirection si déjà connecté
+  // Redirection if already logged in
   useEffect(() => {
     if (!loading && isLoggedIn) {
       router.push("/app");
     }
   }, [isLoggedIn, loading, router]);
 
-  // Affichage du loading pendant la vérification
+  // Display loading during verification
   if (loading) {
     return (
       <main className="min-h-screen bg-background flex items-center justify-center p-4">
         <LoadingSpinner.Card
-          message="Vérification..."
+          message="Checking session..."
           className="max-w-md w-full"
         />
       </main>
     );
   }
 
-  // Ne pas afficher le formulaire si déjà connecté
+  // Do not show the form if already logged in
   if (isLoggedIn) {
     return null;
   }
@@ -69,24 +72,24 @@ function LoginPageClient({ serverSession }: { serverSession: any }) {
         <Card.Header className="text-center">
           <Logo />
           <Card.Title className="text-4xl mb-2 font-light">
-            Se connecter
+            Login
           </Card.Title>
         </Card.Header>
 
         <Card.Content>
-          {/* Bouton Google */}
+          {/* Google Button */}
           <div className="mb-6">
-            <GoogleSignInButton text="Se connecter avec Google" />
+            <GoogleSignInButton text="Sign in with Google" />
           </div>
 
-          {/* Séparateur */}
+          {/* Separator */}
           <div className="relative mb-6">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-sm">
               <span className="px-2 bg-background text-muted-foreground">
-                ou
+                or
               </span>
             </div>
           </div>
@@ -106,7 +109,7 @@ function LoginPageClient({ serverSession }: { serverSession: any }) {
 
                 if (!email || !passwordValue) {
                   setErrorMessage(
-                    "Veuillez renseigner votre identifiant et votre mot de passe."
+                    "Please enter your identifier and password."
                   );
                   setIsPending(false);
                   return;
@@ -124,7 +127,7 @@ function LoginPageClient({ serverSession }: { serverSession: any }) {
                     if (data?.success && data.found) {
                       if (data.expired) {
                         setErrorMessage(
-                          "Ce compte a été supprimé et le délai de restauration est dépassé."
+                          "This account has been deleted and the restoration period has expired."
                         );
                         setIsPending(false);
                         return;
@@ -152,11 +155,11 @@ function LoginPageClient({ serverSession }: { serverSession: any }) {
                   router.push("/app");
                 } else {
                   setErrorMessage(
-                    "Email ou mot de passe incorrect, ou email non vérifié."
+                    "Incorrect email or password, or email not verified."
                   );
                 }
               } catch (err) {
-                setErrorMessage("Une erreur est survenue.");
+                setErrorMessage("An error occurred.");
               } finally {
                 setIsPending(false);
               }
@@ -169,23 +172,23 @@ function LoginPageClient({ serverSession }: { serverSession: any }) {
               id="email"
               name="email"
               required
-              placeholder="votre@email.com"
+              placeholder="your@email.com"
             />
 
-            {/* Mot de passe */}
+            {/* Password */}
             <div className="mb-0">
               <div className="flex justify-between items-center mb-2">
                 <label
                   htmlFor="password"
                   className="block text-sm font-medium text-foreground"
                 >
-                  Mot de passe
+                  Password
                 </label>
                 <Link
                   href="/forgot-password"
                   className="text-sm text-muted-foreground hover:text-foreground font-medium"
                 >
-                  Mot de passe oublié ?
+                  Forgot password?
                 </Link>
               </div>
               <Input
@@ -194,7 +197,7 @@ function LoginPageClient({ serverSession }: { serverSession: any }) {
                 name="password"
                 required
                 minLength={6}
-                placeholder="Votre mot de passe"
+                placeholder="Your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 error={errorMessage || undefined}
@@ -202,32 +205,32 @@ function LoginPageClient({ serverSession }: { serverSession: any }) {
               />
             </div>
             <Card.Footer className="text-center">
-              <p className="text-muted-foreground py-4">
-                Pas encore de compte ?{" "}
-                <Button variant="link" asChild>
+              <div className="text-muted-foreground py-4">
+                Don't have an account?{" "}
+                <Button variant="link" asChild className="p-0 h-auto">
                   <Link
                     className="text-primary"
                     href="/register"
                   >
-                    S'inscrire
+                    Register
                   </Link>
                 </Button>
-              </p>
+              </div>
             </Card.Footer>
-            {/* Bouton de soumission */}
+            {/* Submit Button */}
             <Button
               type="submit"
               disabled={isPending}
               loading={isPending}
               className="w-full"
             >
-              {isPending ? "Connexion..." : "Se connecter"}
+              {isPending ? "Logging in..." : "Login"}
             </Button>
           </form>
         </Card.Content>
         <Card.Footer className="text-center p-2">
           <Link href="/app" className="text-muted-foreground">
-            Continuer en tant que personne anonyme
+            Continue as guest
           </Link>
         </Card.Footer>
       </Card>
@@ -235,11 +238,11 @@ function LoginPageClient({ serverSession }: { serverSession: any }) {
       <Dialog open={reactivateOpen} onOpenChange={setReactivateOpen}>
         <DialogContent showCloseButton>
           <DialogHeader>
-            <DialogTitle>Réactiver votre compte ?</DialogTitle>
+            <DialogTitle>Reactivate your account?</DialogTitle>
             <DialogDescription>
-              Votre compte associé à {reactivateEmail} a été supprimé, mais peut
-              encore être restauré{reactivateExpiresAt ? ` jusqu'au ${new Date(reactivateExpiresAt).toLocaleDateString()}` : ""}.
-              Confirmez pour le réactiver.
+              Your account associated with {reactivateEmail} was deleted, but can
+              still be restored{reactivateExpiresAt ? ` until ${new Date(reactivateExpiresAt).toLocaleDateString()}` : ""}.
+              Confirm to reactivate it.
             </DialogDescription>
           </DialogHeader>
           {reactivateError ? (
@@ -253,7 +256,7 @@ function LoginPageClient({ serverSession }: { serverSession: any }) {
                 setReactivateOpen(false);
               }}
             >
-              Annuler
+              Cancel
             </Button>
             <Button
               className="px-6 py-2"
@@ -268,7 +271,7 @@ function LoginPageClient({ serverSession }: { serverSession: any }) {
                   });
                   const data = await res.json().catch(() => ({}));
                   if (!res.ok || !data?.success) {
-                    setReactivateError(data?.error || "Impossible de réactiver le compte.");
+                    setReactivateError(data?.error || "Unable to reactivate account.");
                     return;
                   }
                   // After restore, sign-in directly
@@ -282,14 +285,14 @@ function LoginPageClient({ serverSession }: { serverSession: any }) {
                     setReactivateOpen(false);
                     router.push("/app");
                   } else {
-                    setReactivateError("La réactivation a réussi, mais la connexion a échoué.");
+                    setReactivateError("Reactivation succeeded, but login failed.");
                   }
                 } catch (e) {
-                  setReactivateError("Erreur interne. Veuillez réessayer.");
+                  setReactivateError("Internal error. Please try again.");
                 }
               }}
             >
-              Réactiver
+              Reactivate
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -301,4 +304,3 @@ function LoginPageClient({ serverSession }: { serverSession: any }) {
 export default function LoginPage() {
   return <LoginPageClient serverSession={null} />;
 }
-

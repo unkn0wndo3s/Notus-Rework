@@ -55,7 +55,7 @@ function toNumber(value: unknown): number | null {
   if (typeof value === "string") {
     const trimmed = value.trim();
     if (!trimmed) return null;
-    const parsed = Number.parseInt(trimmed, 10);
+    const parsed = Number(trimmed);
     return Number.isFinite(parsed) ? parsed : null;
   }
   return null;
@@ -99,7 +99,7 @@ async function extractAuthContext(request: NextRequest): Promise<AuthContext | n
   const secret = process.env.AUTH_SECRET;
 
   if (!secret) {
-    console.error("[apiPolicies] AUTH_SECRET manquant: impossible de décoder la session.");
+    console.error("[apiPolicies] Missing AUTH_SECRET: impossible to decode session.");
     return null;
   }
 
@@ -114,7 +114,7 @@ async function extractAuthContext(request: NextRequest): Promise<AuthContext | n
       typeof rawId === "number"
         ? rawId
         : typeof rawId === "string"
-        ? Number.parseInt(rawId, 10)
+        ? Number(rawId)
         : null;
     const userId = Number.isFinite(parsedId ?? NaN) ? (parsedId as number) : null;
 
@@ -128,7 +128,7 @@ async function extractAuthContext(request: NextRequest): Promise<AuthContext | n
 
     return { userId, email, isAdmin };
   } catch (error) {
-    console.error("[apiPolicies] Erreur lors du décodage du token NextAuth:", error);
+    console.error("[apiPolicies] Error decoding NextAuth token:", error);
     return null;
   }
 }
@@ -140,7 +140,7 @@ async function ensureDocumentOwnership(
 ) {
   if (!documentId || documentId <= 0) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 400 }
     );
   }
@@ -148,7 +148,7 @@ async function ensureDocumentOwnership(
   const ownerResult = await documentAccessService.ownerIdForDocument(documentId);
   if (!ownerResult.success) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 500 }
     );
   }
@@ -156,7 +156,7 @@ async function ensureDocumentOwnership(
   const ownerId = ownerResult.data?.ownerId ?? null;
   if (!ownerId) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 404 }
     );
   }
@@ -166,7 +166,7 @@ async function ensureDocumentOwnership(
 
   if (!isOwner && !isAdmin) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 403 }
     );
   }
@@ -190,7 +190,7 @@ async function enforceSharedEmailMatchesContext(context: PolicyContext) {
   const authContext = context.authContext;
   if (!authContext || !authContext.email) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 401 }
     );
   }
@@ -200,14 +200,14 @@ async function enforceSharedEmailMatchesContext(context: PolicyContext) {
 
   if (!requestedEmail) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 400 }
     );
   }
 
   if (requestedEmail !== authContext.email) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 403 }
     );
   }
@@ -219,7 +219,7 @@ async function enforceNotificationQueryMatchesUser(context: PolicyContext) {
   const authContext = context.authContext;
   if (!authContext?.userId) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 401 }
     );
   }
@@ -229,14 +229,14 @@ async function enforceNotificationQueryMatchesUser(context: PolicyContext) {
 
   if (!requestedId) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 400 }
     );
   }
 
   if (requestedId !== authContext.userId) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 403 }
     );
   }
@@ -248,7 +248,7 @@ async function enforceRequestsAccess(context: PolicyContext) {
   const authContext = context.authContext;
   if (!authContext) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 401 }
     );
   }
@@ -265,7 +265,7 @@ async function enforceRequestsAccess(context: PolicyContext) {
       return null;
     }
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 403 }
     );
   }
@@ -274,7 +274,7 @@ async function enforceRequestsAccess(context: PolicyContext) {
 
   if (!isSelf && !authContext.isAdmin) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 403 }
     );
   }
@@ -285,7 +285,7 @@ async function enforceRequestsAccess(context: PolicyContext) {
 export const apiRoutePolicies: RoutePolicy[] = [
   {
     id: "open-doc-share-delete",
-    description: "Supprimer un partage ciblé d'un document",
+    description: "Delete a targeted share from a document",
     matcher: /^\/api\/openDoc\/share\/delete$/,
     methods: ["DELETE"],
     jsonBodyFor: ["DELETE"],
@@ -294,7 +294,7 @@ export const apiRoutePolicies: RoutePolicy[] = [
   },
   {
     id: "open-doc-share",
-    description: "Ajout ou mise à jour d'un partage de document",
+    description: "Add or update a document share",
     matcher: /^\/api\/openDoc\/share$/,
     methods: ["PATCH"],
     jsonBodyFor: ["PATCH"],
@@ -302,39 +302,39 @@ export const apiRoutePolicies: RoutePolicy[] = [
     enforce: enforceDocumentOwnershipFromBody,
   },
   {
-    id: "dossiers-documents",
-    description: "Ajout ou retrait de documents dans un dossier",
-    matcher: /^\/api\/dossiers\/[^/]+\/documents$/,
+    id: "folders-documents",
+    description: "Add or remove documents in a folder",
+    matcher: /^\/api\/folders\/[^/]+\/documents$/,
     methods: ["POST", "DELETE"],
     jsonBodyFor: ["POST", "DELETE"],
     requireAuth: true,
-    enforce: enforceDossierOwnershipFromPath,
+    enforce: enforceFolderOwnershipFromPath,
   },
   {
-    id: "dossiers-detail",
-    description: "Lecture ou suppression d'un dossier précis",
-    matcher: /^\/api\/dossiers\/[^/]+$/,
+    id: "folders-detail",
+    description: "Read or delete a specific folder",
+    matcher: /^\/api\/folders\/[^/]+$/,
     methods: ["GET", "DELETE"],
     requireAuth: true,
-    enforce: enforceDossierOwnershipFromPath,
+    enforce: enforceFolderOwnershipFromPath,
   },
   {
     id: "admin-requests-resolve",
-    description: "Résolution d'une requête d'assistance",
+    description: "Resolve an assistance request",
     matcher: /^\/api\/admin\/requests\/[^/]+\/resolve$/,
     methods: ["POST"],
     requireAdmin: true,
   },
   {
     id: "admin-requests-reject",
-    description: "Rejet d'une requête d'assistance",
+    description: "Reject an assistance request",
     matcher: /^\/api\/admin\/requests\/[^/]+\/reject$/,
     methods: ["POST"],
     requireAdmin: true,
   },
   {
     id: "admin-requests-detail",
-    description: "Lecture, mise à jour ou suppression d'une requête",
+    description: "Read, update or delete a request",
     matcher: /^\/api\/admin\/requests\/[^/]+$/,
     methods: ["GET", "PATCH", "DELETE"],
     jsonBodyFor: ["PATCH"],
@@ -342,7 +342,7 @@ export const apiRoutePolicies: RoutePolicy[] = [
   },
   {
     id: "admin-users-admin-toggle",
-    description: "Promotion ou rétrogradation d'un utilisateur",
+    description: "Promote or demote a user",
     matcher: /^\/api\/admin\/users\/[^/]+\/admin$/,
     methods: ["PATCH"],
     jsonBodyFor: ["PATCH"],
@@ -350,7 +350,7 @@ export const apiRoutePolicies: RoutePolicy[] = [
   },
   {
     id: "admin-users-ban-toggle",
-    description: "Bannissement ou débannissement d'un utilisateur",
+    description: "Ban or unban a user",
     matcher: /^\/api\/admin\/users\/[^/]+\/ban$/,
     methods: ["PATCH"],
     jsonBodyFor: ["PATCH"],
@@ -358,7 +358,7 @@ export const apiRoutePolicies: RoutePolicy[] = [
   },
   {
     id: "notification-mark-read",
-    description: "Marquer une notification comme lue",
+    description: "Mark a notification as read",
     matcher: /^\/api\/notification\/mark-read$/,
     methods: ["POST"],
     jsonBodyFor: ["POST"],
@@ -366,14 +366,14 @@ export const apiRoutePolicies: RoutePolicy[] = [
   },
   {
     id: "notification-delete",
-    description: "Suppression explicite d'une notification",
-    matcher: /^\/api\/notification\/detete$/,
+    description: "Explicitly delete a notification",
+    matcher: /^\/api\/notification\/delete$/,
     methods: ["DELETE"],
     requireAuth: true,
   },
   {
     id: "open-doc-access-list",
-    description: "Liste des accès à un document",
+    description: "List access to a document",
     matcher: /^\/api\/openDoc\/accessList$/,
     methods: ["GET"],
     requireAuth: true,
@@ -381,7 +381,7 @@ export const apiRoutePolicies: RoutePolicy[] = [
   },
   {
     id: "open-doc-shared",
-    description: "Documents partagés avec l'utilisateur courant",
+    description: "Documents shared with the current user",
     matcher: /^\/api\/openDoc\/shared$/,
     methods: ["GET"],
     requireAuth: true,
@@ -389,7 +389,7 @@ export const apiRoutePolicies: RoutePolicy[] = [
   },
   {
     id: "open-doc-history",
-    description: "Historique des modifications d'un document",
+    description: "Modification history of a document",
     matcher: /^\/api\/openDoc\/history$/,
     methods: ["GET"],
     requireAuth: true,
@@ -397,7 +397,7 @@ export const apiRoutePolicies: RoutePolicy[] = [
   },
   {
     id: "open-doc-single",
-    description: "Lecture d'un document via un accès partagé",
+    description: "Read a document via shared access",
     matcher: /^\/api\/openDoc$/,
     methods: ["GET"],
     requireAuth: true,
@@ -405,7 +405,7 @@ export const apiRoutePolicies: RoutePolicy[] = [
   },
   {
     id: "notification-unread-count",
-    description: "Nombre de notifications non lues",
+    description: "Number of unread notifications",
     matcher: /^\/api\/notification\/unread-count$/,
     methods: ["GET"],
     requireAuth: true,
@@ -413,7 +413,7 @@ export const apiRoutePolicies: RoutePolicy[] = [
   },
   {
     id: "notification-list",
-    description: "Liste paginée des notifications",
+    description: "Paginated list of notifications",
     matcher: /^\/api\/notification\/?$/,
     methods: ["GET"],
     requireAuth: true,
@@ -421,21 +421,21 @@ export const apiRoutePolicies: RoutePolicy[] = [
   },
   {
     id: "tags-list",
-    description: "Récupération des tags utilisateur",
+    description: "Retrieve user tags",
     matcher: /^\/api\/tags$/,
     methods: ["GET"],
     requireAuth: true,
   },
   {
     id: "profile-image",
-    description: "Lecture de l'image de profil",
+    description: "Read profile image",
     matcher: /^\/api\/profile-image$/,
     methods: ["GET"],
     requireAuth: true,
   },
   {
     id: "requests",
-    description: "Création ou consultation des requêtes d'assistance",
+    description: "Create or consult assistance requests",
     matcher: /^\/api\/requests$/,
     methods: ["GET", "POST"],
     jsonBodyFor: ["POST"],
@@ -443,16 +443,16 @@ export const apiRoutePolicies: RoutePolicy[] = [
     enforce: enforceRequestsAccess,
   },
   {
-    id: "dossiers",
-    description: "Listing et création de dossiers",
-    matcher: /^\/api\/dossiers$/,
+    id: "folders",
+    description: "Listing and creating folders",
+    matcher: /^\/api\/folders$/,
     methods: ["GET", "POST"],
     jsonBodyFor: ["POST"],
     requireAuth: true,
   },
   {
     id: "invite-share",
-    description: "Invitation d'un collaborateur sur un document",
+    description: "Invite a collaborator to a document",
     matcher: /^\/api\/invite-share$/,
     methods: ["POST"],
     jsonBodyFor: ["POST"],
@@ -461,20 +461,20 @@ export const apiRoutePolicies: RoutePolicy[] = [
   },
   {
     id: "confirm-share",
-    description: "Confirmation d'une invitation de partage",
+    description: "Confirm a share invitation",
     matcher: /^\/api\/confirm-share$/,
     methods: ["GET"],
   },
   {
     id: "reactivate-account",
-    description: "Restauration d'un compte supprimé",
+    description: "Restore a deleted account",
     matcher: /^\/api\/reactivate-account$/,
     methods: ["POST"],
     jsonBodyFor: ["POST"],
   },
   {
     id: "delete-account",
-    description: "Suppression définitive d'un compte",
+    description: "Permanently delete an account",
     matcher: /^\/api\/delete-account$/,
     methods: ["POST"],
     jsonBodyFor: ["POST"],
@@ -482,28 +482,28 @@ export const apiRoutePolicies: RoutePolicy[] = [
   },
   {
     id: "check-deleted-account",
-    description: "Vérification d'un compte supprimé",
+    description: "Verify a deleted account",
     matcher: /^\/api\/check-deleted-account$/,
     methods: ["POST"],
     jsonBodyFor: ["POST"],
   },
   {
     id: "verify-email",
-    description: "Validation d'adresse email par token",
+    description: "Email address validation by token",
     matcher: /^\/api\/verify-email$/,
     methods: ["POST"],
     jsonBodyFor: ["POST"],
   },
   {
     id: "admin-stats",
-    description: "Tableau de bord administrateur",
+    description: "Administrator dashboard",
     matcher: /^\/api\/admin\/stats$/,
     methods: ["GET"],
     requireAdmin: true,
   },
   {
     id: "admin-check-status",
-    description: "Vérification rapide du statut admin",
+    description: "Quick check of admin status",
     matcher: /^\/api\/admin\/check-status$/,
     methods: ["GET"],
     requireAuth: true,
@@ -516,14 +516,14 @@ export const apiRoutePolicies: RoutePolicy[] = [
   },
   {
     id: "socket-handshake",
-    description: "Initialisation du serveur Socket.IO",
+    description: "Socket.IO server initialization",
     matcher: /^\/api\/socket$/,
     methods: ["GET"],
     requireAuth: true,
   },
   {
     id: "comments",
-    description: "Récupération et création de commentaires sur un document",
+    description: "Retrieve and create comments on a document",
     matcher: /^\/api\/comments$/,
     methods: ["GET", "POST"],
     jsonBodyFor: ["POST"],
@@ -534,26 +534,26 @@ export const apiRoutePolicies: RoutePolicy[] = [
 
 async function enforceOpenDocAccess({ request, authContext, pathname }: PolicyContext) {
   const { searchParams } = new URL(request.url);
-  // Accepter "id" ou "documentId" comme paramètre
+  // Accept "id" or "documentId" as parameter
   const documentId = parseDocumentIdFromParams(searchParams, ["id", "documentId"]);
 
   if (!documentId) {
-    console.log(`[enforceOpenDocAccess] ${pathname}: documentId manquant`);
+    console.log(`[enforceOpenDocAccess] ${pathname}: documentId missing`);
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 400 }
     );
   }
 
   if (!authContext || (!authContext.userId && !authContext.email)) {
-    console.log(`[enforceOpenDocAccess] ${pathname}: authContext manquant`);
+    console.log(`[enforceOpenDocAccess] ${pathname}: authContext missing`);
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 401 }
     );
   }
 
-  // Vérifier l'accès au document
+  // Verify document access
   const hasAccess = await documentAccessService.userHasAccessToDocument(
     documentId,
     authContext.userId ?? undefined,
@@ -564,7 +564,7 @@ async function enforceOpenDocAccess({ request, authContext, pathname }: PolicyCo
 
   if (!hasAccess) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 403 }
     );
   }
@@ -578,19 +578,19 @@ async function enforceDocumentAccessFromQuery(context: PolicyContext) {
 
   if (!documentId) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 400 }
     );
   }
 
   if (!context.authContext || (!context.authContext.userId && !context.authContext.email)) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 401 }
     );
   }
 
-  // Vérifier l'accès au document
+  // Verify access to document
   const hasAccess = await documentAccessService.userHasAccessToDocument(
     documentId,
     context.authContext.userId ?? undefined,
@@ -599,7 +599,7 @@ async function enforceDocumentAccessFromQuery(context: PolicyContext) {
 
   if (!hasAccess) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 403 }
     );
   }
@@ -611,28 +611,28 @@ async function enforceCommentsAccess(context: PolicyContext) {
   const method = context.request.method.toUpperCase();
   
   if (method === "GET") {
-    // Pour GET, utiliser la même vérification que pour l'ouverture d'un document
+    // For GET, use the same verification as for opening a document
     return enforceOpenDocAccess(context);
   } else if (method === "POST") {
-    // Pour POST, vérifier l'accès via body en utilisant la même logique
+    // For POST, verify access via body using the same logic
     const body = await parseJsonBody<Record<string, unknown>>(context.request);
     const documentId = parseDocumentIdFromBody(body);
 
     if (!documentId) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
 
     if (!context.authContext || (!context.authContext.userId && !context.authContext.email)) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 401 }
       );
     }
 
-    // Utiliser la même vérification d'accès que pour l'ouverture d'un document
+    // Use the same access verification as for opening a document
     const hasAccess = await documentAccessService.userHasAccessToDocument(
       documentId,
       context.authContext.userId ?? undefined,
@@ -641,7 +641,7 @@ async function enforceCommentsAccess(context: PolicyContext) {
 
     if (!hasAccess) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 403 }
       );
     }
@@ -652,40 +652,40 @@ async function enforceCommentsAccess(context: PolicyContext) {
   return null;
 }
 
-async function enforceDossierOwnershipFromPath(context: PolicyContext) {
+async function enforceFolderOwnershipFromPath(context: PolicyContext) {
   if (!context.authContext?.userId) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 401 }
     );
   }
 
-  // Extraire l'ID du dossier du pathname
-  // Format: /api/dossiers/123 ou /api/dossiers/123/documents
-  const match = context.pathname.match(/^\/api\/dossiers\/([^/]+)/);
+  // Extract folder ID from pathname
+  // Format: /api/folders/123 or /api/folders/123/documents
+  const match = context.pathname.match(/^\/api\/folders\/([^/]+)/);
   if (!match) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 400 }
     );
   }
 
-  const dossierId = toNumber(match[1]);
-  if (!dossierId || dossierId <= 0) {
+  const folderId = toNumber(match[1]);
+  if (!folderId || folderId <= 0) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 400 }
     );
   }
 
-  // Vérifier la propriété du dossier
-  const dossier = await prisma.dossier.findFirst({
-    where: { id: dossierId, user_id: context.authContext.userId },
+  // Verify folder ownership
+  const folder = await prisma.folder.findFirst({
+    where: { id: folderId, user_id: context.authContext.userId },
   });
 
-  if (!dossier) {
+  if (!folder) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 403 }
     );
   }
@@ -698,15 +698,15 @@ export async function enforceApiPolicies(request: NextRequest) {
   const policy = matchRoutePolicy(pathname);
 
   if (!policy) {
-    console.warn(`[apiPolicies] Route non déclarée: ${pathname}`);
+    console.warn(`[apiPolicies] Undeclared route: ${pathname}`);
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 404 }
     );
   }
 
   if (pathname.includes("/history")) {
-    console.log(`[apiPolicies] Route history détectée: ${pathname}, policy: ${policy.id}`);
+    console.log(`[apiPolicies] History route detected: ${pathname}, policy: ${policy.id}`);
   }
 
   const method = request.method.toUpperCase() as HttpMethod;
@@ -723,7 +723,7 @@ export async function enforceApiPolicies(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: `Méthode ${method} non autorisée sur ${pathname}`,
+        error: `Method ${method} not authorized on ${pathname}`,
       },
       {
         status: 405,
@@ -741,7 +741,7 @@ export async function enforceApiPolicies(request: NextRequest) {
     const contentType = request.headers.get("content-type")?.toLowerCase() ?? "";
     if (!contentType.includes("application/json")) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 415 }
       );
     }
@@ -752,7 +752,7 @@ export async function enforceApiPolicies(request: NextRequest) {
       const contentLength = Number(contentLengthHeader);
       if (!Number.isNaN(contentLength) && contentLength > limit) {
         return NextResponse.json(
-          { success: false, error: "Accès refusé" },
+          { success: false, error: "Access denied" },
           { status: 413 }
         );
       }
@@ -766,14 +766,14 @@ export async function enforceApiPolicies(request: NextRequest) {
 
     if (!authContext) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 401 }
       );
     }
 
     if (policy.requireAdmin && !authContext.isAdmin) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 403 }
       );
     }
@@ -788,4 +788,5 @@ export async function enforceApiPolicies(request: NextRequest) {
 
   return null;
 }
+
 

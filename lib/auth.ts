@@ -77,7 +77,7 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        email: { label: "Email ou nom d'utilisateur", type: "text" },
+        email: { label: "Email or username", type: "text" },
         password: { label: "Mot de passe", type: "password" },
       },
       async authorize(credentials): Promise<User | null> {
@@ -117,7 +117,7 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account, profile }) {
       if (account?.provider === "google") {
         try {
-          // Vérifier si l'utilisateur existe déjà
+          // Check if user already exists
           const existingUser = await userService.getUserByEmail(user.email!);
 
           if (!existingUser.success) {
@@ -156,7 +156,7 @@ export const authOptions: NextAuthOptions = {
                 await tx.deletedAccount.delete({ where: { id: deleted.id } });
               });
             } else {
-              // Créer un nouvel utilisateur OAuth
+              // Create a new OAuth user
               const emailBase = user.email?.split("@")[0] || "user";
               let username = emailBase;
               
@@ -184,19 +184,19 @@ export const authOptions: NextAuthOptions = {
               const createResult = await userService.createOAuthUser({
                 email: user.email!,
                 username,
-                firstName: firstName || "Utilisateur",
+                firstName: firstName || "User",
                 lastName: lastName || "OAuth",
                 provider: "google",
                 providerId: account?.providerAccountId || "",
               });
 
               // Si la création échoue à cause d'un username en double, réessayer avec un nouveau nom
-              if (!createResult.success && createResult.error?.includes("nom d'utilisateur")) {
+              if (!createResult.success && createResult.error?.includes("username")) {
                 username = `${emailBase}_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
                 await userService.createOAuthUser({
                   email: user.email!,
                   username,
-                  firstName: firstName || "Utilisateur",
+                  firstName: firstName || "User",
                   lastName: lastName || "OAuth",
                   provider: "google",
                   providerId: account?.providerAccountId || "",
@@ -206,7 +206,7 @@ export const authOptions: NextAuthOptions = {
           }
         } catch (error) {
           console.error(
-            "Erreur lors de la création/connexion utilisateur:",
+            "Error during user creation/login:",
             error
           );
           return false;
@@ -231,7 +231,7 @@ export const authOptions: NextAuthOptions = {
           }
         } catch (error) {
           console.error(
-            "Erreur lors de la récupération des données utilisateur:",
+            "Error during user data retrieval:",
             error
           );
         }

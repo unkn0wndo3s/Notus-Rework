@@ -1,16 +1,17 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
+import { useCallback } from "react";
 
 export function useGuardedNavigate() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const checkConnectivity = async (): Promise<boolean> => {
+  const checkConnectivity = useCallback(async (): Promise<boolean> => {
     try {
       const controller = new AbortController();
-      const timeoutId = window.setTimeout(() => controller.abort(), 5000);
-      console.log(`[GuardedNavigate] Vérification de connexion...`);
+      const timeoutId = globalThis.window.setTimeout(() => controller.abort(), 5000);
+      console.log(`[GuardedNavigate] Checking connectivity...`);
       const resp = await fetch("/api/admin/check-status", {
         method: "GET",
         cache: "no-store",
@@ -18,14 +19,14 @@ export function useGuardedNavigate() {
         headers: { "cache-control": "no-cache" },
         signal: controller.signal,
       });
-      window.clearTimeout(timeoutId);
-      console.log(`[GuardedNavigate] Réponse de vérification: ${resp.status} ${resp.ok ? "OK" : "FAIL"}`);
+      globalThis.window.clearTimeout(timeoutId);
+      console.log(`[GuardedNavigate] Check response: ${resp.status} ${resp.ok ? "OK" : "FAIL"}`);
       if (!resp.ok) {
-        window.dispatchEvent(
+        globalThis.window.dispatchEvent(
           new CustomEvent("notus:offline-popin", {
             detail: {
               message:
-                "Vous pourrez accéder à cette fonctionnalité une fois la connexion rétablie.",
+                "You will be able to access this feature once connectivity is restored.",
               durationMs: 5000,
             },
           })
@@ -33,41 +34,37 @@ export function useGuardedNavigate() {
       }
       return resp.ok;
     } catch (error) {
-      console.log(`[GuardedNavigate] Erreur de vérification de connexion:`, error);
-      window.dispatchEvent(
+      console.log(`[GuardedNavigate] Connectivity check error:`, error);
+      globalThis.window.dispatchEvent(
         new CustomEvent("notus:offline-popin", {
           detail: {
             message:
-              "Vous pourrez accéder à cette fonctionnalité une fois la connexion rétablie.",
+              "You will be able to access this feature once connectivity is restored.",
             durationMs: 5000,
           },
         })
       );
       return false;
     }
-  };
+  }, []);
 
-  const guardedNavigate = async (href: string) => {
-    console.log(`[GuardedNavigate] Tentative de navigation vers: ${href}`);
-    try {
-      const currentPath = pathname || "/";
-      const targetPath = href || "/";
+  const guardedNavigate = useCallback(async (href: string) => {
+    console.log(`[GuardedNavigate] Attempting to navigate to: ${href}`);
+      const currentPath = pathname ?? "/";
+      const targetPath = href ?? "/";
       if (currentPath === targetPath) {
-        console.log(`[GuardedNavigate] Déjà sur ${targetPath}, aucune action effectuée.`);
+        console.log(`[GuardedNavigate] Already on ${targetPath}, no action taken.`);
         return;
       }
-    } catch (_) {}
 
     const ok = await checkConnectivity();
     if (ok) {
-      console.log(`[GuardedNavigate] Connexion OK, redirection vers ${href}`);
+      console.log(`[GuardedNavigate] Connection OK, redirecting to ${href}`);
       router.push(href);
     } else {
-      console.log(`[GuardedNavigate] Connexion échouée, navigation annulée`);
+      console.log(`[GuardedNavigate] Connection failed, navigation canceled`);
     }
-  };
+  }, [pathname, router, checkConnectivity]);
 
   return { guardedNavigate, checkConnectivity };
 }
-
-

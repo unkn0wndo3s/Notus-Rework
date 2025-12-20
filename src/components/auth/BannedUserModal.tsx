@@ -14,10 +14,10 @@ interface BannedUserModalProps {
 export default function BannedUserModal({
   isOpen,
   onClose,
-  reason = "Votre compte a été suspendu par un administrateur.",
+  reason = "Your account has been suspended by an administrator.",
 }: BannedUserModalProps) {
 
-  // Auto-redirection après 5 secondes si l'utilisateur ne ferme pas le modal
+  // Auto-redirection after 5 seconds if the user does not close the modal
   useEffect(() => {
     if (isOpen) {
       const timer = setTimeout(() => {
@@ -32,7 +32,7 @@ export default function BannedUserModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Compte suspendu"
+      title="Account Suspended"
       size="md"
     >
       <Modal.Content>
@@ -42,14 +42,14 @@ export default function BannedUserModal({
           </div>
           <div>
             <h3 className="text-lg font-semibold text-foreground mb-2">
-              Accès suspendu
+              Access Suspended
             </h3>
             <p className="text-muted-foreground mb-4">
               {reason}
             </p>
             <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3">
               <p className="text-sm text-destructive">
-                Vous avez été déconnecté automatiquement. Vous serez redirigé vers l'accueil dans quelques secondes.
+                You have been automatically logged out. You will be redirected to the home page in a few seconds.
               </p>
             </div>
           </div>
@@ -61,7 +61,7 @@ export default function BannedUserModal({
           className="cursor-pointer px-6 py-2"
           onClick={onClose}
         >
-          Fermer
+          Close
         </Button>
       </Modal.Footer>
     </Modal>

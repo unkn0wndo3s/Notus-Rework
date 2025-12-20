@@ -33,7 +33,7 @@ interface ClientOnlyDrawingCanvasProps {
   [key: string]: any;
 }
 
-export default function ClientOnlyDrawingCanvas({ mode, ...props }: ClientOnlyDrawingCanvasProps) {
+export default function ClientOnlyDrawingCanvas({ mode, ...props }: Readonly<ClientOnlyDrawingCanvasProps>) {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -45,7 +45,7 @@ export default function ClientOnlyDrawingCanvas({ mode, ...props }: ClientOnlyDr
       <div className={`relative ${props.className || ""}`}>
         <div className="w-full h-full flex items-center justify-center bg-muted">
           <p className="text-muted-foreground">
-            Chargement du canvas...
+            Loading canvas...
           </p>
         </div>
       </div>
@@ -54,4 +54,3 @@ export default function ClientOnlyDrawingCanvas({ mode, ...props }: ClientOnlyDr
 
   return <DrawingCanvas mode={mode} {...props} />;
 }
-

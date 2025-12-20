@@ -22,14 +22,14 @@ export default async function TrashPage() {
         <section className="space-y-6">
           <header>
             <h1 className="font-title text-4xl font-regular text-foreground hidden md:block">
-              Corbeille
+              Trash
             </h1>
           </header>
 
           {!trashedResult.success && session?.user && (
             <Alert variant="error">
               <Alert.Description>
-                Erreur lors du chargement de la corbeille: {trashedResult.error}
+                Error loading trash: {trashedResult.error}
               </Alert.Description>
             </Alert>
           )}
@@ -38,15 +38,15 @@ export default async function TrashPage() {
             {(Array.isArray(trashedResult.documents) ? trashedResult.documents : []).map((t: any) => (
               <Card key={t.id}>
                 <CardHeader>
-                  <CardTitle className="truncate">{t.title || "Sans titre"}</CardTitle>
+                  <CardTitle className="truncate">{t.title || "Untitled"}</CardTitle>
                 </CardHeader>
                 <CardContent className="flex items-center justify-between gap-4">
                   <div className="text-sm text-muted-foreground">
-                    Supprimé le {t.deleted_at ? new Date(t.deleted_at).toLocaleDateString() : ""}
+                    Deleted on {t.deleted_at ? new Date(t.deleted_at).toLocaleDateString("en-US") : ""}
                   </div>
                   <form action={restoreTrashedDocumentFormAction}>
                     <input type="hidden" name="trashId" value={String(t.id)} />
-                    <Button type="submit" variant="default">Restaurer</Button>
+                    <Button type="submit" variant="default">Restore</Button>
                   </form>
                 </CardContent>
               </Card>
@@ -55,7 +55,7 @@ export default async function TrashPage() {
 
           {trashedResult.success && (!trashedResult.documents || trashedResult.documents.length === 0) && (
             <div className="text-center py-10 text-muted-foreground">
-              Aucune note dans la corbeille.
+              No notes in trash.
             </div>
           )}
         </section>
@@ -63,5 +63,3 @@ export default async function TrashPage() {
     </main>
   );
 }
-
-

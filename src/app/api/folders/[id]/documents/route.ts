@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, requireDossierOwnership } from "@/lib/security/routeGuards";
+import { requireAuth, requireFolderOwnership } from "@/lib/security/routeGuards";
 
 export async function POST(
   request: NextRequest,
@@ -15,16 +15,16 @@ export async function POST(
       return authResult;
     }
 
-    const dossierId = parseInt(id);
+    const folderId = Number.parseInt(id);
 
-    if (isNaN(dossierId)) {
+    if (Number.isNaN(folderId)) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
 
-    const ownershipCheck = await requireDossierOwnership(dossierId, authResult.userId);
+    const ownershipCheck = await requireFolderOwnership(folderId, authResult.userId);
     if (ownershipCheck) {
       return ownershipCheck;
     }
@@ -34,13 +34,14 @@ export async function POST(
 
     if (!Array.isArray(documentIds) || documentIds.length === 0) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
 
-    const documentIdsNumbers = documentIds.map((id) => parseInt(String(id))).filter((id) => !isNaN(id));
+    const documentIdsNumbers = documentIds.map((id) => Number.parseInt(String(id))).filter((id) => !Number.isNaN(id));
     
+    // Check if documents belong to user
     const documents = await prisma.document.findMany({
       where: {
         id: { in: documentIdsNumbers },
@@ -50,15 +51,15 @@ export async function POST(
 
     if (documents.length !== documentIdsNumbers.length) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 403 }
       );
     }
 
-    // Ajouter les documents au dossier (en évitant les doublons)
-    const existingLinks = await prisma.dossierDocument.findMany({
+    // Add documents to folder (legacy table name or map)
+    const existingLinks = await prisma.folderDocument.findMany({
       where: {
-        dossier_id: dossierId,
+        folder_id: folderId,
         document_id: { in: documentIdsNumbers },
       },
     });
@@ -67,9 +68,9 @@ export async function POST(
     const newDocumentIds = documentIdsNumbers.filter((id) => !existingDocumentIds.has(id));
 
     if (newDocumentIds.length > 0) {
-      await prisma.dossierDocument.createMany({
+      await prisma.folderDocument.createMany({
         data: newDocumentIds.map((docId) => ({
-          dossier_id: dossierId,
+          folder_id: folderId,
           document_id: docId,
         })),
       });
@@ -77,9 +78,9 @@ export async function POST(
 
     return NextResponse.json({ success: true, added: newDocumentIds.length });
   } catch (error) {
-    console.error("❌ Erreur ajout documents au dossier:", error);
+    console.error("❌ Error adding documents to folder:", error);
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 500 }
     );
   }
@@ -97,16 +98,16 @@ export async function DELETE(
       return authResult;
     }
 
-    const dossierId = parseInt(id);
+    const folderId = Number.parseInt(id);
 
-    if (isNaN(dossierId)) {
+    if (Number.isNaN(folderId)) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
 
-    const ownershipCheck = await requireDossierOwnership(dossierId, authResult.userId);
+    const ownershipCheck = await requireFolderOwnership(folderId, authResult.userId);
     if (ownershipCheck) {
       return ownershipCheck;
     }
@@ -116,28 +117,27 @@ export async function DELETE(
 
     if (!Array.isArray(documentIds) || documentIds.length === 0) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
 
-    const documentIdsNumbers = documentIds.map((id) => parseInt(String(id))).filter((id) => !isNaN(id));
+    const documentIdsNumbers = documentIds.map((id) => Number.parseInt(String(id))).filter((id) => !Number.isNaN(id));
 
-    // Retirer les documents du dossier
-    await prisma.dossierDocument.deleteMany({
+    // Remove documents from folder
+    await prisma.folderDocument.deleteMany({
       where: {
-        dossier_id: dossierId,
+        folder_id: folderId,
         document_id: { in: documentIdsNumbers },
       },
     });
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("❌ Erreur retrait documents du dossier:", error);
+    console.error("❌ Error removing documents from folder:", error);
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 500 }
     );
   }
 }
-

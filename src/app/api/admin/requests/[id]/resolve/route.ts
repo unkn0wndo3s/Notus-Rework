@@ -26,7 +26,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     const requestBeforeResolution = await requestService.getRequestById(parseInt(id));
     if (!requestBeforeResolution.success || !requestBeforeResolution.request) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 404 }
       );
     }
@@ -37,16 +37,16 @@ export async function POST(request: Request, { params }: RouteParams) {
 
     if (!result.success) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 500 }
       );
     }
 
-    // Envoyer une notification automatique à l'utilisateur
+    // Send an automatic notification to the user
     const typeLabels: Record<string, string> = {
-      help: "Demande d'aide",
-      data_restoration: "Restauration de données",
-      other: "Autre",
+      help: "Help Request",
+      data_restoration: "Data Restoration",
+      other: "Other",
     };
 
     const notificationMessage = {
@@ -54,9 +54,9 @@ export async function POST(request: Request, { params }: RouteParams) {
       requestId: userRequest.id,
       requestTitle: userRequest.title,
       requestType: userRequest.type,
-      requestTypeLabel: typeLabels[userRequest.type] || "Autre",
+      requestTypeLabel: typeLabels[userRequest.type] || "Other",
       status: "resolved",
-      message: `Votre requête "${userRequest.title}" a été résolue.`,
+      message: `Your request "${userRequest.title}" has been resolved.`,
       from: "Administration",
     };
 
@@ -67,8 +67,8 @@ export async function POST(request: Request, { params }: RouteParams) {
     );
 
     if (!notificationResult.success) {
-      const errorMessage = 'error' in notificationResult ? notificationResult.error : "Erreur inconnue";
-      console.error("❌ Erreur envoi notification:", errorMessage);
+      const errorMessage = 'error' in notificationResult ? notificationResult.error : "Unknown error";
+      console.error("❌ Error sending notification:", errorMessage);
     }
 
     return NextResponse.json({
@@ -77,9 +77,9 @@ export async function POST(request: Request, { params }: RouteParams) {
       notificationSent: notificationResult.success,
     });
   } catch (error) {
-    console.error("❌ Erreur résolution requête:", error);
+    console.error("❌ Error resolving request:", error);
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 500 }
     );
   }

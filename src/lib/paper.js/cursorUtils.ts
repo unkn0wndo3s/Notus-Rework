@@ -2,15 +2,15 @@
 
 import DiffMatchPatch from "diff-match-patch";
 
-// Utilitaire commun pour ajuster une position de curseur (offset) lorsque le texte change.
-// Utilisé à la fois pour le curseur local (dans EditorEffects) et pour les curseurs distants (CursorOverlay).
+// Common utility to adjust a cursor position (offset) when text changes.
+// Used for both local cursor (in EditorEffects) and remote cursors (CursorOverlay).
 export function adjustCursorPositionForTextChange(
   oldText: string,
   newText: string,
   cursorPos: number
 ): number {
   const normalize = (text: string) =>
-    text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    text.replaceAll("\r\n", "\n").replaceAll("\r", "\n");
 
   const oldNorm = normalize(oldText);
   const newNorm = normalize(newText);

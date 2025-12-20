@@ -15,9 +15,9 @@ interface LoginRequiredModalProps {
 export default function LoginRequiredModal({
   isOpen,
   onClose,
-  message = "Vous devez être connecté pour effectuer cette action.",
-  title = "Connexion requise",
-}: LoginRequiredModalProps) {
+  message = "You must be logged in to perform this action.",
+  title = "Authentication Required",
+}: Readonly<LoginRequiredModalProps>) {
   return (
     <Modal
       isOpen={isOpen}
@@ -32,7 +32,7 @@ export default function LoginRequiredModal({
           </div>
           <div>
             <h3 className="text-lg font-semibold text-foreground mb-2">
-              Accès restreint
+              Restricted Access
             </h3>
             <p className="text-muted-foreground">
               {message}
@@ -46,19 +46,17 @@ export default function LoginRequiredModal({
           className="cursor-pointer px-6 py-2"
           onClick={onClose}
         >
-          Fermer
+          Close
         </Button>
         <Button 
           asChild 
           className="cursor-pointer px-6 py-2"
         >
           <Link href="/login">
-            Se connecter
+            Login
           </Link>
         </Button>
       </Modal.Footer>
     </Modal>
   );
 }
-
-

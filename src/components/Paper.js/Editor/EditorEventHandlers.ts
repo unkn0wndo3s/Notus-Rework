@@ -65,14 +65,14 @@ export function useEditorEventHandlers({
   const sanitizeHref = useCallback((href: string | null | undefined) => {
     if (!href) return "";
     // First replace encoded patterns
-    let cleaned = href.replace(/%3C\/?em%3E/gi, "_");
+    let cleaned = href.replaceAll(/%3C\/?em%3E/gi, "_");
     // Then replace literal tags
-    cleaned = cleaned.replace(/<\/?em>/gi, "_");
+    cleaned = cleaned.replaceAll(/<\/?em>/gi, "_");
     // Try decoding and clean again
     try {
       const decoded = decodeURIComponent(cleaned);
-      cleaned = decoded.replace(/<\/?em>/gi, "_");
-    } catch (_e) {
+      cleaned = decoded.replaceAll(/<\/?em>/gi, "_");
+    } catch (error_) {
       // ignore decode errors
     }
     return cleaned;
@@ -80,7 +80,7 @@ export function useEditorEventHandlers({
 
   // Handle link hover to show popup
   const handleLinkHover = useCallback((e: React.MouseEvent) => {
-    // Ne pas afficher le popup pour les fichiers joints
+    // Do not show the popup for file attachments
     const target = e.target as HTMLElement;
     if (target.closest('.wysiwyg-file-attachment')) {
       return;
@@ -125,7 +125,7 @@ export function useEditorEventHandlers({
         try {
           if (popupHideTimerRef.current) clearTimeout(popupHideTimerRef.current);
         } catch (_) {}
-        popupHideTimerRef.current = window.setTimeout(() => {
+        popupHideTimerRef.current = globalThis.window.setTimeout(() => {
           setLinkPopup(prev => ({ ...prev, visible: false }));
           popupHideTimerRef.current = null;
         }, 150) as unknown as number;
@@ -138,12 +138,12 @@ export function useEditorEventHandlers({
     return () => {
       try {
         if (popupHideTimerRef.current) clearTimeout(popupHideTimerRef.current);
-      } catch (_) {}
+      } catch (error_) {}
     };
   }, []);
 
-  const updateOverlayForElement = (element: HTMLElement) => {
-    requestAnimationFrame(() => {
+  const updateOverlayForElement = useCallback((element: HTMLElement) => {
+    globalThis.window.requestAnimationFrame(() => {
       if (editorRef.current) {
         const elemRect = element.getBoundingClientRect();
         const contRect = editorRef.current.getBoundingClientRect();
@@ -155,21 +155,20 @@ export function useEditorEventHandlers({
         });
       }
     });
-  };
+  }, [editorRef, setImageOverlayRect]);
 
-  // Handle editor clicks to track selected media
   const handleEditorClick = useCallback((e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     const img = target?.closest('img');
     const video = target?.closest('video');
     const attachment = target?.closest('.wysiwyg-file-attachment');
     
-    // Permettre la sélection des vidéos (pour suppression)
+    // Allow selecting videos (for deletion)
     if (editorRef.current && video && editorRef.current.contains(video)) {
       if (selectedImage && selectedImage !== video) {
-        selectedImage.removeAttribute('data-selected-image');
+        delete (selectedImage as HTMLElement).dataset.selectedImage;
       }
-      (video as HTMLVideoElement).setAttribute('data-selected-image', 'true');
+      (video as HTMLVideoElement).dataset.selectedImage = 'true';
       setSelectedImage(video as HTMLVideoElement);
       updateOverlayForElement(video as HTMLVideoElement);
       return;
@@ -177,29 +176,31 @@ export function useEditorEventHandlers({
     
     if (editorRef.current && img && editorRef.current.contains(img)) {
       if (selectedImage && selectedImage !== img) {
-        selectedImage.removeAttribute('data-selected-image');
+        delete (selectedImage as HTMLElement).dataset.selectedImage;
       }
-      (img as HTMLImageElement).setAttribute('data-selected-image', 'true');
+      (img as HTMLImageElement).dataset.selectedImage = 'true';
       setSelectedImage(img as HTMLImageElement);
       updateOverlayForElement(img as HTMLImageElement);
     } else if (editorRef.current && attachment && editorRef.current.contains(attachment)) {
       if (selectedImage && selectedImage !== attachment && selectedImage instanceof HTMLElement) {
-        selectedImage.removeAttribute('data-selected-image');
+        delete selectedImage.dataset.selectedImage;
       }
       setSelectedImage(attachment as HTMLElement);
       updateOverlayForElement(attachment as HTMLElement);
     } else {
       if (selectedImage) {
-        selectedImage.removeAttribute('data-selected-image');
+        delete (selectedImage as HTMLElement).dataset.selectedImage;
       }
       setSelectedImage(null);
       setImageOverlayRect(null);
       try {
         const selectedFile = editorRef.current?.querySelector('.wysiwyg-file-attachment[data-selected-file="true"]') as HTMLElement | null;
-        selectedFile?.removeAttribute('data-selected-file');
-      } catch (_e) {}
+        if (selectedFile) {
+          delete selectedFile.dataset.selectedFile;
+        }
+      } catch (error_) {}
     }
-  }, [selectedImage, editorRef, setSelectedImage, setImageOverlayRect]);
+  }, [selectedImage, editorRef, setSelectedImage, setImageOverlayRect, updateOverlayForElement]);
 
   // Handle dblclick to open image crop modal
   const handleEditorDoubleClick = useCallback((e: React.MouseEvent) => {
@@ -213,14 +214,14 @@ export function useEditorEventHandlers({
     
     if (editorRef.current && img && editorRef.current.contains(img)) {
       if (selectedImage && selectedImage !== img) {
-        selectedImage.removeAttribute('data-selected-image');
+        delete (selectedImage as HTMLElement).dataset.selectedImage;
       }
-      (img as HTMLImageElement).setAttribute('data-selected-image', 'true');
+      (img as HTMLImageElement).dataset.selectedImage = 'true';
       setSelectedImage(img as HTMLImageElement);
       try {
-        const open = window.openImageEditModal;
+        const open = (window as any).openImageEditModal;
         if (typeof open === 'function') open();
-      } catch (_e) {
+      } catch (error_) {
         // no-op
       }
     }
@@ -228,7 +229,7 @@ export function useEditorEventHandlers({
 
   // Handle paste events to clean up content
   const handlePaste = useCallback((e: React.ClipboardEvent) => {
-    // Empêcher le paste dans les fichiers joints
+    // Prevent pasting into file attachments
     const target = e.target as HTMLElement;
     if (target.closest('.wysiwyg-file-attachment')) {
       e.preventDefault();
@@ -244,13 +245,13 @@ export function useEditorEventHandlers({
     if (pastedData) {
       try {
         // If current selection is inside a link, move caret after the link before inserting
-        const sel = window.getSelection();
+        const sel = globalThis.window.getSelection();
         if (sel && sel.rangeCount > 0) {
           let node: Node | null = sel.getRangeAt(0).commonAncestorContainer;
           if (node && node.nodeType === Node.TEXT_NODE) node = node.parentElement;
           const el = node as Element | null;
           if (el) {
-            // Si on est dans un fichier joint, sortir avant de coller
+            // If we are in a file attachment, exit before pasting
             const fileContainer = el.closest('.wysiwyg-file-attachment');
             if (fileContainer && fileContainer.parentNode) {
               const newRange = document.createRange();
@@ -270,14 +271,14 @@ export function useEditorEventHandlers({
             }
           }
         }
-      } catch (_e) {
+      } catch (error_) {
         // ignore
       }
       // Clean the pasted content
       const cleanHtml = DOMPurify.sanitize(pastedData);
-      document.execCommand('insertHTML', false, cleanHtml);
+      globalThis.window.document.execCommand('insertHTML', false, cleanHtml);
       
-      setTimeout(() => {
+      globalThis.window.setTimeout(() => {
         handleEditorChangeCallback();
       }, 0);
     }
@@ -291,250 +292,160 @@ export function useEditorEventHandlers({
     if (e.ctrlKey && e.key === 'z' && !e.shiftKey) {
       e.preventDefault();
       formattingHandler.current.applyFormatting('undo');
+      return;
     }
-    // Handle Ctrl+Shift+Z or Ctrl+Y for redo
-    else if ((e.ctrlKey && e.shiftKey && e.key === 'Z') || (e.ctrlKey && e.key === 'y')) {
+    // Handle Redo
+    if ((e.ctrlKey && e.shiftKey && e.key === 'Z') || (e.ctrlKey && e.key === 'y')) {
       e.preventDefault();
       formattingHandler.current.applyFormatting('redo');
+      return;
     }
-    // Handle Backspace to remove a zero-width-space paragraph in one stroke
-    else if (e.key === 'Backspace' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
-      try {
-        const sel = window.getSelection();
-        if (sel && sel.rangeCount === 1) {
-          const range = sel.getRangeAt(0);
-          
-          // Gérer la suppression des images ou vidéos sélectionnées
-          const selectedMedia = editorRef.current?.querySelector('[data-selected-image="true"]') as HTMLElement;
-          if (selectedMedia && (selectedMedia.tagName === 'IMG' || selectedMedia.tagName === 'VIDEO')) {
+
+    const sel = globalThis.window.getSelection();
+    if (!sel || sel.rangeCount !== 1) return;
+    const range = sel.getRangeAt(0);
+
+    // Handle Deletion (Backspace or Delete)
+    if (e.key === 'Backspace' || e.key === 'Delete') {
+      // 1. Handle selected media
+      const selectedMedia = editorRef.current?.querySelector('[data-selected-image="true"]') as HTMLElement;
+      if (selectedMedia && (selectedMedia.tagName === 'IMG' || selectedMedia.tagName === 'VIDEO')) {
+        e.preventDefault();
+        const brAfter = selectedMedia.nextSibling;
+        selectedMedia.remove();
+        if (brAfter && brAfter.nodeName === 'BR') brAfter.remove();
+        setSelectedImage(null);
+        setImageOverlayRect(null);
+        setTimeout(() => {
+          try { handleEditorChange(); } catch (error_) {}
+        }, 0);
+        return;
+      }
+
+      // 2. Handle selected file attachment
+      const selectedFile = editorRef.current?.querySelector('.wysiwyg-file-attachment[data-selected-file="true"]') as HTMLElement;
+      if (selectedFile) {
+        e.preventDefault();
+        selectedFile.remove();
+        setTimeout(() => {
+          try { handleEditorChange(); } catch (error_) {}
+        }, 0);
+        return;
+      }
+
+      // 3. Handle selection by range for file attachments
+      if (!range.collapsed) {
+        const ancestorNode = range.commonAncestorContainer.nodeType === Node.ELEMENT_NODE
+          ? (range.commonAncestorContainer as Element)
+          : range.commonAncestorContainer.parentElement;
+        const fileContainer = ancestorNode instanceof Element
+          ? (ancestorNode.closest('.wysiwyg-file-attachment') as HTMLElement | null)
+          : null;
+        if (fileContainer) {
+          e.preventDefault();
+          fileContainer.remove();
+          setTimeout(() => {
+            try { handleEditorChange(); } catch (error_) {}
+          }, 0);
+          return;
+        }
+      }
+
+      // 4. Handle Backspace on empty paragraph (ZWSP)
+      if (e.key === 'Backspace' && range.collapsed) {
+        let node: Node | null = range.startContainer;
+        if (node && node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+        const el = node as HTMLElement | null;
+        const para = el?.closest ? (el.closest('p') || el.closest('div')) as HTMLElement | null : null;
+        if (para) {
+          const txt = para.textContent || '';
+          if (txt === '\u200B' || txt === '\u200B\n' || txt.trim() === '\u200B') {
             e.preventDefault();
-            const brAfter = selectedMedia.nextSibling;
-            selectedMedia.remove();
-            // Si un <br> suit le média, le supprimer aussi
-            if (brAfter && brAfter.nodeName === 'BR') {
-              brAfter.remove();
-            }
-            // Réinitialiser la sélection
-            setSelectedImage(null);
-            setImageOverlayRect(null);
-            // Synchroniser le markdown
-            setTimeout(() => {
-              try { handleEditorChange(); } catch (_e) {}
-            }, 0);
-            return;
-          }
-          
-          // Gérer la suppression des fichiers joints sélectionnés
-          const selectedFile = editorRef.current?.querySelector('.wysiwyg-file-attachment[data-selected-file="true"]') as HTMLElement;
-          if (selectedFile) {
-            e.preventDefault();
-            selectedFile.remove();
-            // Synchroniser le markdown
-            setTimeout(() => {
-              try { handleEditorChange(); } catch (_e) {}
-            }, 0);
-            return;
-          }
-          
-          // Gérer la suppression des fichiers joints (sélection par range)
-          if (!range.collapsed) {
-            const ancestorNode = range.commonAncestorContainer.nodeType === Node.ELEMENT_NODE
-              ? (range.commonAncestorContainer as Element)
-              : range.commonAncestorContainer.parentElement;
-            const fileContainer = ancestorNode instanceof Element
-              ? (ancestorNode.closest('.wysiwyg-file-attachment') as HTMLElement | null)
-              : null;
-            if (fileContainer) {
-              e.preventDefault();
-              fileContainer.remove();
-              // Synchroniser le markdown
-              setTimeout(() => {
-                try { handleEditorChange(); } catch (_e) {}
-              }, 0);
-              return;
-            }
-          }
-          
-          if (range.collapsed) {
-            let node: Node | null = range.startContainer;
-            if (node && node.nodeType === Node.TEXT_NODE) node = node.parentElement;
-            const el = node as HTMLElement | null;
-            const para = el?.closest ? (el.closest('p') || el.closest('div')) as HTMLElement | null : null;
-            if (para) {
-              const txt = para.textContent || '';
-              // If paragraph contains only the zero-width-space, remove paragraph
-              if (txt === '\u200B' || txt === '\u200B\n' || txt.trim() === '\u200B') {
-                e.preventDefault();
-                const prev = para.previousElementSibling as HTMLElement | null;
-                if (prev) {
-                  // remove the empty paragraph and put caret at end of previous block
-                  para.remove();
-                  const sel2 = window.getSelection();
-                  const rng = document.createRange();
-                  // find last text node inside prev
-                  const walker = document.createTreeWalker(prev, NodeFilter.SHOW_TEXT);
-                  let last: Node | null = null;
-                  let n = walker.nextNode();
-                  while (n) { last = n; n = walker.nextNode(); }
-                  if (last) {
-                    rng.setStart(last, (last.textContent || '').length);
-                    rng.collapse(true);
-                    sel2?.removeAllRanges();
-                    sel2?.addRange(rng);
-                  } else {
-                    // fallback: place caret after prev
-                    rng.setStartAfter(prev);
-                    rng.collapse(true);
-                    sel2?.removeAllRanges();
-                    sel2?.addRange(rng);
-                  }
-                } else {
-                  // no previous block: clear paragraph content and place caret at start
-                  para.textContent = '';
-                  const sel2 = window.getSelection();
-                  const rng = document.createRange();
-                  rng.selectNodeContents(para);
-                  rng.collapse(true);
-                  sel2?.removeAllRanges();
-                  sel2?.addRange(rng);
-                }
-                try {
-                  if (editorRef.current && markdownConverter.current) {
-                    const updatedHtml = editorRef.current.innerHTML;
-                    try {
-                      const updatedMd = markdownConverter.current.htmlToMarkdown(updatedHtml);
-                      onContentChange(updatedMd);
-                    } catch (_err) {
-                      // fallback to generic change handler if conversion fails
-                      try { handleEditorChange(); } catch (_e) {}
-                    }
-                  } else {
-                    try { handleEditorChange(); } catch (_e) {}
-                  }
-                } catch (_e) {}
+            const prev = para.previousElementSibling as HTMLElement | null;
+            if (prev) {
+              para.remove();
+              const rng = document.createRange();
+              const walker = document.createTreeWalker(prev, NodeFilter.SHOW_TEXT);
+              let last: Node | null = null;
+              let n = walker.nextNode();
+              while (n) { last = n; n = walker.nextNode(); }
+              if (last) {
+                rng.setStart(last, (last.textContent || '').length);
+                rng.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(rng);
+              } else {
+                rng.setStartAfter(prev);
+                rng.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(rng);
               }
+            } else {
+              para.textContent = '';
+              const rng = document.createRange();
+              rng.selectNodeContents(para);
+              rng.collapse(true);
+              sel.removeAllRanges();
+              sel.addRange(rng);
             }
+            setTimeout(() => {
+              if (editorRef.current && markdownConverter.current) {
+                try {
+                  const updatedHtml = editorRef.current.innerHTML;
+                  const updatedMd = markdownConverter.current.htmlToMarkdown(updatedHtml);
+                  onContentChange(updatedMd);
+                } catch (error_) {
+                  try { handleEditorChange(); } catch (error_2) {}
+                }
+              } else {
+                try { handleEditorChange(); } catch (error_) {}
+              }
+            }, 0);
           }
         }
-      } catch (_e) {
-        // ignore
       }
     }
-    // Handle Enter to preserve empty paragraph lines across sync
+    // Handle Enter to preserve empty lines
     else if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
-      // Allow default behavior (creates paragraph), then ensure the new paragraph
-      // contains a zero-width space if it's empty so it survives HTML/MD roundtrips.
       setTimeout(() => {
         try {
-          const sel = window.getSelection();
-          if (!sel || sel.rangeCount === 0) return;
-          const range = sel.getRangeAt(0);
-          let node: Node | null = range.startContainer;
-          if (node && node.nodeType === Node.TEXT_NODE) node = node.parentElement;
-          const el = node as HTMLElement | null;
-          const paragraph = el?.closest ? (el.closest('p') || el.closest('div')) as HTMLElement | null : null;
-          if (paragraph) {
-            const txt = paragraph.textContent || '';
-            // If paragraph contains only whitespace or is effectively empty, insert ZWSP
-            if (txt.trim() === '') {
-              const zw = document.createTextNode('\u200B');
-              paragraph.insertBefore(zw, paragraph.firstChild || null);
-              const newRange = document.createRange();
-              newRange.setStart(zw, 1);
-              newRange.collapse(true);
-              sel.removeAllRanges();
-              sel.addRange(newRange);
-              // Notify change so collaboration sends the updated markdown
-              try { handleEditorChange(); } catch(_e) {}
-            }
+          const sel_ = globalThis.window.getSelection();
+          if (!sel_ || sel_.rangeCount === 0) return;
+          const range_ = sel_.getRangeAt(0);
+          let node_ = range_.startContainer;
+          if (node_ && node_.nodeType === Node.TEXT_NODE) node_ = node_.parentElement || node_;
+          const el_ = node_ as HTMLElement | null;
+          const paragraph = el_?.closest ? (el_.closest('p') || el_.closest('div')) as HTMLElement | null : null;
+          if (paragraph && (paragraph.textContent || '').trim() === '') {
+            const zw = document.createTextNode('\u200B');
+            paragraph.insertBefore(zw, paragraph.firstChild || null);
+            const newRange = document.createRange();
+            newRange.setStart(zw, 1);
+            newRange.collapse(true);
+            sel_.removeAllRanges();
+            sel_.addRange(newRange);
+            try { handleEditorChange(); } catch(error_) {}
           }
-        } catch (_e) {}
+        } catch (error_) {}
       }, 0);
     }
-    // Handle Ctrl+B for bold
-    else if (e.ctrlKey && e.key === 'b') {
-      e.preventDefault();
-      formattingHandler.current.applyFormatting('bold');
-    }
-    // Handle Ctrl+I for italic
-    else if (e.ctrlKey && e.key === 'i') {
-      e.preventDefault();
-      formattingHandler.current.applyFormatting('italic');
-    }
-    // Handle Ctrl+U for underline
-    else if (e.ctrlKey && e.key === 'u') {
-      e.preventDefault();
-      formattingHandler.current.applyFormatting('underline');
-    }
-    // Handle Ctrl+Shift+> for quote
-    else if (e.ctrlKey && e.shiftKey && e.key === '.') {
-      e.preventDefault();
-      formattingHandler.current.applyFormatting('insertQuote');
-    }
-    // Handle Ctrl+Shift+- for horizontal rule
-    else if (e.ctrlKey && e.shiftKey && e.key === '-') {
-      e.preventDefault();
-      formattingHandler.current.applyFormatting('insertHorizontalRule');
-    }
-    // Handle Delete key - permettre suppression images, vidéos et fichiers joints
-    else if (e.key === 'Delete' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
-      try {
-        // Gérer la suppression des images ou vidéos sélectionnées
-        const selectedMedia = editorRef.current?.querySelector('[data-selected-image="true"]') as HTMLElement;
-        if (selectedMedia && (selectedMedia.tagName === 'IMG' || selectedMedia.tagName === 'VIDEO')) {
-          e.preventDefault();
-          const brAfter = selectedMedia.nextSibling;
-          selectedMedia.remove();
-          // Si un <br> suit le média, le supprimer aussi
-          if (brAfter && brAfter.nodeName === 'BR') {
-            brAfter.remove();
-          }
-          // Réinitialiser la sélection
-          setSelectedImage(null);
-          setImageOverlayRect(null);
-          // Synchroniser le markdown
-          setTimeout(() => {
-            try { handleEditorChange(); } catch (_e) {}
-          }, 0);
-          return;
-        }
-        
-        // Gérer la suppression des fichiers joints sélectionnés
-        const selectedFile = editorRef.current?.querySelector('.wysiwyg-file-attachment[data-selected-file="true"]') as HTMLElement;
-        if (selectedFile) {
-          e.preventDefault();
-          selectedFile.remove();
-          // Synchroniser le markdown
-          setTimeout(() => {
-            try { handleEditorChange(); } catch (_e) {}
-          }, 0);
-          return;
-        }
-        
-        const sel = window.getSelection();
-        if (sel && sel.rangeCount === 1) {
-          const range = sel.getRangeAt(0);
-          if (!range.collapsed) {
-            // Gérer la suppression des fichiers joints (sélection par range)
-            const ancestorNode = range.commonAncestorContainer.nodeType === Node.ELEMENT_NODE
-              ? (range.commonAncestorContainer as Element)
-              : range.commonAncestorContainer.parentElement;
-            const fileContainer = ancestorNode instanceof Element
-              ? (ancestorNode.closest('.wysiwyg-file-attachment') as HTMLElement | null)
-              : null;
-            if (fileContainer) {
-              e.preventDefault();
-              fileContainer.remove();
-              // Synchroniser le markdown
-              setTimeout(() => {
-                try { handleEditorChange(); } catch (_e) {}
-              }, 0);
-              return;
-            }
-          }
-        }
-      } catch (_e) {
-        // ignore
+    // Formatting Shortcuts
+    else if (e.ctrlKey) {
+      if (e.key === 'b') {
+        e.preventDefault();
+        formattingHandler.current.applyFormatting('bold');
+      } else if (e.key === 'i') {
+        e.preventDefault();
+        formattingHandler.current.applyFormatting('italic');
+      } else if (e.key === 'u') {
+        e.preventDefault();
+        formattingHandler.current.applyFormatting('underline');
+      } else if (e.shiftKey && e.key === '.') {
+        e.preventDefault();
+        formattingHandler.current.applyFormatting('insertQuote');
+      } else if (e.shiftKey && e.key === '-') {
+        e.preventDefault();
+        formattingHandler.current.applyFormatting('insertHorizontalRule');
       }
     }
   }, [formattingHandler, handleEditorChange, editorRef, markdownConverter, onContentChange, setSelectedImage, setImageOverlayRect]);

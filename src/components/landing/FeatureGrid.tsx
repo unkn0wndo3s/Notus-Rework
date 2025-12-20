@@ -11,51 +11,51 @@ interface Feature {
 
 const features: Feature[] = [
   {
-    title: "Éditeur",
-    description: "Mise en forme avancée, composants collaboratifs, mentions et intégrations médias.",
+    title: "Editor",
+    description: "Advanced formatting, collaborative components, mentions and media integrations.",
     icon: "note",
-    highlight: "Temps réel",
+    highlight: "Real-time",
   },
   {
-    title: "Collaboration instantanée",
-    description: "Invitez vos coéquipiers, assignez des tâches et discutez directement dans le document.",
+    title: "Instant Collaboration",
+    description: "Invite your teammates, assign tasks and discuss directly in the document.",
     icon: "users",
-    highlight: "Accès partagé",
+    highlight: "Shared Access",
   },
   {
-    title: "Synthèses IA",
-    description: "Résumez vos notes en un clic grâce à notre moteur de synthèse contextuelle.",
+    title: "AI Synthesis",
+    description: "Summarize your notes in one click with our contextual synthesis engine.",
     icon: "sparkles",
-    highlight: "IA intégrée",
+    highlight: "Integrated AI",
   },
   {
-    title: "Organisation claire",
-    description: "Classez vos notes par dossiers et tags. Trouvez la bonne information immédiatement.",
+    title: "Clear Organization",
+    description: "Organize your notes with folders and tags. Find the right information immediately.",
     icon: "folder",
   },
   {
-    title: "Historique complet",
-    description: "Revenez sur n'importe quelle version de votre document et comparez les modifications.",
+    title: "Full History",
+    description: "Go back to any version of your document and compare changes.",
     icon: "clock",
   },
   {
-    title: "Commentaires contextualisés",
-    description: "Ajoutez des annotations ciblées et recevez des notifications personnalisées.",
+    title: "Contextual Comments",
+    description: "Add targeted annotations and receive personalized notifications.",
     icon: "comment",
   },
   {
-    title: "Recherche intelligente",
-    description: "Filtres, tags... retrouvez en quelques secondes la bonne note.",
+    title: "Smart Search",
+    description: "Filters, tags... find the right note in seconds.",
     icon: "search",
   },
   {
-    title: "Partage sécurisé",
-    description: "Définissez des niveaux d’accès précis. Notus respecte vos exigences RGPD.",
+    title: "Secure Sharing",
+    description: "Define precise access levels. Notus respects your GDPR requirements.",
     icon: "shieldCheck",
   },
   {
-    title: "Favoris rapides",
-    description: "Epinglez vos documents critiques pour les retrouver instantanément.",
+    title: "Quick Favorites",
+    description: "Pin your critical documents to find them instantly.",
     icon: "star",
   },
 ];
@@ -65,9 +65,9 @@ export default function FeatureGrid() {
     <section id="features" className="py-20 bg-muted/30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionHeading
-          eyebrow="Fonctionnalités"
-          title="Tout ce dont votre équipe a besoin"
-          description="Des outils puissants et simples d’utilisation pour accompagner chaque étape de votre flux documentaire."
+          eyebrow="Features"
+          title="Everything your team needs"
+          description="Powerful and simple-to-use tools to support every stage of your document workflow."
         />
         <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
           {features.map((feature) => (

@@ -5,18 +5,18 @@ export class UserValidator {
     const errors: Record<string, string> = {};
 
     if (!email || email.trim().length === 0) {
-      errors.email = "L'email est requis";
+      errors.email = "Email is required";
       return { isValid: false, errors };
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      errors.email = "L'email n'est pas valide";
+      errors.email = "Email is not valid";
       return { isValid: false, errors };
     }
 
     if (email.length > 255) {
-      errors.email = "L'email ne peut pas dépasser 255 caractères";
+      errors.email = "Email cannot exceed 255 characters";
       return { isValid: false, errors };
     }
 
@@ -27,23 +27,23 @@ export class UserValidator {
     const errors: Record<string, string> = {};
 
     if (!username || username.trim().length === 0) {
-      errors.username = "Le nom d'utilisateur est requis";
+      errors.username = "Username is required";
       return { isValid: false, errors };
     }
 
     if (username.length < 3) {
-      errors.username = "Le nom d'utilisateur doit contenir au moins 3 caractères";
+      errors.username = "Username must contain at least 3 characters";
       return { isValid: false, errors };
     }
 
     if (username.length > 50) {
-      errors.username = "Le nom d'utilisateur ne peut pas dépasser 50 caractères";
+      errors.username = "Username cannot exceed 50 characters";
       return { isValid: false, errors };
     }
 
     const usernameRegex = /^[a-zA-Z0-9_-]+$/;
     if (!usernameRegex.test(username)) {
-      errors.username = "Le nom d'utilisateur ne peut contenir que des lettres, chiffres, tirets et underscores";
+      errors.username = "Username can only contain letters, numbers, dashes and underscores";
       return { isValid: false, errors };
     }
 
@@ -54,17 +54,17 @@ export class UserValidator {
     const errors: Record<string, string> = {};
 
     if (!password || password.length === 0) {
-      errors.password = "Le mot de passe est requis";
+      errors.password = "Password is required";
       return { isValid: false, errors };
     }
 
     if (password.length < 6) {
-      errors.password = "Le mot de passe doit contenir au moins 6 caractères";
+      errors.password = "Password must contain at least 6 characters";
       return { isValid: false, errors };
     }
 
     if (password.length > 128) {
-      errors.password = "Le mot de passe ne peut pas dépasser 128 caractères";
+      errors.password = "Password cannot exceed 128 characters";
       return { isValid: false, errors };
     }
 
@@ -75,18 +75,18 @@ export class UserValidator {
     const errors: Record<string, string> = {};
 
     if (!name || name.trim().length === 0) {
-      errors[fieldName] = `${fieldName} est requis`;
+      errors[fieldName] = `${fieldName} is required`;
       return { isValid: false, errors };
     }
 
     if (name.length > 100) {
-      errors[fieldName] = `${fieldName} ne peut pas dépasser 100 caractères`;
+      errors[fieldName] = `${fieldName} cannot exceed 100 characters`;
       return { isValid: false, errors };
     }
 
     const nameRegex = /^[a-zA-ZÀ-ÿ\s'-]+$/;
     if (!nameRegex.test(name)) {
-      errors[fieldName] = `${fieldName} ne peut contenir que des lettres, espaces, apostrophes et tirets`;
+      errors[fieldName] = `${fieldName} can only contain letters, spaces, apostrophes and dashes`;
       return { isValid: false, errors };
     }
 
@@ -102,32 +102,32 @@ export class UserValidator {
   }): ValidationResult {
     const errors: Record<string, string> = {};
 
-    // Valider l'email
+    // Validate email
     const emailValidation = this.validateEmail(userData.email);
     if (!emailValidation.isValid) {
       Object.assign(errors, emailValidation.errors);
     }
 
-    // Valider le nom d'utilisateur
+    // Validate username
     const usernameValidation = this.validateUsername(userData.username);
     if (!usernameValidation.isValid) {
       Object.assign(errors, usernameValidation.errors);
     }
 
-    // Valider le mot de passe
+    // Validate password
     const passwordValidation = this.validatePassword(userData.password);
     if (!passwordValidation.isValid) {
       Object.assign(errors, passwordValidation.errors);
     }
 
-    // Valider le prénom
-    const firstNameValidation = this.validateName(userData.firstName, "firstName");
+    // Validate first name
+    const firstNameValidation = this.validateName(userData.firstName, "first_name");
     if (!firstNameValidation.isValid) {
       Object.assign(errors, firstNameValidation.errors);
     }
 
-    // Valider le nom
-    const lastNameValidation = this.validateName(userData.lastName, "lastName");
+    // Validate last name
+    const lastNameValidation = this.validateName(userData.lastName, "last_name");
     if (!lastNameValidation.isValid) {
       Object.assign(errors, lastNameValidation.errors);
     }
@@ -148,7 +148,7 @@ export class UserValidator {
   }): ValidationResult {
     const errors: Record<string, string> = {};
 
-    // Valider l'email si fourni
+    // Validate email if provided
     if (profileData.email !== undefined) {
       const emailValidation = this.validateEmail(profileData.email);
       if (!emailValidation.isValid) {
@@ -156,7 +156,7 @@ export class UserValidator {
       }
     }
 
-    // Valider le nom d'utilisateur si fourni
+    // Validate username if provided
     if (profileData.username !== undefined) {
       const usernameValidation = this.validateUsername(profileData.username);
       if (!usernameValidation.isValid) {
@@ -164,24 +164,24 @@ export class UserValidator {
       }
     }
 
-    // Valider le prénom si fourni
+    // Validate first name if provided
     if (profileData.firstName !== undefined) {
-      const firstNameValidation = this.validateName(profileData.firstName, "firstName");
+      const firstNameValidation = this.validateName(profileData.firstName, "first_name");
       if (!firstNameValidation.isValid) {
         Object.assign(errors, firstNameValidation.errors);
       }
     }
 
-    // Valider le nom si fourni
+    // Validate last name if provided
     if (profileData.lastName !== undefined) {
-      const lastNameValidation = this.validateName(profileData.lastName, "lastName");
+      const lastNameValidation = this.validateName(profileData.lastName, "last_name");
       if (!lastNameValidation.isValid) {
         Object.assign(errors, lastNameValidation.errors);
       }
     }
 
-    // Valider les images si fournies
-    // Limite de caractères retirée pour permettre des URLs d'images plus longues
+    // Image validation if provided
+    // Character limit removed to allow longer image URLs
 
     return {
       isValid: Object.keys(errors).length === 0,
@@ -192,15 +192,15 @@ export class UserValidator {
   static validatePasswordResetData(password: string, confirmPassword: string): ValidationResult {
     const errors: Record<string, string> = {};
 
-    // Valider le mot de passe
+    // Validate password
     const passwordValidation = this.validatePassword(password);
     if (!passwordValidation.isValid) {
       Object.assign(errors, passwordValidation.errors);
     }
 
-    // Vérifier que les mots de passe correspondent
+    // Verify that passwords match
     if (password !== confirmPassword) {
-      errors.confirmPassword = "Les mots de passe ne correspondent pas";
+      errors.confirmPassword = "Passwords do not match";
     }
 
     return {
@@ -209,3 +209,4 @@ export class UserValidator {
     };
   }
 }
+

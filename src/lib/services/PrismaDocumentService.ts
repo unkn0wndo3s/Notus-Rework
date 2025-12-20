@@ -16,8 +16,8 @@ export class PrismaDocumentService {
     try {
       return await this.documentRepository.createDocument(data);
     } catch (error) {
-      console.error("❌ Erreur création document:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error creating document:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -25,8 +25,8 @@ export class PrismaDocumentService {
     try {
       return await this.documentRepository.getDocumentById(id);
     } catch (error) {
-      console.error("❌ Erreur récupération document:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error retrieving document:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -34,8 +34,8 @@ export class PrismaDocumentService {
     try {
       return await this.documentRepository.getUserDocuments(userId, limit, offset);
     } catch (error) {
-      console.error("❌ Erreur récupération documents utilisateur:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error retrieving user documents:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -43,8 +43,8 @@ export class PrismaDocumentService {
     try {
       return await this.documentRepository.updateDocument(id, userId, title, content, tags);
     } catch (error) {
-      console.error("❌ Erreur mise à jour document:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error updating document:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -52,8 +52,8 @@ export class PrismaDocumentService {
     try {
       return await this.documentRepository.deleteDocument(id, userId);
     } catch (error) {
-      console.error("❌ Erreur suppression document:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error deleting document:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -61,8 +61,8 @@ export class PrismaDocumentService {
     try {
       return await this.documentRepository.deleteDocumentsBulk(userId, documentIds);
     } catch (error) {
-      console.error("❌ Erreur suppression multiple documents:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error deleting multiple documents:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -70,8 +70,8 @@ export class PrismaDocumentService {
     try {
       return await this.documentRepository.createOrUpdateDocumentById(id, userId, title, content, tags, userEmail);
     } catch (error) {
-      console.error("❌ Erreur création/mise à jour document:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error creating/updating document:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -79,8 +79,8 @@ export class PrismaDocumentService {
     try {
       return await this.documentRepository.getUserTrashedDocuments(userId, limit, offset) as any;
     } catch (error) {
-      console.error("❌ Erreur récupération corbeille:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" } as any;
+      console.error("❌ Error retrieving trash:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" } as any;
     }
   }
 
@@ -88,8 +88,8 @@ export class PrismaDocumentService {
     try {
       return await this.documentRepository.restoreDocumentFromTrash(trashId, userId);
     } catch (error) {
-      console.error("❌ Erreur restauration corbeille:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error restoring from trash:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -97,8 +97,8 @@ export class PrismaDocumentService {
     try {
       return await this.documentRepository.fetchSharedWithUser(email);
     } catch (error) {
-      console.error("❌ Erreur récupération documents partagés:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue", documents: [] };
+      console.error("❌ Error retrieving shared documents:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error", documents: [] };
     }
   }
 
@@ -106,8 +106,8 @@ export class PrismaDocumentService {
     try {
       return await this.documentRepository.fetchSharedByUser(userId);
     } catch (error) {
-      console.error("❌ Erreur récupération documents partagés par utilisateur:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue", documents: [] };
+      console.error("❌ Error retrieving documents shared by user:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error", documents: [] };
     }
   }
 
@@ -115,8 +115,8 @@ export class PrismaDocumentService {
     try {
       return await this.documentRepository.toggleFavoriteForDocument(documentId, userId, value);
     } catch (error) {
-      console.error("❌ Erreur toggle favori (document):", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error toggling favorite (document):", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -124,8 +124,8 @@ export class PrismaDocumentService {
     try {
       return await this.documentRepository.toggleFavoriteForShare(documentId, email, value);
     } catch (error) {
-      console.error("❌ Erreur toggle favori (share):", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error toggling favorite (share):", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -133,8 +133,8 @@ export class PrismaDocumentService {
     try {
       return await this.documentRepository.getFavorites(userId, email);
     } catch (error) {
-      console.error("❌ Erreur récupération favoris:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue", documents: [] };
+      console.error("❌ Error retrieving favorites:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error", documents: [] };
     }
   }
 }

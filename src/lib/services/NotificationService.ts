@@ -23,8 +23,8 @@ export class NotificationService {
             await this.notificationRepository.initializeTables();
             return await this.notificationRepository.createNotification(id_sender, id_receiver, message);
         } catch (error) {
-            console.error("❌ Erreur sendNotification:", error);
-            return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+            console.error("❌ Error sendNotification:", error);
+            return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
         }
     }
 
@@ -81,8 +81,8 @@ export class NotificationService {
 
             return { success: true, data: normalized };
         } catch (error) {
-            console.error("❌ Erreur getNotificationsForUser:", error);
-            return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+            console.error("❌ Error getNotificationsForUser:", error);
+            return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
         }
     }
 
@@ -90,8 +90,8 @@ export class NotificationService {
         try {
             return await this.notificationRepository.markAsRead(notificationId);
         } catch (error) {
-            console.error("❌ Erreur markNotificationAsRead:", error);
-            return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+            console.error("❌ Error markNotificationAsRead:", error);
+            return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
         }
     }
 
@@ -99,8 +99,8 @@ export class NotificationService {
         try {
             return await this.notificationRepository.markAllAsRead(id_receiver);
         } catch (error) {
-            console.error("❌ Erreur markAllAsRead:", error);
-            return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+            console.error("❌ Error markAllAsRead:", error);
+            return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
         }
     }
 
@@ -108,17 +108,17 @@ export class NotificationService {
         try {
             return await this.notificationRepository.deleteNotification(notificationId);
         } catch (error) {
-            console.error("❌ Erreur deleteNotification:", error);
-            return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+            console.error("❌ Error deleteNotification:", error);
+            return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
         }
     }
 
     async sendPasswordChangeNotification(id_receiver: number) {
-        const messageText = "Votre mot de passe a été modifié.";
+        const messageText = "Your password has been changed.";
         try {
             return await this.notificationRepository.createNotification(null, id_receiver, messageText);
         } catch (error) {
-            return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+            return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
         }
     }
 
@@ -126,8 +126,8 @@ export class NotificationService {
         try {
             return await this.notificationRepository.countUnread(id_receiver);
         } catch (error) {
-            console.error("❌ Erreur getUnreadCount:", error);
-            return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+            console.error("❌ Error getUnreadCount:", error);
+            return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
         }
     }
 }

@@ -29,7 +29,7 @@ interface WysiwygEditorProps {
 export default function WysiwygEditor({
   content,
   onContentChange,
-  placeholder = "Commencez à écrire votre document...",
+  placeholder = "Start writing your document...",
   className = "",
   showDebug = false,
   readOnly = false,
@@ -91,7 +91,7 @@ export default function WysiwygEditor({
     roomId,
     editorRef,
     clientId: clientIdRef.current,
-    username: username || 'Utilisateur',
+    username: username || 'User',
   });
 
   // Initialize history with initial content
@@ -279,7 +279,7 @@ export default function WysiwygEditor({
         <div className={`flex flex-col relative w-full`}>
           {showDebug && (
             <div className="bg-muted px-3 py-2 border-b border-border">
-              <span className="text-sm font-medium text-foreground">Éditeur WYSIWYG</span>
+              <span className="text-sm font-medium text-foreground">WYSIWYG Editor</span>
             </div>
           )}
           <div className="flex-1 relative">
@@ -296,7 +296,7 @@ export default function WysiwygEditor({
               style={{ 
                 minHeight: '200px', 
                 maxHeight: 'none',
-                // Styles spécifiques pour les listes
+                // Specific styles for lists
                 '--tw-prose-ul': 'list-style-type: disc; margin: 1rem 0; padding-left: 1.5rem;',
                 '--tw-prose-ol': 'list-style-type: decimal; margin: 1rem 0; padding-left: 1.5rem;',
                 '--tw-prose-li': 'margin: 0.25rem 0; display: list-item; list-style-position: outside;'

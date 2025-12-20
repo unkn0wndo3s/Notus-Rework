@@ -1,6 +1,6 @@
-// Utilitaires pour gérer la session utilisateur dans sessionStorage
+// Utilities for managing user session in sessionStorage
 
-// Types pour les données de session
+// Types for session data
 interface UserSessionData {
   id: string | number;
   email: string;
@@ -32,23 +32,26 @@ export function saveUserSession(userData: UserSessionData): boolean {
       isVerified: userData.isVerified,
       timestamp: Date.now(),
     };
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
+    if (globalThis.window !== undefined) {
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
+    }
     return true;
   } catch (error) {
-    console.error("❌ Erreur lors de la sauvegarde de la session:", error);
+    console.error("❌ Error while saving session:", error);
     return false;
   }
 }
 
 export function getUserSession(): UserSessionData | null {
   try {
+    if (globalThis.window === undefined) return null;
     const sessionData = sessionStorage.getItem(SESSION_KEY);
     if (!sessionData) {
       return null;
     }
     const parsed = JSON.parse(sessionData) as UserSessionData;
     // Patch: fallback to email in localStorage if missing
-    if (!parsed.email && typeof window !== 'undefined') {
+    if (!parsed.email) {
       const local = localStorage.getItem('userSession');
       if (local) {
         const localParsed = JSON.parse(local);
@@ -57,7 +60,7 @@ export function getUserSession(): UserSessionData | null {
     }
     return parsed;
   } catch (error) {
-    console.error("❌ Erreur lors de la récupération de la session:", error);
+    console.error("❌ Error while retrieving session:", error);
     clearUserSession();
     return null;
   }
@@ -65,14 +68,14 @@ export function getUserSession(): UserSessionData | null {
 
 export function clearUserSession(): boolean {
   try {
-    // Vider complètement le sessionStorage
-    sessionStorage.clear();
+    if (globalThis.window !== undefined) {
+      // Completely clear sessionStorage
+      sessionStorage.clear();
 
-    // Vider aussi le localStorage pour la session utilisateur
-    if (typeof window !== "undefined") {
+      // Also clear localStorage for user session
       localStorage.removeItem("userSession");
       localStorage.removeItem("currentUserId");
-      // Nettoyer aussi les clés de documents liées à l'utilisateur
+      // Also clean document keys related to the user
       const keysToRemove = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
@@ -85,7 +88,7 @@ export function clearUserSession(): boolean {
 
     return true;
   } catch (error) {
-    console.error("❌ Erreur lors de la suppression de la session:", error);
+    console.error("❌ Error while clearing session:", error);
     return false;
   }
 }
@@ -124,3 +127,4 @@ export function getUsername(): string | null {
   const session = getUserSession();
   return session ? session.username : null;
 }
+

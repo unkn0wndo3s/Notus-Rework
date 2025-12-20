@@ -34,7 +34,7 @@ export default function FavoriteToggle({
         onClick={handleClick}
         onMouseDown={(e) => { e.stopPropagation(); }}
         onTouchStart={(e) => { e.stopPropagation(); }}
-        aria-label={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+        aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
         className={cn(
           "inline-flex items-center justify-center h-8 w-8 rounded-md transition-colors cursor-pointer",
           className

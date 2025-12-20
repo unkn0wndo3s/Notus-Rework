@@ -10,7 +10,7 @@ export class UserRepository extends BaseRepository {
 
     return this.ensureInitialized(async () => {
       try {
-        // Vérifier si on doit réinitialiser la base de données
+        // Check if database reset is needed
         const shouldReset = process.env.RESET_DATABASE === "true";
 
         if (shouldReset) {
@@ -18,7 +18,7 @@ export class UserRepository extends BaseRepository {
           await resetDatabase();
         }
 
-        // Table des utilisateurs
+        // Users table
         await this.query(`
           CREATE TABLE IF NOT EXISTS users (
             id SERIAL PRIMARY KEY,
@@ -36,35 +36,35 @@ export class UserRepository extends BaseRepository {
           )
         `);
 
-        // Ajouter les colonnes OAuth si elles n'existent pas
+        // Add OAuth columns if they don't exist
         await this.addColumnIfNotExists("users", "provider", "VARCHAR(50)");
         await this.addColumnIfNotExists("users", "provider_id", "VARCHAR(255)");
         
-        // Rendre password_hash nullable pour les utilisateurs OAuth
+        // Make password_hash nullable for OAuth users
         await this.makeColumnNullable("users", "password_hash");
         
-        // Ajouter les colonnes pour la réinitialisation de mot de passe
+        // Add columns for password reset
         await this.addColumnIfNotExists("users", "reset_token", "VARCHAR(255)");
         await this.addColumnIfNotExists("users", "reset_token_expiry", "TIMESTAMP");
         
-        // Ajouter les colonnes pour l'administration
+        // Add columns for administration
         await this.addColumnIfNotExists("users", "is_admin", "BOOLEAN DEFAULT FALSE");
         await this.addColumnIfNotExists("users", "is_banned", "BOOLEAN DEFAULT FALSE");
         
-        // Ajouter la colonne pour l'acceptation des conditions d'utilisation
+        // Add column for terms acceptance
         await this.addColumnIfNotExists("users", "terms_accepted_at", "TIMESTAMP");
         
-        // Ajouter les colonnes pour les images de profil et bannière
+        // Add columns for profile and banner images
         await this.addColumnIfNotExists("users", "profile_image", "TEXT");
         await this.addColumnIfNotExists("users", "banner_image", "TEXT");
 
-        // Créer les index
+        // Create indexes
         await this.createIndexes();
 
-        // Créer les triggers
+        // Create triggers
         await this.createTriggers();
       } catch (error) {
-        console.error("❌ Erreur lors de l'initialisation des tables utilisateurs:", error);
+        console.error("❌ Error initializing user tables:", error);
         throw error;
       }
     });
@@ -74,7 +74,7 @@ export class UserRepository extends BaseRepository {
     try {
       await this.query(`ALTER TABLE ${tableName} ADD COLUMN IF NOT EXISTS ${columnName} ${columnDefinition}`);
     } catch (error) {
-      // Ignorer l'erreur si la colonne existe déjà
+      // Ignore error if column already exists
     }
   }
 
@@ -82,7 +82,7 @@ export class UserRepository extends BaseRepository {
     try {
       await this.query(`ALTER TABLE ${tableName} ALTER COLUMN ${columnName} DROP NOT NULL`);
     } catch (error) {
-      // Ignorer l'erreur si la colonne est déjà nullable
+      // Ignore error if column is already nullable
     }
   }
 
@@ -99,7 +99,7 @@ export class UserRepository extends BaseRepository {
   }
 
   private async createTriggers(): Promise<void> {
-    // Fonction pour mettre à jour updated_at
+    // Function to update updated_at
     await this.query(`
       CREATE OR REPLACE FUNCTION update_updated_at_column()
       RETURNS TRIGGER AS $$
@@ -110,7 +110,7 @@ export class UserRepository extends BaseRepository {
       $$ language 'plpgsql'
     `);
 
-    // Trigger pour users
+    // Trigger for users
     await this.query(`
       DROP TRIGGER IF EXISTS update_users_updated_at ON users;
       CREATE TRIGGER update_users_updated_at
@@ -124,22 +124,22 @@ export class UserRepository extends BaseRepository {
     try {
       const { email, username, password, firstName, lastName, verificationToken, emailVerified = false, provider, providerId } = userData;
 
-      // Vérifier si l'email existe déjà
+      // Check if email already exists
       const existingEmail = await this.query<{ id: number }>("SELECT id FROM users WHERE email = $1", [email]);
       if (existingEmail.rows.length > 0) {
-        return { success: false, error: "Cet email est déjà utilisé" };
+        return { success: false, error: "Email already used" };
       }
 
-      // Vérifier si le nom d'utilisateur existe déjà
+      // Check if username already exists
       const existingUsername = await this.query<{ id: number }>("SELECT id FROM users WHERE username = $1", [username]);
       if (existingUsername.rows.length > 0) {
-        return { success: false, error: "Ce nom d'utilisateur est déjà utilisé" };
+        return { success: false, error: "Username already used" };
       }
 
-      // Hacher le mot de passe seulement s'il est fourni (pas pour OAuth)
+      // Hash password only if provided (not for OAuth)
       const passwordHash = password && password.trim() !== "" ? await bcrypt.hash(password, 12) : null;
 
-      // Insérer l'utilisateur
+      // Insert user
       const result = await this.query<User>(
         `INSERT INTO users (email, username, password_hash, first_name, last_name, email_verified, email_verification_token, terms_accepted_at, provider, provider_id)
          VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, $8, $9)
@@ -149,14 +149,14 @@ export class UserRepository extends BaseRepository {
 
       return { success: true, user: result.rows[0] };
     } catch (error) {
-      console.error("❌ Erreur création utilisateur:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error creating user:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
   async verifyUserEmail(token: string): Promise<UserRepositoryResult<{ id: number; email: string; first_name: string }>> {
     try {
-      // Trouver l'utilisateur avec ce token
+      // Find user with this token
       const user = await this.query<{
         id: number;
         email: string;
@@ -165,14 +165,14 @@ export class UserRepository extends BaseRepository {
       }>("SELECT id, email, first_name, email_verified FROM users WHERE email_verification_token = $1", [token]);
 
       if (user.rows.length === 0) {
-        return { success: false, error: "Token de vérification invalide" };
+        return { success: false, error: "Invalid verification token" };
       }
 
       if (user.rows[0].email_verified) {
-        return { success: false, error: "Email déjà vérifié" };
+        return { success: false, error: "Email already verified" };
       }
 
-      // Marquer l'email comme vérifié et supprimer le token
+      // Mark email as verified and remove token
       await this.query(
         "UPDATE users SET email_verified = TRUE, email_verification_token = NULL WHERE id = $1",
         [user.rows[0].id]
@@ -187,8 +187,8 @@ export class UserRepository extends BaseRepository {
         },
       };
     } catch (error) {
-      console.error("❌ Erreur vérification email:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error verifying email:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -224,7 +224,7 @@ export class UserRepository extends BaseRepository {
       }
 
       if (updates.length === 0) {
-        return { success: false, error: "Aucun champ à mettre à jour" };
+        return { success: false, error: "No fields to update" };
       }
 
       // Always touch updated_at
@@ -239,23 +239,23 @@ export class UserRepository extends BaseRepository {
       );
 
       if (result.rows.length === 0) {
-        return { success: false, error: "Utilisateur non trouvé" };
+        return { success: false, error: "User not found" };
       }
 
       return { success: true, user: result.rows[0] };
     } catch (error) {
-      // Gérer les violations d'unicité
+      // Handle uniqueness violations
       if (error && typeof error === 'object' && 'code' in error && error.code === "23505") {
         const detail = String((error as any).detail || "");
         if (detail.includes("users_email_key") || detail.includes("(email)")) {
-          return { success: false, error: "Cet email est déjà utilisé" };
+          return { success: false, error: "Email already used" };
         }
         if (detail.includes("users_username_key") || detail.includes("(username)")) {
-          return { success: false, error: "Ce nom d'utilisateur est déjà utilisé" };
+          return { success: false, error: "Username already used" };
         }
       }
-      console.error("❌ Erreur mise à jour profil:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error updating profile:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -268,13 +268,13 @@ export class UserRepository extends BaseRepository {
       );
 
       if (result.rows.length === 0) {
-        return { success: false, error: "Utilisateur non trouvé" };
+        return { success: false, error: "User not found" };
       }
 
       return { success: true, user: result.rows[0] };
     } catch (error) {
-      console.error("❌ Erreur récupération utilisateur:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error retrieving user:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -287,13 +287,13 @@ export class UserRepository extends BaseRepository {
       );
 
       if (result.rows.length === 0) {
-        return { success: false, error: "Utilisateur non trouvé" };
+        return { success: false, error: "User not found" };
       }
 
       return { success: true, user: result.rows[0] };
     } catch (error) {
-      console.error("❌ Erreur récupération utilisateur par email:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error retrieving user by email:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -311,8 +311,8 @@ export class UserRepository extends BaseRepository {
 
       return { success: true, users: result.rows };
     } catch (error) {
-      console.error("❌ Erreur récupération utilisateurs:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error retrieving users:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -332,13 +332,13 @@ export class UserRepository extends BaseRepository {
       );
 
       if (result.rows.length === 0) {
-        return { success: false, error: "Utilisateur non trouvé" };
+        return { success: false, error: "User not found" };
       }
 
       return { success: true, data: result.rows[0] };
     } catch (error) {
-      console.error("❌ Erreur bannissement utilisateur:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error banning user:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -358,13 +358,13 @@ export class UserRepository extends BaseRepository {
       );
 
       if (result.rows.length === 0) {
-        return { success: false, error: "Utilisateur non trouvé" };
+        return { success: false, error: "User not found" };
       }
 
       return { success: true, data: result.rows[0] };
     } catch (error) {
-      console.error("❌ Erreur changement statut admin:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error changing admin status:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -378,7 +378,7 @@ export class UserRepository extends BaseRepository {
 
       return result.rows[0].is_admin === true;
     } catch (error) {
-      console.error("❌ Erreur vérification statut admin:", error);
+      console.error("❌ Error verifying admin status:", error);
       return false;
     }
   }
@@ -391,8 +391,8 @@ export class UserRepository extends BaseRepository {
       );
       return { success: true };
     } catch (error) {
-      console.error("❌ Erreur mise à jour token reset:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error updating reset token:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -404,13 +404,13 @@ export class UserRepository extends BaseRepository {
       );
 
       if (result.rows.length === 0) {
-        return { success: false, error: "Token invalide ou expiré" };
+        return { success: false, error: "Invalid or expired token" };
       }
 
       return { success: true, user: result.rows[0] };
     } catch (error) {
-      console.error("❌ Erreur récupération utilisateur par token:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error retrieving user by token:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -422,8 +422,8 @@ export class UserRepository extends BaseRepository {
       );
       return { success: true };
     } catch (error) {
-      console.error("❌ Erreur mise à jour mot de passe:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error updating password:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 }

@@ -1,33 +1,32 @@
-# Lignes directrices pour les commits
+# Commit Guidelines
 
-## Format du message
+## Message Format
 
-1. Ligne de titre : `[type] Sujet court` limité à 72 caractères.
-2. Ligne vide.
-3. Corps optionnel enveloppé à ~72 caractères par ligne, décrivant le **pourquoi**, les impacts et les tests effectués.
-4. Utilisez des puces `-` ou des paragraphes courts pour le corps.
+1. Title line: `[type] Short subject` limited to 72 characters.
+2. Empty line.
+3. Optional body wrapped at ~72 characters per line, describing the **why**, impacts, and tests performed.
+4. Use bullet points `-` or short paragraphs for the body.
 
-## Types autorisés
+## Allowed Types
 
-- `[feature]` : ajout d’une fonctionnalité ou d’une API.
-- `[fix]` : résolution d’un bug utilisateur ou d’une régression.
-- `[update]` : amélioration mineure (UI, contenu, configuration légère).
-- `[refactor]` : modifications internes sans impact fonctionnel.
-- `[perf]` : optimisation de performance.
-- `[docs]` : documentation ou guides uniquement.
-- `[test]` : ajout/mise à jour de tests.
-- `[chore]` : tâches de maintenance (dépendances, tooling, scripts).
-- `[ci]` : pipelines CI/CD, automation, checks.
-- `[security]` : correctifs ou durcissements liés à la sécurité.
-- `[revert]` : annulation explicite d’un commit antérieur (indiquer son hash).
+- `[feature]`: addition of a feature or API.
+- `[fix]`: resolving a user bug or regression.
+- `[update]`: minor improvement (UI, content, light configuration).
+- `[refactor]`: internal changes without functional impact.
+- `[perf]`: performance optimization.
+- `[docs]`: documentation or guides only.
+- `[test]`: adding/updating tests.
+- `[chore]`: maintenance tasks (dependencies, tooling, scripts).
+- `[ci]`: CI/CD pipelines, automation, checks.
+- `[security]`: security-related fixes or hardening.
+- `[revert]`: explicit cancellation of a previous commit (indicate its hash).
 
-## Bonnes pratiques
+## Best Practices
 
-- Préfixez chaque commit d’un seul type.
-- Utilisez l’impératif présent : « Ajoute », « Corrige », « Met à jour ».
-- Lorsque pertinent, ajoutez un bloc `Tests:` dans le corps avec les commandes exécutées.
-- Évitez les commits mélangeant plusieurs intentions ; découpez au besoin.
-- Exemples :
-  - `[feature] Ajoute la duplication de workspace`
-  - `[fix] Corrige la reconnexion socket en cas de timeout`
-
+- Prefix each commit with a single type.
+- Use the imperative present: "Add", "Fix", "Update".
+- When relevant, add a `Tests:` block in the body with the executed commands.
+- Avoid commits mixing multiple intentions; split them if necessary.
+- Examples:
+  - `[feature] Add workspace duplication`
+  - `[fix] Fix socket reconnection on timeout`

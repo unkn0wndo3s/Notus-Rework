@@ -45,13 +45,13 @@ function getUserInitials(user: CommentUser | null): string {
 }
 
 function getUserDisplayName(user: CommentUser | null): string {
-  if (!user) return "Utilisateur inconnu";
+  if (!user) return "Unknown user";
   if (user.username) return user.username;
   if (user.first_name || user.last_name) {
     return `${user.first_name ?? ""} ${user.last_name ?? ""}`.trim();
   }
   if (user.email) return user.email;
-  return "Utilisateur";
+  return "User";
 }
 
 function formatDateHeader(date: Date): string {
@@ -62,11 +62,11 @@ function formatDateHeader(date: Date): string {
   yesterday.setDate(yesterday.getDate() - 1);
 
   if (commentDate.getTime() === today.getTime()) {
-    return "Aujourd'hui";
+    return "Today";
   } else if (commentDate.getTime() === yesterday.getTime()) {
-    return "Hier";
+    return "Yesterday";
   } else {
-    return date.toLocaleDateString("fr-FR", {
+    return date.toLocaleDateString("en-US", {
       weekday: "long",
       day: "numeric",
       month: "long",
@@ -76,21 +76,21 @@ function formatDateHeader(date: Date): string {
 }
 
 function formatTime(date: Date): string {
-  return date.toLocaleTimeString("fr-FR", {
+  return date.toLocaleTimeString("en-US", {
     hour: "2-digit",
     minute: "2-digit",
   });
 }
 
 function getDateKey(date: Date): string {
-  return date.toLocaleDateString("fr-FR", {
+  return date.toLocaleDateString("en-US", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
   });
 }
 
-export default function CommentsSidebar({ documentId, isOpen, onClose }: CommentsSidebarProps) {
+export default function CommentsSidebar({ documentId, isOpen, onClose }: Readonly<CommentsSidebarProps>) {
   const [comments, setComments] = useState<CommentItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -113,13 +113,13 @@ export default function CommentsSidebar({ documentId, isOpen, onClose }: Comment
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        setError(data.error || "Impossible de charger les commentaires");
+        setError(data.error || "Unable to load comments");
         setComments([]);
         return;
       }
       setComments(Array.isArray(data.comments) ? data.comments : []);
     } catch (e) {
-      setError("Erreur lors du chargement des commentaires");
+      setError("Error loading comments");
       setComments([]);
     } finally {
       setLoading(false);
@@ -138,7 +138,7 @@ export default function CommentsSidebar({ documentId, isOpen, onClose }: Comment
     }
   }, [comments, isOpen]);
 
-  // Empêcher le scroll du body sur mobile quand le sidebar est ouvert
+  // Prevent body scroll on mobile when sidebar is open
   useEffect(() => {
     if (isOpen) {
       const originalStyle = window.getComputedStyle(document.body).overflow;
@@ -170,20 +170,20 @@ export default function CommentsSidebar({ documentId, isOpen, onClose }: Comment
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        setError(data.error || "Impossible d'envoyer le commentaire");
+        setError(data.error || "Unable to send comment");
         return;
       }
 
       setNewComment("");
-      // Ajouter le nouveau commentaire en bas de la liste
+      // Add new comment at the bottom
       if (data.comment) {
         setComments((prev) => [...prev, data.comment as CommentItem]);
       } else {
-        // Au cas où, on recharge la liste
+        // Fallback reload
         void fetchComments();
       }
     } catch (e) {
-      setError("Erreur lors de l'envoi du commentaire");
+      setError("Error sending comment");
     } finally {
       setSubmitting(false);
     }
@@ -196,7 +196,7 @@ export default function CommentsSidebar({ documentId, isOpen, onClose }: Comment
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
           <Icon name="comment" className="w-5 h-5" />
-          <h2 className="text-xl font-title">Commentaires de la note</h2>
+          <h2 className="text-xl font-title">Note Comments</h2>
         </div>
         <Button
           variant="ghost"
@@ -210,9 +210,9 @@ export default function CommentsSidebar({ documentId, isOpen, onClose }: Comment
 
       <div className="flex-1 min-h-0 flex flex-col">
         <div className="px-4 pt-3 pb-1 text-xs text-muted-foreground">
-          {loading && <span>Chargement des commentaires…</span>}
+          {loading && <span>Loading comments…</span>}
           {!loading && !error && comments.length === 0 && (
-            <span>Aucun commentaire pour l’instant. Soyez le premier à commenter.</span>
+            <span>No comments yet. Be the first to comment.</span>
           )}
           {!loading && error && (
             <span className="text-red-500">{error}</span>
@@ -307,7 +307,7 @@ export default function CommentsSidebar({ documentId, isOpen, onClose }: Comment
               setNewComment(value);
             }
           }}
-          placeholder="Écrire un commentaire…"
+          placeholder="Write a comment…"
           rows={2}
           className="text-sm resize-none"
           maxLength={MAX_COMMENT_LENGTH}
@@ -319,7 +319,7 @@ export default function CommentsSidebar({ documentId, isOpen, onClose }: Comment
               ? "text-destructive"
               : "text-muted-foreground"
           )}>
-            {newComment.length}/{MAX_COMMENT_LENGTH} caractères
+            {newComment.length}/{MAX_COMMENT_LENGTH} characters
           </span>
           <Button
             type="submit"
@@ -328,12 +328,10 @@ export default function CommentsSidebar({ documentId, isOpen, onClose }: Comment
             className="px-4 py-2"
             variant="default"
           >
-            {submitting ? "Envoi..." : "Envoyer"}
+            {submitting ? "Sending..." : "Send"}
           </Button>
         </div>
       </form>
     </div>
   );
 }
-
-

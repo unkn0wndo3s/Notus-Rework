@@ -20,7 +20,14 @@ interface UserListButtonProps {
   currentUserId?: string | number | null;
 }
 
-export default function UserListButton({ users, className, documentId, onAccessListRefresh, isOwner, currentUserId }: UserListButtonProps) {
+export default function UserListButton({
+  users,
+  className,
+  documentId,
+  onAccessListRefresh,
+  isOwner,
+  currentUserId
+}: Readonly<UserListButtonProps>) {
   const [errored, setErrored] = useState<{ [id: string]: boolean }>({});
   const [open, setOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -35,9 +42,8 @@ export default function UserListButton({ users, className, documentId, onAccessL
     function handleClick(e: MouseEvent) {
       const target = e.target as Node;
       // If the click is inside the toggle button, ignore
-      if (buttonRef.current && buttonRef.current.contains(target)) return;
-      // If the click is inside the overlay itself, ignore
-      if (overlayRef.current && overlayRef.current.contains(target)) return;
+      if (buttonRef.current?.contains(target)) return;
+      if (overlayRef.current?.contains(target)) return;
       try {
         const el = target as Element | null;
         if (el && el instanceof Element) {
@@ -45,7 +51,9 @@ export default function UserListButton({ users, className, documentId, onAccessL
             return;
           }
         }
-      } catch (_) {}
+      } catch (err) {
+        console.error("Error in click outside handler:", err);
+      }
       setOpen(false);
     }
     document.addEventListener("mousedown", handleClick);
@@ -91,7 +99,7 @@ export default function UserListButton({ users, className, documentId, onAccessL
               "text-[10px] font-semibold leading-none",
               "min-w-[1.125rem] h-[1.125rem] px-1"
             )}
-            title={`${badgeCount} autre${badgeCount > 1 ? "s" : ""} utilisateur${badgeCount > 1 ? "s" : ""}`}
+            title={`${badgeCount} other user${badgeCount > 1 ? "s" : ""}`}
           >
             +{badgeCount}
           </span>
@@ -106,7 +114,7 @@ export default function UserListButton({ users, className, documentId, onAccessL
         ref={buttonRef}
         onClick={() => setOpen((v) => !v)}
         type="button"
-        aria-label={`${userCount} utilisateur${userCount > 1 ? "s" : ""} connecté${userCount > 1 ? "s" : ""}`}
+        aria-label={`${userCount} user${userCount > 1 ? "s" : ""} connected`}
         aria-expanded={open}
         className={cn(
           "relative flex items-center justify-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer",
@@ -151,7 +159,7 @@ export default function UserListButton({ users, className, documentId, onAccessL
               users={users.map((u) => ({
                 ...u,
                 id: Number(u.id),
-                permission: u.permission === undefined ? false : u.permission,
+                permission: u.permission ?? false,
               }))}
               currentUserId={currentUserId ?? undefined}
               documentId={documentId ?? (users[0]?.id ?? (undefined as any))}

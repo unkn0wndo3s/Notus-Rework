@@ -21,7 +21,7 @@ interface SearchableDocumentsListProps {
   currentUserId?: string;
   error?: string;
   isFavoritesList?: boolean;
-  onRemoveFromDossier?: (documentIds: string[]) => void;
+  onRemoveFromFolder?: (documentIds: string[]) => void;
 }
 
 export function SearchableDocumentsList({
@@ -29,7 +29,7 @@ export function SearchableDocumentsList({
   currentUserId,
   error,
   isFavoritesList = false,
-  onRemoveFromDossier,
+  onRemoveFromFolder,
 }: SearchableDocumentsListProps) {
   const { filterDocuments, filterLocalDocuments, isSearching, hasActiveFilters } = useSearch();
   const router = useRouter();
@@ -64,7 +64,7 @@ export function SearchableDocumentsList({
 
   useEffect(() => {
     setIsMessageVisible(!!message);
-    if (message && !isPending && !message.includes("Erreur")) {
+    if (message && !isPending && !message.includes("Error")) {
       const timer = setTimeout(() => { router.refresh(); }, 1000);
       return () => clearTimeout(timer);
     }
@@ -105,7 +105,7 @@ export function SearchableDocumentsList({
         const updated = parsed.filter((doc: LocalDocument) => !localIdsToDelete.includes(doc.id));
         localStorage.setItem(LOCAL_DOCS_KEY, JSON.stringify(updated));
         setLocalDocuments(updated);
-      } catch (e) { console.error("Erreur lors de la suppression locale:", e); }
+      } catch (e) { console.error("Error deleting local documents:", e); }
     }
     if (currentUserId && serverIdsToDelete.length > 0) {
       formData.append("userId", String(currentUserId));
@@ -120,7 +120,7 @@ export function SearchableDocumentsList({
     return (
       <Alert variant="error">
         <Alert.Description>
-          Erreur lors du chargement des documents: {error}
+          Error loading documents: {error}
         </Alert.Description>
       </Alert>
     );
@@ -137,8 +137,8 @@ export function SearchableDocumentsList({
       <Card className="text-center py-12">
         <Card.Content>
           <div className="text-muted-foreground mb-4"><Icon name="document" className="w-16 h-16 mx-auto" /></div>
-          <Card.Title className="text-lg mb-2">Aucun document pour le moment</Card.Title>
-          <Card.Description>Créez votre premier document !</Card.Description>
+          <Card.Title className="text-lg mb-2">No documents yet</Card.Title>
+          <Card.Description>Create your first document!</Card.Description>
         </Card.Content>
       </Card>
     );
@@ -149,8 +149,8 @@ export function SearchableDocumentsList({
       <Card className="text-center py-12">
         <Card.Content>
           <div className="text-muted-foreground mb-4"><Icon name="search" className="w-16 h-16 mx-auto" /></div>
-          <Card.Title className="text-lg mb-2">Aucun résultat trouvé</Card.Title>
-          <Card.Description>Essayez d&apos;ajuster votre recherche ou vos filtres.</Card.Description>
+          <Card.Title className="text-lg mb-2">No results found</Card.Title>
+          <Card.Description>Try adjusting your search or filters.</Card.Description>
         </Card.Content>
       </Card>
     );
@@ -162,7 +162,7 @@ export function SearchableDocumentsList({
         {message && isMessageVisible && (
           <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start justify-between gap-3">
             <p className="text-sm text-destructive flex-1">{message}</p>
-            <button type="button" onClick={() => setIsMessageVisible(false)} aria-label="Fermer le message" className="text-destructive hover:opacity-80 shrink-0">
+            <button type="button" onClick={() => setIsMessageVisible(false)} aria-label="Close message" className="text-destructive hover:opacity-80 shrink-0">
               <Icon name="x" className="w-[18px] h-[18px]" />
             </button>
           </div>
@@ -205,9 +205,9 @@ export function SearchableDocumentsList({
           onCancel={() => { setSelectMode(false); setSelectedIds([]); }}
           onToggleAll={toggleAll}
           onBulkDelete={handleBulkDelete}
-          onAddToDossier={currentUserId && !onRemoveFromDossier ? async (dossierId: number, documentIds: string[]) => {
+          onAddToFolder={currentUserId && !onRemoveFromFolder ? async (folderId: number, documentIds: string[]) => {
             try {
-              const response = await fetch(`/api/dossiers/${dossierId}/documents`, {
+              const response = await fetch(`/api/folders/${folderId}/documents`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ documentIds }),
@@ -218,19 +218,19 @@ export function SearchableDocumentsList({
                 router.refresh();
               } else {
                 const data = await response.json();
-                console.error("Erreur:", data.error);
+                console.error("Error:", data.error);
               }
             } catch (error) {
-              console.error("Erreur lors de l'ajout au dossier:", error);
+              console.error("Error adding to folder:", error);
             }
           } : undefined}
-          onRemoveFromDossier={onRemoveFromDossier ? async (documentIds: string[]) => {
+          onRemoveFromFolder={onRemoveFromFolder ? async (documentIds: string[]) => {
             try {
-              await onRemoveFromDossier(documentIds);
+              await onRemoveFromFolder(documentIds);
               setSelectMode(false);
               setSelectedIds([]);
             } catch (error) {
-              console.error("Erreur lors du retrait du dossier:", error);
+              console.error("Error removing from folder:", error);
             }
           } : undefined}
           selectedDocumentIds={selectedIds}
@@ -241,5 +241,3 @@ export function SearchableDocumentsList({
     </TagsProvider>
   );
 }
-
-

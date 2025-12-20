@@ -19,7 +19,7 @@ export default function DeleteAccountPage() {
   useEffect(() => {
     if (successOpen) {
       const t = setTimeout(() => {
-        // Rediriger vers le flux de déconnexion unifié (comme la navbar)
+        // Redirect to unified logout flow (like the navbar)
         router.push("/logout?immediate=1");
       }, 1500);
       return () => clearTimeout(t);
@@ -40,7 +40,7 @@ export default function DeleteAccountPage() {
           >
             <Icon name="arrowLeft" className="h-6 w-6 mr-2" />
           </Link>
-          <h2 className="font-title text-4xl font-regular">Supprimer le compte</h2>
+          <h2 className="font-title text-4xl font-regular">Delete Account</h2>
         </div>
       </div>
 
@@ -51,31 +51,31 @@ export default function DeleteAccountPage() {
             {/* Conditions Section */}
             <section>
               <h3 className="text-foreground text-2xl font-title font-bold mb-4">
-                Conditions :
+                Terms:
               </h3>
               <p className="text-muted-foreground leading-relaxed">
-                Après la suppression de votre compte, vos données seront conservées encore 30 jours après l'activation de la suppression de votre compte. Vos notes personnelles seront supprimées définitivement après ce délai passé. Vous serez également déconnecté de l'application.
+                After deleting your account, your data will be kept for 30 days following the activation of your account deletion. Your personal notes will be permanently deleted after this period has passed. You will also be logged out of the application.
               </p>
             </section>
 
             {/* Delete Account Section */}
             <section>
               <h3 className="text-foreground text-2xl font-title font-bold mb-4">
-                Supprimer le compte
+                Delete Account
               </h3>
               <p className="text-muted-foreground leading-relaxed mb-6">
-                Une fois avoir pris connaissance des conséquences, si vous voulez toujours supprimer votre compte, veuillez entrer votre mot de passe. Vous recevrez ensuite un email confirmant la suppression. Vous pourrez réactiver votre compte sous 30 jours.
+                Once you have understood the consequences, if you still want to delete your account, please enter your password. You will then receive a confirmation email. You can reactivate your account within 30 days.
               </p>
 
               {/* Password Input */}
               <div className="mb-6">
                 <label className="text-foreground text-2xl font-title font-bold block mb-2.5">
-                  Mot de passe
+                  Password
                 </label>
                 <div className="relative">
                   <Input
                     type={showPassword ? "text" : "password"}
-                    placeholder="Votre mot de passe"
+                    placeholder="Your password"
                     className="bg-card text-foreground border-border pr-10"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -106,13 +106,13 @@ export default function DeleteAccountPage() {
                   onClick={() => {
                     setMessage(null);
                     if (!password) {
-                      setMessage("Veuillez saisir votre mot de passe.");
+                      setMessage("Please enter your password.");
                       return;
                     }
                     setConfirmOpen(true);
                   }}
                 >
-                  {isLoading ? "Traitement..." : "Supprimer votre compte"}
+                  {isLoading ? "Processing..." : "Delete your account"}
                 </Button>
               </div>
             </section>
@@ -125,12 +125,12 @@ export default function DeleteAccountPage() {
         isOpen={confirmOpen}
         onClose={() => setConfirmOpen(false)}
         size="sm"
-        title="Confirmer la suppression ?"
+        title="Confirm deletion?"
         className="bg-background text-foreground border-2 border-primary text-center text-xl"
       >
         <div className="flex flex-col items-center text-center gap-4">
           <p className="text-muted-foreground">
-            Cette action supprimera votre compte. Vous pourrez le réactiver pendant 30 jours.
+            This action will delete your account. You will be able to reactivate it for 30 days.
           </p>
           {message && (
             <p className="text-sm text-destructive text-center max-w-md">{message}</p>
@@ -151,26 +151,26 @@ export default function DeleteAccountPage() {
                   });
                   const data = await res.json();
                   if (!res.ok || !data.success) {
-                    setMessage(data.error || "Suppression impossible. Réessayez.");
+                    setMessage(data.error || "Unable to delete account. Please try again.");
                     return;
                   }
                   setConfirmOpen(false);
                   setSuccessOpen(true);
                 } catch (e) {
-                  setMessage("Une erreur est survenue. Réessayez plus tard.");
+                  setMessage("An error occurred. Please try again later.");
                 } finally {
                   setIsLoading(false);
                 }
               }}
             >
-              Confirmer
+              Confirm
             </Button>
             <Button
               variant="ghost"
               className="px-6 py-2"
               onClick={() => setConfirmOpen(false)}
             >
-              Annuler
+              Cancel
             </Button>
           </div>
         </div>
@@ -181,12 +181,12 @@ export default function DeleteAccountPage() {
         isOpen={successOpen}
         onClose={() => setSuccessOpen(false)}
         size="sm"
-        title="Compte supprimé"
+        title="Account Deleted"
         className="bg-background text-foreground border-2 border-primary text-center text-xl"
       >
         <div className="flex flex-col items-center text-center gap-4">
           <p className="text-muted-foreground">
-            Compte supprimé. Vous allez être déconnecté de l'application.
+            Account deleted. You will be logged out of the application.
           </p>
         </div>
       </Modal>

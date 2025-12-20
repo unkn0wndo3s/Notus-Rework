@@ -13,10 +13,10 @@ export async function DELETE(request: Request) {
     const { documentId, email, userId } = body ?? {};
 
     if (!documentId) {
-      return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Access denied" }, { status: 400 });
     }
     if (!email && !userId) {
-      return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Access denied" }, { status: 400 });
     }
 
     const documentService = new DocumentService();
@@ -29,7 +29,7 @@ export async function DELETE(request: Request) {
     if (email) {
       const res = await documentService.removeShare(documentId, String(email));
       if (!res.success) {
-        return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 500 });
+        return NextResponse.json({ success: false, error: "Access denied" }, { status: 500 });
       }
       return NextResponse.json({ success: true, data: res.data });
     }
@@ -37,23 +37,23 @@ export async function DELETE(request: Request) {
     if (userId) {
       const findRes = await documentService.findShare(documentId, Number(userId));
       if (!findRes.success) {
-        return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 404 });
+        return NextResponse.json({ success: false, error: "Access denied" }, { status: 404 });
       }
       const share = findRes.data?.share;
       const targetEmail = share?.email;
       if (!targetEmail) {
-        return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 400 });
+        return NextResponse.json({ success: false, error: "Access denied" }, { status: 400 });
       }
       const delRes = await documentService.removeShare(documentId, String(targetEmail));
       if (!delRes.success) {
-        return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 500 });
+        return NextResponse.json({ success: false, error: "Access denied" }, { status: 500 });
       }
       return NextResponse.json({ success: true, data: delRes.data });
     }
 
-    return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 400 });
+    return NextResponse.json({ success: false, error: "Access denied" }, { status: 400 });
   } catch (e) {
     console.error("❌ Error in /api/openDoc/share/delete DELETE:", e);
-    return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 500 });
+    return NextResponse.json({ success: false, error: "Access denied" }, { status: 500 });
   }
 }

@@ -15,11 +15,11 @@ export async function PATCH(request: Request) {
     const { documentId, email, userId, permission } = body ?? {};
 
     if (!documentId || (typeof permission !== "boolean")) {
-      return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Access denied" }, { status: 400 });
     }
 
     if (!email && !userId) {
-      return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Access denied" }, { status: 400 });
     }
 
     const ownershipCheck = await requireDocumentOwnership(documentId, authResult.userId);
@@ -30,7 +30,7 @@ export async function PATCH(request: Request) {
     if (email) {
       const res = await documentService.addShare(documentId, email, permission);
       if (!res.success) {
-        return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 500 });
+        return NextResponse.json({ success: false, error: "Access denied" }, { status: 500 });
       }
       return NextResponse.json({ success: true });
     }
@@ -38,14 +38,14 @@ export async function PATCH(request: Request) {
     if (userId) {
       const res = await documentService.updatePermission(documentId, Number(userId), permission);
       if (!res.success) {
-        return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 500 });
+        return NextResponse.json({ success: false, error: "Access denied" }, { status: 500 });
       }
       return NextResponse.json({ success: true, data: res.data });
     }
 
-    return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 500 });
+    return NextResponse.json({ success: false, error: "Access denied" }, { status: 500 });
   } catch (e) {
     console.error("❌ Error in /api/openDoc/share PATCH:", e);
-    return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 500 });
+    return NextResponse.json({ success: false, error: "Access denied" }, { status: 500 });
   }
 }

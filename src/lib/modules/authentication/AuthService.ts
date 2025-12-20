@@ -6,25 +6,25 @@ import { UserValidator } from "../../validators/UserValidator";
 import { ActionResult } from "../../types";
 
 export class AuthService {
-  private userService: UserService;
+  private readonly userService: UserService;
 
   constructor() {
     this.userService = new UserService();
   }
 
-  async authenticate(prevState: unknown, formData: FormData): Promise<string> {
+  async authenticate(_prevState: unknown, formData: FormData): Promise<string> {
     try {
       const email = formData.get("email") as string;
       const password = formData.get("password") as string;
 
       if (!email || !password) {
-        return "Email et mot de passe requis";
+        return "Email and password required";
       }
 
-      // Vérifier si l'utilisateur est banni avant la tentative de connexion
+      // Check if user is banned before login attempt
       const userResult = await this.userService.getUserByEmail(email);
       if (userResult.success && userResult.user?.is_banned) {
-        return "Ce compte a été banni. Contactez un administrateur pour plus d'informations.";
+        return "This account has been banned. Contact an administrator for more information.";
       }
 
       await signIn("credentials", {
@@ -35,14 +35,14 @@ export class AuthService {
       return "";
     } catch (error: unknown) {
       if (error && typeof error === 'object' && 'type' in error && error.type === "CredentialsSignin") {
-        return "Email ou mot de passe incorrect, ou email non vérifié.";
+        return "Incorrect email or password, or unverified email.";
       }
 
-      return "Une erreur est survenue.";
+      return "An error has occurred.";
     }
   }
 
-  async registerUser(prevState: unknown, formData: FormData): Promise<string> {
+  async registerUser(_prevState: unknown, formData: FormData): Promise<string> {
     try {
       const userData = {
         email: formData.get("email") as string,
@@ -52,47 +52,47 @@ export class AuthService {
         lastName: formData.get("lastName") as string,
       };
 
-      // Vérifier l'acceptation des conditions d'utilisation
+      // Check acceptance of terms of use
       const acceptTerms = formData.get("acceptTerms");
       if (!acceptTerms) {
-        return "Vous devez accepter les conditions d'utilisation et les mentions légales pour vous inscrire.";
+        return "You must accept the terms of use and legal notices to register.";
       }
 
-      // Validation côté serveur
+      // Server-side validation
       const validation = UserValidator.validateRegistrationData(userData);
       if (!validation.isValid) {
-        return Object.values(validation.errors)[0] || "Données invalides";
+        return Object.values(validation.errors)[0] || "Invalid data";
       }
 
-      // Vérifier si la base de données est configurée
+      // Check if database is configured
       if (!process.env.DATABASE_URL) {
-        return "Inscription réussie (mode simulation). Configurez DATABASE_URL pour la persistance.";
+        return "Registration successful (simulation mode). Configure DATABASE_URL for persistence.";
       }
 
-      // Initialiser les tables si elles n'existent pas
+      // Initialize tables if they don't exist
       await this.userService.initializeTables();
 
-      // Créer l'utilisateur
+      // Create user
       const result = await this.userService.createUser(userData);
 
       if (!result.success) {
-        return result.error || "Erreur lors de l'inscription";
+        return result.error || "Error during registration";
       }
 
-      return "Inscription réussie ! Un email de vérification a été envoyé. Vérifiez votre boîte de réception.";
+      return "Registration successful! A verification email has been sent. Check your inbox.";
     } catch (error: unknown) {
-      console.error("❌ Erreur lors de l'inscription:", error);
+      console.error("❌ Registration error:", error);
 
-    if (error instanceof Error && (error.message.includes("déjà utilisé") || error.message.includes("existe déjà"))) {
+    if (error instanceof Error && (error.message.includes("already used") || error.message.includes("already exists"))) {
       return error.message;
     }
 
       if (error && typeof error === 'object' && 'code' in error && 
           (error.code === "ECONNRESET" || error.code === "ECONNREFUSED")) {
-        return "Base de données non accessible. Vérifiez la configuration PostgreSQL.";
+        return "Database not accessible. Check PostgreSQL configuration.";
       }
 
-      return "Erreur lors de l'inscription. Veuillez réessayer.";
+      return "Error during registration. Please try again.";
     }
   }
 
@@ -103,18 +103,19 @@ export class AuthService {
       if (!session?.user?.id) {
         return {
           success: false,
-          error: "Utilisateur non connecté",
+          error: "User not logged in",
         };
       }
 
-      const userId = parseInt(session.user.id);
+      const userId = Number(session.user.id);
       return await this.userService.getUserById(userId);
     } catch (error: unknown) {
-      console.error("❌ Erreur lors de la récupération de l'utilisateur actuel:", error);
+      console.error("❌ Error while fetching current user:", error);
       return {
         success: false,
-        error: "Erreur lors de la récupération de l'utilisateur",
+        error: "Error while fetching user",
       };
     }
   }
 }
+

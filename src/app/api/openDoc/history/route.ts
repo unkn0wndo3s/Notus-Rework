@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
 
     if (!id) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const documentId = parseInt(id, 10);
     if (isNaN(documentId) || documentId <= 0) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
@@ -59,9 +59,9 @@ export async function GET(request: NextRequest) {
       history: historyEntries,
     });
   } catch (error) {
-    console.error("❌ Erreur GET /api/openDoc/history:", error);
+    console.error("❌ Error GET /api/openDoc/history:", error);
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 500 }
     );
   }

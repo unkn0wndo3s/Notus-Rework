@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useState, useRef } from "react";
-import Image  from "next/image";
+import NextImage from "next/image";
 import Icon from "@/components/Icon";
 
 export interface ImageUploadProps {
@@ -29,7 +29,7 @@ export default function ImageUpload({
   preview = true,
   recommendedSize = null,
   variant = "dropzone",
-}: ImageUploadProps) {
+}: Readonly<ImageUploadProps>) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(value || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -37,23 +37,23 @@ export default function ImageUpload({
   const handleFileSelect = (file: File | null | undefined) => {
     if (!file) return;
 
-    // Vérifier la taille du fichier
+    // Check file size
     if (file.size > maxSize) {
       alert(
-        `Le fichier est trop volumineux. Taille maximale : ${Math.round(
+        `File is too large. Maximum size: ${Math.round(
           maxSize / 1024 / 1024
         )}MB`
       );
       return;
     }
 
-    // Vérifier le type de fichier
+    // Check file type
     if (!file.type.startsWith("image/")) {
-      alert("Veuillez sélectionner un fichier image valide");
+      alert("Please select a valid image file");
       return;
     }
 
-    // Convertir en base64
+    // Convert to base64
     const reader = new FileReader();
     reader.onload = (e) => {
       const base64 = e.target?.result as string;
@@ -137,8 +137,8 @@ export default function ImageUpload({
           <div className="flex items-center justify-between select-none">
             <div className="text-muted-foreground text-sm">
               {previewUrl
-                ? "Image sélectionnée — cliquez pour changer"
-                : `JPEG, PNG, GIF et moins de ${sizeInMb}MB`}
+                ? "Image selected — click to change"
+                : `JPEG, PNG, GIF and less than ${sizeInMb}MB`}
             </div>
             <div className="text-muted-foreground">
               <Icon name="pencil" className="w-4 h-4" />
@@ -147,7 +147,7 @@ export default function ImageUpload({
         </div>
         {recommendedSize && (
           <p className="text-sm text-muted-foreground">
-            Format recommandé : {recommendedSize}
+            Recommended format: {recommendedSize}
           </p>
         )}
         {error && (
@@ -178,6 +178,14 @@ export default function ImageUpload({
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onClick={handleClick}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            handleClick();
+          }
+        }}
+        tabIndex={0}
+        role="button"
       >
         <input
           ref={fileInputRef}
@@ -190,9 +198,12 @@ export default function ImageUpload({
         {previewUrl ? (
           <div className="space-y-4">
             <div className="relative inline-block">
-              <img
+              <NextImage
                 src={previewUrl}
-                alt="Aperçu"
+                alt="Preview"
+                width={200}
+                height={200}
+                unoptimized
                 className="max-w-full max-h-48 rounded-lg object-cover"
               />
               <button
@@ -207,7 +218,7 @@ export default function ImageUpload({
               </button>
             </div>
             <p className="text-sm text-muted-foreground">
-              Cliquez pour changer l'image
+              Click to change image
             </p>
           </div>
         ) : (
@@ -216,13 +227,13 @@ export default function ImageUpload({
               <Icon name="image" className="w-12 h-12" />
             </div>
             <p className="text-muted-foreground">
-              Glissez-déposez une image ou cliquez pour sélectionner
+              Drag and drop an image or click to select
             </p>
             <p className="text-sm text-muted-foreground">
               JPEG, PNG, GIF (max {Math.round(maxSize / 1024 / 1024)}MB)
               {recommendedSize && (
                 <span className="block text-xs mt-1">
-                  Recommandé : {recommendedSize}
+                  Recommended: {recommendedSize}
                 </span>
               )}
             </p>

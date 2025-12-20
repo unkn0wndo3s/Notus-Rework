@@ -15,9 +15,9 @@ export default function ForgotPasswordPage() {
     <main className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="max-w-md w-full">
         <Card.Header className="text-center">
-          <Card.Title className="text-3xl mb-2">Mot de passe oublié</Card.Title>
+          <Card.Title className="text-3xl mb-2">Forgot password</Card.Title>
           <Card.Description>
-            Entrez votre email pour recevoir un lien de réinitialisation
+            Enter your email to receive a reset link
           </Card.Description>
         </Card.Header>
 
@@ -25,19 +25,19 @@ export default function ForgotPasswordPage() {
           <form action={formAction} className="space-y-6">
             {/* Email */}
             <Input
-              label="Adresse email"
+              label="Email address"
               type="email"
               id="email"
               name="email"
               required
-              placeholder="votre@email.com"
+              placeholder="your@email.com"
             />
 
-            {/* Message de succès/erreur */}
+            {/* Success/error message */}
             {message && (
               <Alert
                 variant={
-                  message.includes("envoyé") || message.includes("réussi")
+                  message.toLowerCase().includes("sent") || message.toLowerCase().includes("successful")
                     ? "success"
                     : "error"
                 }
@@ -46,7 +46,7 @@ export default function ForgotPasswordPage() {
               </Alert>
             )}
 
-            {/* Bouton de soumission */}
+            {/* Submission button */}
             <Button
               type="submit"
               disabled={isPending}
@@ -55,17 +55,17 @@ export default function ForgotPasswordPage() {
               size="lg"
             >
               {isPending
-                ? "Envoi en cours..."
-                : "Envoyer le lien de réinitialisation"}
+                ? "Sending..."
+                : "Send reset link"}
             </Button>
           </form>
         </Card.Content>
 
         <Card.Footer className="text-center">
           <p className="text-foreground py-3">
-            Vous vous souvenez de votre mot de passe ?{" "}
+            Remember your password?{" "}
             <Button variant="link" asChild>
-              <Link href="/login">Se connecter</Link>
+              <Link href="/login">Login</Link>
             </Button>
           </p>
         </Card.Footer>

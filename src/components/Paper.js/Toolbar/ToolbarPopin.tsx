@@ -11,7 +11,7 @@ interface LinkPopinProps {
     mode?: "link" | "image";
 }
 
-export function ToolbarPopin({ onClose, onInsertUrl, mode = "link" }: LinkPopinProps) {
+export function ToolbarPopin({ onClose, onInsertUrl, mode = "link" }: Readonly<LinkPopinProps>) {
     const rootRef = useRef<HTMLDivElement | null>(null);
     const [url, setUrl] = useState("");
     const [previewLoading, setPreviewLoading] = useState(false);
@@ -42,8 +42,8 @@ export function ToolbarPopin({ onClose, onInsertUrl, mode = "link" }: LinkPopinP
         onClose();
     };
 
-    const heading = mode === "image" ? "Insérer une image (URL)" : "Insérer un lien";
-    const buttonText = mode === "image" ? "Insérer l'image" : "Insérer le lien";
+    const heading = mode === "image" ? "Insert an image (URL)" : "Insert a link";
+    const buttonText = mode === "image" ? "Insert image" : "Insert link";
 
     return (
         <div
@@ -68,12 +68,12 @@ export function ToolbarPopin({ onClose, onInsertUrl, mode = "link" }: LinkPopinP
                         {url ? (
                             <div className="rounded border border-border p-2 bg-background">
                                 {previewError ? (
-                                    <div className="text-sm text-destructive">Impossible de charger l'image.</div>
+                                    <div className="text-sm text-destructive">Unable to load image.</div>
                                 ) : (
                                     <div className="flex items-center justify-center">
                                         <img
                                             src={url}
-                                            alt="Prévisualisation"
+                                            alt="Preview"
                                             className="max-h-36 object-contain"
                                             onLoad={() => {
                                                 setPreviewLoading(false);
@@ -91,11 +91,11 @@ export function ToolbarPopin({ onClose, onInsertUrl, mode = "link" }: LinkPopinP
                                     </div>
                                 )}
                                 {previewLoading && !previewError && (
-                                    <div className="text-xs text-muted-foreground mt-1">Chargement…</div>
+                                    <div className="text-xs text-muted-foreground mt-1">Loading...</div>
                                 )}
                             </div>
                         ) : (
-                            <div className="text-xs text-muted-foreground">Coller une URL d'image pour voir la prévisualisation.</div>
+                            <div className="text-xs text-muted-foreground">Paste an image URL to see preview.</div>
                         )}
                     </div>
                 )}
@@ -104,7 +104,7 @@ export function ToolbarPopin({ onClose, onInsertUrl, mode = "link" }: LinkPopinP
                         {buttonText}
                     </Button>
                     <Button variant="ghost" size="sm" onClick={onClose} className="whitespace-nowrap">
-                        Annuler
+                        Cancel
                     </Button>
                 </div>
             </div>

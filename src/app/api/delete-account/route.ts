@@ -18,23 +18,23 @@ export async function POST(request: Request) {
       password = String(body?.password || "").trim();
     } catch (_) {}
     if (!password) {
-      return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Access denied" }, { status: 400 });
     }
 
     const userRepo = new PrismaUserRepository();
     const userRes = await userRepo.getUserById(authResult.userId);
     if (!userRes.success || !userRes.user) {
-      return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 404 });
+      return NextResponse.json({ success: false, error: "Access denied" }, { status: 404 });
     }
 
     const user = userRes.user;
     if (!user.password_hash) {
-      return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Access denied" }, { status: 400 });
     }
 
     const ok = await bcrypt.compare(password, user.password_hash);
     if (!ok) {
-      return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 401 });
+      return NextResponse.json({ success: false, error: "Access denied" }, { status: 401 });
     }
 
     // Immediate deletion: archive documents, archive user, then delete user
@@ -83,13 +83,13 @@ export async function POST(request: Request) {
     const emailService = new EmailService();
     await emailService.sendDeletionCompletedEmail(
       user.email,
-      user.first_name || "Utilisateur"
+      user.first_name || "User"
     );
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("❌ Erreur API delete-account:", error);
-    return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 500 });
+    console.error("❌ API error delete-account:", error);
+    return NextResponse.json({ success: false, error: "Access denied" }, { status: 500 });
   }
 }
 

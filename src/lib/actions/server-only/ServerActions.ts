@@ -1,11 +1,11 @@
 "use server";
-
-// Actions serveur uniquement - pas d'imports de base de données côté client
+ 
+// Server-only actions - no database imports on client side
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../../lib/auth";
 import { revalidatePath } from "next/cache";
-
-// Import dynamique des services uniquement côté serveur
+ 
+// Dynamic import of services only on server side
 async function getUserService() {
   const { PrismaUserService } = await import("../../services/PrismaUserService");
   return new PrismaUserService();
@@ -21,22 +21,22 @@ async function getEmailService() {
   return new EmailService();
 }
 
-// Actions d'authentification
-export async function authenticate(prevState: unknown, formData: FormData): Promise<string> {
+// Authentication actions
+export async function authenticate(_prevState: unknown, formData: FormData): Promise<string> {
   try {
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
 
     if (!email || !password) {
-      return "Email et mot de passe requis";
+      return "Email and password required";
     }
 
     const userService = await getUserService();
     
-    // Vérifier si l'utilisateur est banni avant la tentative de connexion
+    // Check if user is banned before login attempt
     const userResult = await userService.getUserByEmail(email);
     if (userResult.success && userResult.user?.is_banned) {
-      return "Ce compte a été banni. Contactez un administrateur pour plus d'informations.";
+      return "This account has been banned. Contact an administrator for more information.";
     }
 
     const { signIn } = await import("next-auth/react");
@@ -48,13 +48,13 @@ export async function authenticate(prevState: unknown, formData: FormData): Prom
     return "";
   } catch (error: unknown) {
     if (error && typeof error === 'object' && 'type' in error && error.type === "CredentialsSignin") {
-      return "Email ou mot de passe incorrect, ou email non vérifié.";
+      return "Incorrect email or password, or unverified email.";
     }
-    return "Une erreur est survenue.";
+    return "An error has occurred.";
   }
 }
 
-// Documents partagés (utilise PrismaDocumentService)
+// Shared documents (uses PrismaDocumentService)
 export async function fetchSharedDocumentsAction() {
   try {
     const session = await getServerSession(authOptions);
@@ -62,7 +62,7 @@ export async function fetchSharedDocumentsAction() {
     const userId = session?.user?.id ? Number(session.user.id) : undefined;
 
     if (!email || !userId) {
-      return { success: false, error: "Utilisateur non authentifié", documents: [] };
+      return { success: false, error: "User not authenticated", documents: [] };
     }
 
     if (!process.env.DATABASE_URL) {
@@ -74,12 +74,12 @@ export async function fetchSharedDocumentsAction() {
 
     const sharedWithResult = await documentService.fetchSharedWithUser(email);
     if (!sharedWithResult.success) {
-      return { success: false, error: sharedWithResult.error || "Erreur lors de la récupération des documents partagés", documents: [] };
+      return { success: false, error: sharedWithResult.error || "Error retrieving shared documents", documents: [] };
     }
 
     const sharedByResult = await documentService.fetchSharedByUser(userId);
     if (!sharedByResult.success) {
-      return { success: false, error: sharedByResult.error || "Erreur lors de la récupération des documents partagés", documents: [] };
+      return { success: false, error: sharedByResult.error || "Error retrieving shared documents", documents: [] };
     }
 
     const allSharedDocuments = [
@@ -89,12 +89,12 @@ export async function fetchSharedDocumentsAction() {
 
     return { success: true, documents: allSharedDocuments };
   } catch (error: unknown) {
-    console.error("❌ Erreur fetchSharedDocumentsAction:", error);
-    return { success: false, error: "Erreur lors de la récupération des documents partagés", documents: [] };
+    console.error("❌ fetchSharedDocumentsAction error:", error);
+    return { success: false, error: "Error retrieving shared documents", documents: [] };
   }
 }
 
-export async function registerUser(prevState: unknown, formData: FormData): Promise<string> {
+export async function registerUser(_prevState: unknown, formData: FormData): Promise<string> {
   try {
     const userData = {
       email: formData.get("email") as string,
@@ -104,55 +104,55 @@ export async function registerUser(prevState: unknown, formData: FormData): Prom
       lastName: formData.get("lastName") as string,
     };
 
-    // Vérifier l'acceptation des conditions d'utilisation
+    // Check acceptance of terms of use
     const acceptTerms = formData.get("acceptTerms");
     if (!acceptTerms) {
-      return "Vous devez accepter les conditions d'utilisation et les mentions légales pour vous inscrire.";
+      return "You must accept the terms of use and legal notices to register.";
     }
 
-    // Validation côté serveur
+    // Server-side validation
     const { UserValidator } = await import("../../validators/UserValidator");
     const validation = UserValidator.validateRegistrationData(userData);
     if (!validation.isValid) {
-      return Object.values(validation.errors)[0] || "Données invalides";
+      return Object.values(validation.errors)[0] || "Invalid data";
     }
 
-    // Vérifier si la base de données est configurée
+    // Check if database is configured
     if (!process.env.DATABASE_URL) {
-      return "Inscription réussie (mode simulation). Configurez DATABASE_URL pour la persistance.";
+      return "Registration successful (simulation mode). Configure DATABASE_URL for persistence.";
     }
 
     const userService = await getUserService();
     
-    // Initialiser les tables si elles n'existent pas
+    // Initialize tables if they don't exist
     await userService.initializeTables();
 
-    // Créer l'utilisateur
+    // Create user
     const result = await userService.createUser(userData);
 
     if (!result.success) {
-      return result.error || "Erreur lors de l'inscription";
+      return result.error || "Error during registration";
     }
 
-    return "Inscription réussie ! Un email de vérification a été envoyé. Vérifiez votre boîte de réception.";
+    return "Registration successful! A verification email has been sent. Check your inbox.";
   } catch (error: unknown) {
-    console.error("❌ Erreur lors de l'inscription:", error);
+    console.error("❌ Registration error:", error);
 
-    if (error instanceof Error && (error.message.includes("déjà utilisé") || error.message.includes("existe déjà"))) {
+    if (error instanceof Error && (error.message.includes("already used") || error.message.includes("already exists"))) {
       return error.message;
     }
 
     if (error && typeof error === 'object' && 'code' in error && 
         (error.code === "ECONNRESET" || error.code === "ECONNREFUSED")) {
-      return "Base de données non accessible. Vérifiez la configuration PostgreSQL.";
+      return "Database not accessible. Check PostgreSQL configuration.";
     }
 
-    return "Erreur lors de l'inscription. Veuillez réessayer.";
+    return "Error during registration. Please try again.";
   }
 }
 
-// Actions de gestion des documents
-export async function createDocumentAction(prevState: unknown, formData: FormData) {
+// Document management actions
+export async function createDocumentAction(_prevState: unknown, formData: FormData) {
   try {
     const title = formData.get("title") as string;
     const content = formData.get("content") as string;
@@ -160,28 +160,28 @@ export async function createDocumentAction(prevState: unknown, formData: FormDat
     const rawTags = formData.get("tags") as string;
 
     if (!userId) {
-      return "Utilisateur requis.";
+      return "User required.";
     }
 
-    // Gérer les différents types d'IDs utilisateur
+    // Handle different user ID types
     let userIdNumber: number;
 
     if (!userId || userId === "undefined" || userId === "null" || userId === "unknown") {
-      console.error("❌ ID utilisateur non défini dans la session");
-      return "Session utilisateur invalide. Veuillez vous reconnecter.";
+      console.error("❌ User ID not defined in session");
+      return "Invalid user session. Please log in again.";
     }
 
     if (userId === "oauth-simulated-user") {
-      userIdNumber = 1; // ID de simulation
+      userIdNumber = 1; // Simulation ID
     } else {
-      userIdNumber = parseInt(userId);
-      if (isNaN(userIdNumber) || userIdNumber <= 0) {
-        console.error("❌ ID utilisateur invalide:", userId, "Parsed as:", userIdNumber);
-        return "ID utilisateur invalide. Veuillez vous reconnecter.";
+      userIdNumber = Number(userId);
+      if (Number.isNaN(userIdNumber) || userIdNumber <= 0) {
+        console.error("❌ Invalid user ID:", userId, "Parsed as:", userIdNumber);
+        return "Invalid user ID. Please log in again.";
       }
     }
 
-    // Parser les tags
+    // Parse tags
     let tags: string[] = [];
     try {
       if (rawTags) {
@@ -192,7 +192,7 @@ export async function createDocumentAction(prevState: unknown, formData: FormDat
       tags = [];
     }
 
-    // Validation des données
+    // Data validation
     const { DocumentValidator } = await import("../../validators/DocumentValidator");
     const validation = DocumentValidator.validateDocumentData({
       title: title || "",
@@ -201,20 +201,20 @@ export async function createDocumentAction(prevState: unknown, formData: FormDat
     });
 
     if (!validation.isValid) {
-      return Object.values(validation.errors)[0] || "Données invalides";
+      return Object.values(validation.errors)[0] || "Invalid data";
     }
 
-    // Vérifier si la base de données est configurée
+    // Check if database is configured
     if (!process.env.DATABASE_URL) {
-      return "Document créé avec succès (mode simulation). Configurez DATABASE_URL pour la persistance.";
+      return "Document created successfully (simulation mode). Configure DATABASE_URL for persistence.";
     }
 
     const documentService = await getDocumentService();
     
-    // Initialiser les tables si elles n'existent pas
+    // Initialize tables if they don't exist
     await documentService.initializeTables();
 
-    // Créer un nouveau document
+    // Create a new document
     const result = await documentService.createDocument({
       userId: userIdNumber,
       title: title.trim(),
@@ -223,41 +223,42 @@ export async function createDocumentAction(prevState: unknown, formData: FormDat
     });
 
     if (!result.success) {
-      console.error("❌ Erreur création document:", result.error);
-      return "Erreur lors de la création du document. Veuillez réessayer.";
+      console.error("❌ Document creation error:", result.error);
+      return "Error during document creation. Please try again.";
     }
 
     return {
       success: true,
-      message: "Document créé avec succès !",
+      message: "Document created successfully!",
       documentId: result.document!.id,
     };
   } catch (error: unknown) {
-    console.error("❌ Erreur lors de la création du document:", error);
+    console.error("❌ Error during document creation:", error);
 
     if (error && typeof error === 'object' && 'code' in error && 
         (error.code === "ECONNRESET" || error.code === "ECONNREFUSED")) {
-      return "Base de données non accessible. Vérifiez la configuration PostgreSQL.";
+      return "Database not accessible. Check PostgreSQL configuration.";
     }
 
-    return "Erreur lors de la création du document. Veuillez réessayer.";
+    return "Error during document creation. Please try again.";
   }
 }
 
+
 export async function getUserDocumentsAction(userId: number, limit: number = 20, offset: number = 0) {
   try {
-    // Validation des paramètres de pagination
+    // Pagination parameter validation
     const { DocumentValidator } = await import("../../validators/DocumentValidator");
     const paginationValidation = DocumentValidator.validatePaginationParams(limit, offset);
     if (!paginationValidation.isValid) {
       return {
         success: false,
-        error: Object.values(paginationValidation.errors)[0] || "Paramètres de pagination invalides",
+        error: Object.values(paginationValidation.errors)[0] || "Invalid pagination parameters",
         documents: [],
       };
     }
 
-    // Vérifier si la base de données est configurée
+    // Check if database is configured
     if (!process.env.DATABASE_URL) {
       return {
         success: true,
@@ -265,8 +266,8 @@ export async function getUserDocumentsAction(userId: number, limit: number = 20,
           {
             id: 1,
             user_id: 1,
-            title: "Document de simulation",
-            content: "Configurez DATABASE_URL pour la persistance.",
+            title: "Simulated Document",
+            content: "Configure DATABASE_URL for persistence.",
             tags: [],
             created_at: new Date(),
             updated_at: new Date(),
@@ -280,17 +281,17 @@ export async function getUserDocumentsAction(userId: number, limit: number = 20,
 
     const documentService = await getDocumentService();
     
-    // Initialiser les tables si elles n'existent pas
+    // Initialize tables if they don't exist
     await documentService.initializeTables();
 
-    // Récupérer les documents
+    // Fetch documents
     const result = await documentService.getUserDocuments(userId, limit, offset);
 
     if (!result.success) {
-      console.error("❌ Erreur récupération documents:", result.error);
+      console.error("❌ Error fetching documents:", result.error);
       return {
         success: false,
-        error: "Erreur lors de la récupération des documents.",
+        error: "Error while fetching documents.",
         documents: [],
       };
     }
@@ -300,16 +301,16 @@ export async function getUserDocumentsAction(userId: number, limit: number = 20,
       documents: result.documents || [],
     };
   } catch (error: unknown) {
-    console.error("❌ Erreur lors de la récupération des documents:", error);
+    console.error("❌ Error while fetching documents:", error);
     return {
       success: false,
-      error: "Erreur lors de la récupération des documents.",
+      error: "Error while fetching documents.",
       documents: [],
     };
   }
 }
 
-// Corbeille: récupérer les documents supprimés de l'utilisateur
+// Trash: fetch user's deleted documents
 export async function getUserTrashDocumentsAction(userId: number, limit: number = 20, offset: number = 0) {
   try {
     const { DocumentValidator } = await import("../../validators/DocumentValidator");
@@ -317,7 +318,7 @@ export async function getUserTrashDocumentsAction(userId: number, limit: number 
     if (!paginationValidation.isValid) {
       return {
         success: false,
-        error: Object.values(paginationValidation.errors)[0] || "Paramètres de pagination invalides",
+        error: Object.values(paginationValidation.errors)[0] || "Invalid pagination parameters",
         documents: [],
       };
     }
@@ -332,66 +333,66 @@ export async function getUserTrashDocumentsAction(userId: number, limit: number 
     const documentService = await getDocumentService();
     const result = await documentService.getUserTrashedDocuments(userId, limit, offset);
     if (!result.success) {
-      return { success: false, error: result.error || "Erreur lors de la récupération de la corbeille", documents: [] };
+      return { success: false, error: result.error || "Error while fetching trash", documents: [] };
     }
     return { success: true, documents: result.documents || [] };
   } catch (error: unknown) {
-    console.error("❌ Erreur corbeille:", error);
-    return { success: false, error: "Erreur lors de la récupération de la corbeille", documents: [] };
+    console.error("❌ Trash error:", error);
+    return { success: false, error: "Error while fetching trash", documents: [] };
   }
 }
 
-// Corbeille: restaurer un document supprimé
-export async function restoreTrashedDocumentAction(prevState: unknown, formData: FormData): Promise<string> {
+// Trash: restore a deleted document
+export async function restoreTrashedDocumentAction(_prevState: unknown, formData: FormData): Promise<string> {
   try {
     const trashIdRaw = formData.get("trashId");
     if (!trashIdRaw) {
-      return "Identifiant de corbeille manquant";
+      return "Missing trash ID";
     }
-    const trashId = parseInt(String(trashIdRaw));
-    if (isNaN(trashId) || trashId <= 0) {
-      return "Identifiant invalide";
+    const trashId = Number(trashIdRaw);
+    if (Number.isNaN(trashId) || trashId <= 0) {
+      return "Invalid ID";
     }
 
     if (!process.env.DATABASE_URL) {
-      return "Document restauré (mode simulation). Configurez DATABASE_URL pour la persistance.";
+      return "Document restored (simulation mode). Configure DATABASE_URL for persistence.";
     }
 
     const session = await getServerSession(authOptions);
-    const userId = session?.user?.id ? parseInt(String(session.user.id)) : undefined;
+    const userId = session?.user?.id ? Number(session.user.id) : undefined;
     if (!userId) {
-      return "Non authentifié";
+      return "Not authenticated";
     }
 
     const documentService = await getDocumentService();
     const result = await documentService.restoreDocumentFromTrash(trashId, userId);
     if (!result.success) {
-      return result.error || "Erreur lors de la restauration";
+      return result.error || "Error during restoration";
     }
     // Revalidate trash page so UI reflects changes immediately
     try {
       revalidatePath("/trash");
     } catch {}
-    return "Document restauré avec succès";
+    return "Document successfully restored";
   } catch (error: unknown) {
-    console.error("❌ Erreur restauration corbeille:", error);
-    return "Erreur lors de la restauration. Veuillez réessayer.";
+    console.error("❌ Trash restoration error:", error);
+    return "Error during restoration. Please try again.";
   }
 }
 
-// Wrapper pour utilisation directe dans <form action={...}>
+// Wrapper for direct use in <form action={...}>
 export async function restoreTrashedDocumentFormAction(formData: FormData): Promise<void> {
   await restoreTrashedDocumentAction(undefined, formData);
 }
 
-// Actions de profil utilisateur
-export async function updateUserProfileAction(prevState: unknown, formData: FormData): Promise<string> {
+// User profile actions
+export async function updateUserProfileAction(_prevState: unknown, formData: FormData): Promise<string> {
   try {
     const session = await getServerSession(authOptions);
     const userIdRaw = session?.user?.id;
 
     if (!userIdRaw) {
-      return "Vous devez être connecté pour modifier votre profil.";
+      return "You must be logged in to modify your profile.";
     }
 
     const email = formData.get("email") as string || undefined;
@@ -401,7 +402,7 @@ export async function updateUserProfileAction(prevState: unknown, formData: Form
     const profileImage = formData.get("profileImage") as string || undefined;
     const bannerImage = formData.get("bannerImage") as string || undefined;
 
-    // Validation des données de profil
+    // Profile data validation
     const { UserValidator } = await import("../../validators/UserValidator");
     const profileData = {
       email: email?.trim(),
@@ -414,7 +415,7 @@ export async function updateUserProfileAction(prevState: unknown, formData: Form
 
     const validation = UserValidator.validateProfileData(profileData);
     if (!validation.isValid) {
-      return Object.values(validation.errors)[0] || "Données invalides";
+      return Object.values(validation.errors)[0] || "Invalid data";
     }
 
     const fields: Record<string, string> = {};
@@ -426,150 +427,150 @@ export async function updateUserProfileAction(prevState: unknown, formData: Form
     if (bannerImage !== undefined) fields.bannerImage = bannerImage;
 
     if (Object.keys(fields).length === 0) {
-      return "Aucun changement détecté.";
+      return "No changes detected.";
     }
 
     if (!process.env.DATABASE_URL) {
-      return "Profil mis à jour (mode simulation). Configurez DATABASE_URL pour la persistance.";
+      return "Profile updated (simulation mode). Configure DATABASE_URL for persistence.";
     }
 
     const userService = await getUserService();
     await userService.initializeTables();
 
-    const userId = parseInt(String(userIdRaw));
+    const userId = Number(userIdRaw);
     const result = await userService.updateUserProfile(userId, fields);
 
     if (!result.success) {
-      return result.error || "Erreur lors de la mise à jour du profil.";
+      return result.error || "Error while updating profile.";
     }
 
-    return "Profil mis à jour avec succès !";
+    return "Profile updated successfully!";
   } catch (error: unknown) {
-    console.error("❌ Erreur mise à jour profil:", error);
+    console.error("❌ Profile update error:", error);
     if (error && typeof error === 'object' && 'code' in error && 
         (error.code === "ECONNRESET" || error.code === "ECONNREFUSED")) {
-      return "Base de données non accessible. Vérifiez la configuration PostgreSQL.";
+      return "Database not accessible. Check PostgreSQL configuration.";
     }
-    return "Erreur lors de la mise à jour du profil. Veuillez réessayer.";
+    return "Error while updating profile. Please try again.";
   }
 }
 
-// Actions de gestion des mots de passe
-export async function sendPasswordResetEmailAction(prevState: unknown, formData: FormData): Promise<string> {
+// Password management actions
+export async function sendPasswordResetEmailAction(_prevState: unknown, formData: FormData): Promise<string> {
   try {
     const email = formData.get("email") as string;
 
     if (!email) {
-      return "Veuillez entrer votre adresse email.";
+      return "Please enter your email address.";
     }
 
-    // Validation basique de l'email
+    // Basic email validation
     const { UserValidator } = await import("../../validators/UserValidator");
     const emailValidation = UserValidator.validateEmail(email);
     if (!emailValidation.isValid) {
-      return "Veuillez entrer une adresse email valide.";
+      return "Please enter a valid email address.";
     }
 
-    // Vérifier si la base de données est configurée
+    // Check if database is configured
     if (!process.env.DATABASE_URL) {
-      return "Email de réinitialisation envoyé (mode simulation). Configurez DATABASE_URL pour la persistance.";
+      return "Reset email sent (simulation mode). Configure DATABASE_URL for persistence.";
     }
 
     const userService = await getUserService();
     
-    // Initialiser les tables si elles n'existent pas
+    // Initialize tables if they don't exist
     await userService.initializeTables();
 
-    // Envoyer l'email de réinitialisation
+    // Send reset email
     const result = await userService.sendPasswordResetEmail(email);
 
     if (!result.success) {
-      return result.error || "Erreur lors de l'envoi de l'email";
+      return result.error || "Error while sending email";
     }
 
-    return "Si un compte existe avec cette adresse email, un lien de réinitialisation a été envoyé.";
+    return "If an account exists with this email address, a reset link has been sent.";
   } catch (error: unknown) {
-    console.error("❌ Erreur lors de l'envoi de l'email de réinitialisation:", error);
+    console.error("❌ Error while sending reset email:", error);
 
     if (error && typeof error === 'object' && 'code' in error && 
         (error.code === "ECONNRESET" || error.code === "ECONNREFUSED")) {
-      return "Base de données non accessible. Vérifiez la configuration PostgreSQL.";
+      return "Database not accessible. Check PostgreSQL configuration.";
     }
 
-    return "Erreur lors de l'envoi de l'email. Veuillez réessayer.";
+    return "Error while sending email. Please try again.";
   }
 }
 
-export async function resetPasswordAction(prevState: unknown, formData: FormData): Promise<string> {
+export async function resetPasswordAction(_prevState: unknown, formData: FormData): Promise<string> {
   try {
     const token = formData.get("token") as string;
     const password = formData.get("password") as string;
     const confirmPassword = formData.get("confirmPassword") as string;
 
     if (!token || !password || !confirmPassword) {
-      return "Tous les champs sont requis.";
+      return "All fields are required.";
     }
 
-    // Validation des mots de passe
+    // Password validation
     const { UserValidator } = await import("../../validators/UserValidator");
     const passwordValidation = UserValidator.validatePasswordResetData(password, confirmPassword);
     if (!passwordValidation.isValid) {
-      return Object.values(passwordValidation.errors)[0] || "Données invalides";
+      return Object.values(passwordValidation.errors)[0] || "Invalid data";
     }
 
-    // Vérifier si la base de données est configurée
+    // Check if database is configured
     if (!process.env.DATABASE_URL) {
-      return "Mot de passe modifié avec succès (mode simulation). Configurez DATABASE_URL pour la persistance.";
+      return "Password changed successfully (simulation mode). Configure DATABASE_URL for persistence.";
     }
 
     const userService = await getUserService();
     
-    // Initialiser les tables si elles n'existent pas
+    // Initialize tables if they don't exist
     await userService.initializeTables();
 
-    // Réinitialiser le mot de passe
+    // Reset password
     const result = await userService.resetPassword(token, password);
 
     if (!result.success) {
-      return result.error || "Erreur lors de la réinitialisation du mot de passe";
+      return result.error || "Error while resetting password";
     }
 
-    return "Mot de passe modifié avec succès. Vous pouvez maintenant vous connecter.";
+    return "Password changed successfully. You can now log in.";
   } catch (error: unknown) {
-    console.error("❌ Erreur lors de la réinitialisation du mot de passe:", error);
+    console.error("❌ Error during password reset:", error);
 
     if (error && typeof error === 'object' && 'code' in error && 
         (error.code === "ECONNRESET" || error.code === "ECONNREFUSED")) {
-      return "Base de données non accessible. Vérifiez la configuration PostgreSQL.";
+      return "Database not accessible. Check PostgreSQL configuration.";
     }
 
-    return "Erreur lors de la réinitialisation. Veuillez réessayer.";
+    return "Error during reset. Please try again.";
   }
 }
 
-// Actions de gestion des documents supplémentaires
+// Additional document management actions
 export async function getDocumentByIdAction(documentId: number) {
   try {
-    // Validation de l'ID du document
+    // Document ID validation
     const { DocumentValidator } = await import("../../validators/DocumentValidator");
     const idValidation = DocumentValidator.validateDocumentId(documentId);
     if (!idValidation.isValid) {
       return {
         success: false,
-        error: Object.values(idValidation.errors)[0] || "ID de document invalide",
+        error: Object.values(idValidation.errors)[0] || "Invalid document ID",
         document: undefined,
       };
     }
 
-    // Vérifier si la base de données est configurée
+    // Check if database is configured
     if (!process.env.DATABASE_URL) {
       return {
         success: true,
         document: {
-          id: parseInt(documentId.toString()),
+          id: Number(documentId),
           user_id: 1,
-          title: "Document de simulation",
-          content: "Configurez DATABASE_URL pour la persistance.",
+          title: "Simulated Document",
+          content: "Configure DATABASE_URL for persistence.",
           tags: [],
           created_at: new Date(),
           updated_at: new Date(),
@@ -582,17 +583,17 @@ export async function getDocumentByIdAction(documentId: number) {
 
     const documentService = await getDocumentService();
     
-    // Initialiser les tables si elles n'existent pas
+    // Initialize tables if they don't exist
     await documentService.initializeTables();
 
-    // Récupérer le document
-    const result = await documentService.getDocumentById(parseInt(documentId.toString()));
+    // Fetch document
+    const result = await documentService.getDocumentById(Number(documentId));
 
     if (!result.success) {
-      console.error("❌ Erreur récupération document:", result.error);
+      console.error("❌ Error fetching document:", result.error);
       return {
         success: false,
-        error: "Erreur lors de la récupération du document.",
+        error: "Error while fetching document.",
         document: undefined,
       };
     }
@@ -602,10 +603,10 @@ export async function getDocumentByIdAction(documentId: number) {
       document: result.document,
     };
   } catch (error: unknown) {
-    console.error("❌ Erreur lors de la récupération du document:", error);
+    console.error("❌ Error while fetching document:", error);
     return {
       success: false,
-      error: "Erreur lors de la récupération du document.",
+      error: "Error while fetching document.",
       document: undefined,
     };
   }
@@ -620,9 +621,9 @@ interface UpdateDocumentPayload {
   email?: string;
 }
 
-export async function updateDocumentAction(prevState: unknown, formDataOrObj: FormData | UpdateDocumentPayload) {
+export async function updateDocumentAction(_prevState: unknown, formDataOrObj: FormData | UpdateDocumentPayload) {
   try {
-    // Vérifier que formDataOrObj existe et est valide
+    // Check that formDataOrObj exists and is valid
     if (!formDataOrObj) {
       return { ok: false, error: "No data provided" };
     }
@@ -634,11 +635,11 @@ export async function updateDocumentAction(prevState: unknown, formDataOrObj: Fo
     
     if (!documentId) return { ok: false, error: "Missing documentId" };
 
-    // Validation de l'ID du document
+    // Document ID validation
     const { DocumentValidator } = await import("../../validators/DocumentValidator");
     const idValidation = DocumentValidator.validateDocumentId(documentId);
     if (!idValidation.isValid) {
-      return { ok: false, error: Object.values(idValidation.errors)[0] || "ID de document invalide" };
+      return { ok: false, error: Object.values(idValidation.errors)[0] || "Invalid document ID" };
     }
 
     // Try server session (if available)
@@ -654,7 +655,7 @@ export async function updateDocumentAction(prevState: unknown, formDataOrObj: Fo
     let clientUserId: number | undefined;
     if (fd) {
       const u = fd.get("userId");
-      if (u) clientUserId = Number(String(u));
+      if (u) clientUserId = Number(u);
     } else if ((formDataOrObj as UpdateDocumentPayload).userId) {
       clientUserId = Number((formDataOrObj as UpdateDocumentPayload).userId);
     }
@@ -694,7 +695,7 @@ export async function updateDocumentAction(prevState: unknown, formDataOrObj: Fo
       tags = [];
     }
 
-    // Validation des données
+    // Data validation
     const validation = DocumentValidator.validateDocumentData({
       title,
       content: contentStr,
@@ -702,7 +703,7 @@ export async function updateDocumentAction(prevState: unknown, formDataOrObj: Fo
     });
 
     if (!validation.isValid) {
-      return { ok: false, error: Object.values(validation.errors)[0] || "Données invalides" };
+      return { ok: false, error: Object.values(validation.errors)[0] || "Invalid data" };
     }
 
     // Get user email from session or formData
@@ -719,7 +720,7 @@ export async function updateDocumentAction(prevState: unknown, formDataOrObj: Fo
       } catch {}
     }
     if (!userEmail) {
-      return { ok: false, error: "Email utilisateur manquant pour la mise à jour." };
+      return { ok: false, error: "Missing user email for update." };
     }
 
     const documentService = await getDocumentService();
@@ -735,10 +736,10 @@ export async function updateDocumentAction(prevState: unknown, formDataOrObj: Fo
     );
 
     if (!updateResult.success) {
-      console.error("❌ Erreur mise à jour document:", updateResult.error);
+      console.error("❌ Document update error:", updateResult.error);
       return {
         ok: false,
-        error: updateResult.error || "Erreur lors de la mise à jour du document.",
+        error: updateResult.error || "Error while updating document.",
       };
     }
 
@@ -753,88 +754,88 @@ export async function updateDocumentAction(prevState: unknown, formDataOrObj: Fo
   }
 }
 
-export async function deleteDocumentAction(prevState: unknown, formData: FormData): Promise<string> {
+export async function deleteDocumentAction(_prevState: unknown, formData: FormData): Promise<string> {
   try {
     const documentId = formData.get("documentId") as string;
     const userId = formData.get("userId") as string;
 
     if (!documentId || !userId) {
-      return "ID de document et utilisateur requis.";
+      return "Document ID and user required.";
     }
 
-    // Validation des IDs
+    // ID validation
     const { DocumentValidator } = await import("../../validators/DocumentValidator");
     const documentIdValidation = DocumentValidator.validateDocumentId(documentId);
     if (!documentIdValidation.isValid) {
-      return Object.values(documentIdValidation.errors)[0] || "ID document invalide";
+      return Object.values(documentIdValidation.errors)[0] || "Invalid document ID";
     }
 
     const userIdValidation = DocumentValidator.validateUserId(userId);
     if (!userIdValidation.isValid) {
-      return Object.values(userIdValidation.errors)[0] || "ID utilisateur invalide";
+      return Object.values(userIdValidation.errors)[0] || "Invalid user ID";
     }
 
-    const documentIdNumber = parseInt(documentId);
-    const userIdNumber = parseInt(userId);
+    const documentIdNumber = Number(documentId);
+    const userIdNumber = Number(userId);
 
-    // Vérifier si la base de données est configurée
+    // Check if database is configured
     if (!process.env.DATABASE_URL) {
-      return "Document supprimé avec succès (mode simulation). Configurez DATABASE_URL pour la persistance.";
+      return "Document successfully deleted (simulation mode). Configure DATABASE_URL for persistence.";
     }
 
     const documentService = await getDocumentService();
     
-    // Initialiser les tables si elles n'existent pas
+    // Initialize tables if they don't exist
     await documentService.initializeTables();
 
-    // Supprimer le document
+    // Delete document
     const result = await documentService.deleteDocument(documentIdNumber, userIdNumber);
 
     if (!result.success) {
-      console.error("❌ Erreur suppression document:", result.error);
+      console.error("❌ Document deletion error:", result.error);
       return result.error!;
     }
 
-    return "Document supprimé avec succès";
+    return "Document successfully deleted";
   } catch (error: unknown) {
-    console.error("❌ Erreur lors de la suppression du document:", error);
+    console.error("❌ Error while deleting document:", error);
 
     if (error && typeof error === 'object' && 'code' in error && 
         (error.code === "ECONNRESET" || error.code === "ECONNREFUSED")) {
-      return "Base de données non accessible. Vérifiez la configuration PostgreSQL.";
+      return "Database not accessible. Check PostgreSQL configuration.";
     }
 
-    return "Erreur lors de la suppression du document. Veuillez réessayer.";
+    return "Error while deleting document. Please try again.";
   }
 }
 
-export async function deleteMultipleDocumentsAction(prevState: unknown, formData: FormData): Promise<string> {
+export async function deleteMultipleDocumentsAction(_prevState: unknown, formData: FormData): Promise<string> {
   try {
     const userId = formData.get("userId") as string;
     const idsRaw = formData.getAll("documentIds") as string[];
 
     if (!userId) {
-      return "ID utilisateur requis.";
+      return "User ID required.";
     }
 
-    // Validation de l'ID utilisateur
+    // User ID validation
     const { DocumentValidator } = await import("../../validators/DocumentValidator");
     const userIdValidation = DocumentValidator.validateUserId(userId);
     if (!userIdValidation.isValid) {
-      return Object.values(userIdValidation.errors)[0] || "ID utilisateur invalide";
+      return Object.values(userIdValidation.errors)[0] || "Invalid user ID";
     }
 
-    // Validation des IDs de documents
+    // Document IDs validation
     const documentIdsValidation = DocumentValidator.validateDocumentIds(idsRaw);
     if (!documentIdsValidation.isValid) {
-      return Object.values(documentIdsValidation.errors)[0] || "IDs de documents invalides";
+      return Object.values(documentIdsValidation.errors)[0] || "Invalid document IDs";
     }
 
-    const userIdNumber = parseInt(userId);
+    const userIdNumber = Number(userId);
 
-    // Vérifier si la base de données est configurée
+    // Check if database is configured
     if (!process.env.DATABASE_URL) {
-      return `${idsRaw.length} document(s) supprimé(s) (mode simulation). Configurez DATABASE_URL pour la persistance.`;
+      return `${idsRaw.length} document(s) deleted (simulation mode). Configure DATABASE_URL for persistence.`;
     }
 
     const documentService = await getDocumentService();
@@ -843,24 +844,24 @@ export async function deleteMultipleDocumentsAction(prevState: unknown, formData
     const result = await documentService.deleteDocumentsBulk(userIdNumber, idsRaw);
 
     if (!result.success) {
-      return result.error || "Erreur lors de la suppression multiple.";
+      return result.error || "Error while bulk deleting.";
     }
 
-    return `${result.data?.deletedCount || 0} document(s) supprimé(s) avec succès`;
+    return `${result.data?.deletedCount || 0} document(s) successfully deleted`;
   } catch (error: unknown) {
-    console.error("❌ Erreur lors de la suppression multiple:", error);
+    console.error("❌ Error during bulk deletion:", error);
     if (error && typeof error === 'object' && 'code' in error && 
         (error.code === "ECONNRESET" || error.code === "ECONNREFUSED")) {
-      return "Base de données non accessible. Vérifiez la configuration PostgreSQL.";
+      return "Database not accessible. Check PostgreSQL configuration.";
     }
-    return "Erreur lors de la suppression multiple. Veuillez réessayer.";
+    return "Error while bulk deleting. Please try again.";
   }
 }
 
-// Actions de profil utilisateur supplémentaires
+// Additional user profile actions
 export async function getUserProfileAction(userId: number) {
   try {
-    // Vérifier si la base de données est configurée
+    // Check if database is configured
     if (!process.env.DATABASE_URL) {
       return {
         success: true,
@@ -890,16 +891,16 @@ export async function getUserProfileAction(userId: number) {
 
     const userService = await getUserService();
     
-    // Initialiser les tables si elles n'existent pas
+    // Initialize tables if they don't exist
     await userService.initializeTables();
 
-    // Récupérer les données complètes de l'utilisateur
+    // Fetch full user data
     const result = await userService.getUserById(userId);
 
     if (!result.success) {
       return {
         success: false,
-        error: result.error || "Utilisateur non trouvé",
+        error: result.error || "User not found",
       };
     }
 
@@ -908,36 +909,36 @@ export async function getUserProfileAction(userId: number) {
       user: result.user,
     };
   } catch (error: unknown) {
-    console.error("❌ Erreur lors de la récupération du profil utilisateur:", error);
+    console.error("❌ Error while fetching user profile:", error);
     return {
       success: false,
-      error: "Erreur lors de la récupération du profil",
+      error: "Error while fetching profile",
     };
   }
 }
 
 export async function getUserIdByEmailAction(email: string) {
   try {
-    // Vérifier si la base de données est configurée
+    // Check if database is configured
     if (!process.env.DATABASE_URL) {
       return {
         success: true,
-        userId: "1", // ID de simulation
+        userId: "1", // Simulation ID
       };
     }
 
     const userService = await getUserService();
     
-    // Initialiser les tables si elles n'existent pas
+    // Initialize tables if they don't exist
     await userService.initializeTables();
 
-    // Récupérer l'ID utilisateur par email
+    // Fetch user ID by email
     const result = await userService.getUserByEmail(email);
 
     if (!result.success) {
       return {
         success: false,
-        error: "Utilisateur non trouvé",
+        error: "User not found",
       };
     }
 
@@ -946,18 +947,18 @@ export async function getUserIdByEmailAction(email: string) {
       userId: result.user!.id.toString(),
     };
   } catch (error: unknown) {
-    console.error("❌ Erreur lors de la récupération de l'ID utilisateur:", error);
+    console.error("❌ Error while fetching user ID:", error);
     return {
       success: false,
-      error: "Erreur lors de la récupération de l'ID utilisateur",
+      error: "Error while fetching user ID",
     };
   }
 }
 
-// Actions administrateur
+// Admin actions
 export async function getAllUsersAction() {
   try {
-    // Vérifier si la base de données est configurée
+    // Check if database is configured
     if (!process.env.DATABASE_URL) {
       return {
         success: true,
@@ -980,17 +981,17 @@ export async function getAllUsersAction() {
 
     const userService = await getUserService();
     
-    // Initialiser les tables si elles n'existent pas
+    // Initialize tables if they don't exist
     await userService.initializeTables();
 
-    // Récupérer tous les utilisateurs
+    // Fetch all users
     const result = await userService.getAllUsers();
 
     if (!result.success) {
-      console.error("❌ Erreur récupération utilisateurs:", result.error);
+      console.error("❌ Error fetching users:", result.error);
       return {
         success: false,
-        error: "Erreur lors de la récupération des utilisateurs.",
+        error: "Error while fetching users.",
         users: [],
       };
     }
@@ -1000,34 +1001,34 @@ export async function getAllUsersAction() {
       users: result.users || [],
     };
   } catch (error: unknown) {
-    console.error("❌ Erreur lors de la récupération des utilisateurs:", error);
+    console.error("❌ Error while fetching users:", error);
     return {
       success: false,
-      error: "Erreur lors de la récupération des utilisateurs.",
+      error: "Error while fetching users.",
       users: [],
     };
   }
 }
 
-// --- Favoris ---
-export async function toggleFavoriteAction(prevState: unknown, formData: FormData) {
+// --- Favorites ---
+export async function toggleFavoriteAction(_prevState: unknown, formData: FormData) {
   try {
     const session = await getServerSession(authOptions);
     const userId = session?.user?.id ? Number(session.user.id) : undefined;
     const email = session?.user?.email as string | undefined;
     if (!userId || !email) {
-      return { success: false, error: "Utilisateur non authentifié" };
+      return { success: false, error: "User not authenticated" };
     }
 
     const documentIdRaw = formData.get("documentId");
     const valueRaw = formData.get("value");
-    if (!documentIdRaw) return { success: false, error: "documentId requis" };
-    const documentId = parseInt(String(documentIdRaw), 10);
-    if (isNaN(documentId) || documentId <= 0) return { success: false, error: "ID de document invalide" };
+    if (!documentIdRaw) return { success: false, error: "documentId required" };
+    const documentId = Number(documentIdRaw);
+    if (Number.isNaN(documentId) || documentId <= 0) return { success: false, error: "Invalid document ID" };
     const value = valueRaw === "1" || valueRaw === "true" ? true : null;
 
     if (!process.env.DATABASE_URL) {
-      return { success: true, message: "Favori simulé (DATABASE_URL non configurée)" };
+      return { success: true, message: "Simulated favorite (DATABASE_URL not configured)" };
     }
 
     const docSvc = await getDocumentService();
@@ -1035,16 +1036,16 @@ export async function toggleFavoriteAction(prevState: unknown, formData: FormDat
 
     const docRes = await docSvc.getDocumentById(documentId);
     if (!docRes.success || !docRes.document) {
-      return { success: false, error: docRes.error || "Document introuvable" };
+      return { success: false, error: docRes.error || "Document not found" };
     }
 
     if (docRes.document.user_id === userId) {
       const res = await docSvc.toggleFavoriteForDocument(documentId, userId, value);
-      if (!res.success) return { success: false, error: res.error || "Erreur lors de la mise à jour du favori" };
+      if (!res.success) return { success: false, error: res.error || "Error while updating favorite" };
       return { success: true };
     } else {
       const res = await docSvc.toggleFavoriteForShare(documentId, email, value);
-      if (!res.success) return { success: false, error: res.error || "Erreur lors de la mise à jour du favori" };
+      if (!res.success) return { success: false, error: res.error || "Error while updating favorite" };
       return { success: true };
     }
   } catch (error: unknown) {
@@ -1058,7 +1059,7 @@ export async function getFavoritesAction() {
     const userId = session?.user?.id ? Number(session.user.id) : undefined;
     const email = session?.user?.email as string | undefined;
     if (!userId || !email) {
-      return { success: false, error: "Utilisateur non authentifié", documents: [] };
+      return { success: false, error: "User not authenticated", documents: [] };
     }
 
     if (!process.env.DATABASE_URL) {
@@ -1067,7 +1068,7 @@ export async function getFavoritesAction() {
 
     const docSvc = await getDocumentService();
     const res = await docSvc.getFavorites(userId, email);
-    if (!res.success) return { success: false, error: res.error || "Erreur favoris", documents: [] };
+    if (!res.success) return { success: false, error: res.error || "Favorite error", documents: [] };
     return { success: true, documents: res.documents };
   } catch (error: unknown) {
     return { success: false, error: String(error instanceof Error ? error.message : error), documents: [] };

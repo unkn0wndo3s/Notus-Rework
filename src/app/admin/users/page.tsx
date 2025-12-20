@@ -10,11 +10,10 @@ export default async function AdminUsersPage() {
     <main className="space-y-6">
       <header className="text-center pt-10">
         <h1 className="text-3xl font-bold text-foreground">
-          Gestion des utilisateurs
+          User Management
         </h1>
         <p className="mt-2 text-muted-foreground">
-          Gérez les comptes utilisateurs, bannissez ou débannissez des
-          utilisateurs.
+          Manage user accounts, ban or unban users.
         </p>
       </header>
 
@@ -22,7 +21,7 @@ export default async function AdminUsersPage() {
         <div className="px-4 py-5 sm:p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg leading-6 font-medium text-foreground">
-              Liste des utilisateurs ({users.length})
+              User List ({users.length})
             </h3>
             {/* <div className="flex space-x-2">
               <button className="inline-flex items-center px-3 py-2 border border-border shadow-sm text-sm leading-4 font-medium rounded-md text-foreground bg-card hover:bg-muted focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring">

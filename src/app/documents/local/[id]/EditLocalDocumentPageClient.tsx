@@ -29,7 +29,7 @@ interface EditLocalDocumentPageClientProps {
   params: Promise<{ id: string }> | { id: string };
 }
 
-export default function EditLocalDocumentPageClient({ params }: EditLocalDocumentPageClientProps) {
+export default function EditLocalDocumentPageClient({ params }: Readonly<EditLocalDocumentPageClientProps>) {
   const localSession = useLocalSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -41,7 +41,7 @@ export default function EditLocalDocumentPageClient({ params }: EditLocalDocumen
   const [showSavedState, setShowSavedState] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
 
-  // Gérer les paramètres asynchrones
+  // Handle async parameters
   const [docId, setDocId] = useState<string | null>(null);
   const [isNewDoc, setIsNewDoc] = useState(false);
 
@@ -50,7 +50,7 @@ export default function EditLocalDocumentPageClient({ params }: EditLocalDocumen
   }));
   const [editorKey, setEditorKey] = useState(() => `new-${Date.now()}`);
 
-  // Gérer les paramètres asynchrones
+  // Handle async parameters initialization
   useEffect(() => {
     const initializeParams = async () => {
       if (params) {
@@ -60,9 +60,9 @@ export default function EditLocalDocumentPageClient({ params }: EditLocalDocumen
         setDocId(id);
         setIsNewDoc(isNew);
 
-        // Charger le document directement ici au lieu d'attendre un autre useEffect
+        // Load document directly here instead of waiting for another useEffect
         if (isNew) {
-          // Nouveau document
+          // New document
           setDocument(null);
           setTitle("");
           setContent({ text: "" });
@@ -70,16 +70,16 @@ export default function EditLocalDocumentPageClient({ params }: EditLocalDocumen
           setError(null);
           setLoading(false);
         } else {
-          // Document existant
+          // Existing document
           const docs = loadLocalDocuments();
           const found = docs.find((d) => d.id === id);
           if (!found) {
-            setError("Document local introuvable");
+            setError("Local document not found");
             setDocument(null);
           } else {
             setDocument(found);
-            setTitle(found.title || "Sans titre");
-            // Charger les tags depuis le doc ou localStorage
+            setTitle(found.title || "Untitled");
+            // Load tags from doc or localStorage
             try {
               const rawTags = localStorage.getItem("notus.tags");
               const tagsMap = rawTags ? JSON.parse(rawTags) : {};
@@ -146,8 +146,6 @@ export default function EditLocalDocumentPageClient({ params }: EditLocalDocumen
     }
   };
 
-  // La logique de chargement est maintenant dans l'initialisation des paramètres
-
   const handleSave = async () => {
     const docs = loadLocalDocuments();
 
@@ -159,10 +157,10 @@ export default function EditLocalDocumentPageClient({ params }: EditLocalDocumen
     const nowIso = new Date().toISOString();
 
     if (isNewDoc) {
-      // Créer un nouveau document
+      // Create a new document
       const newDoc: LocalDocument = {
         id: `local-${Date.now()}`,
-        title: (title || "Sans titre").trim(),
+        title: (title || "Untitled").trim(),
         content: normalizedContentObj,
         created_at: nowIso,
         updated_at: nowIso,
@@ -172,53 +170,53 @@ export default function EditLocalDocumentPageClient({ params }: EditLocalDocumen
       docs.push(newDoc);
       const ok = saveLocalDocuments(docs);
       if (!ok) {
-        setError("Impossible d'enregistrer localement (quota ou permissions)");
+        setError("Impossible to save locally (quota or permissions)");
         return;
       }
-      // Persister les tags pour ce document dans notus.tags
+      // Persist tags for this document in notus.tags
       try {
         const raw = localStorage.getItem("notus.tags");
         const tagsMap = raw ? JSON.parse(raw) : {};
         tagsMap[String(newDoc.id)] = tags;
         localStorage.setItem("notus.tags", JSON.stringify(tagsMap));
       } catch (_) {}
-      // Mettre à jour l'état local et rediriger vers l'URL correcte
+      // Update local state and redirect to correct URL
       setDocument(newDoc);
-      setIsNewDoc(false); // Marquer comme document existant
+      setIsNewDoc(false); // Mark as existing document
       setShowSavedState(true);
 
-      // Rediriger vers l'URL avec le nouvel ID
+      // Redirect to URL with new ID
       setTimeout(() => {
         router.push(`/documents/local/${newDoc.id}`);
       }, 100);
     } else {
-      // Mettre à jour un document existant
+      // Update an existing document
       const idx = docs.findIndex((d) => d.id === docId);
       if (idx === -1) {
-        setError("Document local introuvable");
+        setError("Local document not found");
         return;
       }
 
       docs[idx] = {
         ...docs[idx],
-        title: (title || "Sans titre").trim(),
+        title: (title || "Untitled").trim(),
         content: normalizedContentObj,
         updated_at: nowIso,
         tags: tags,
       };
       const ok = saveLocalDocuments(docs);
       if (!ok) {
-        setError("Impossible d'enregistrer localement (quota ou permissions)");
+        setError("Impossible to save locally (quota or permissions)");
         return;
       }
-      // Persister les tags pour ce document dans notus.tags
+      // Persist tags for this document in notus.tags
       try {
         const raw = localStorage.getItem("notus.tags");
         const tagsMap = raw ? JSON.parse(raw) : {};
         tagsMap[String(docs[idx].id)] = tags;
         localStorage.setItem("notus.tags", JSON.stringify(tagsMap));
       } catch (_) {}
-      // Mettre à jour l'état local et rester sur la page
+      // Update local state and stay on page
       setDocument(docs[idx]);
       setShowSavedState(true);
     }
@@ -229,7 +227,7 @@ export default function EditLocalDocumentPageClient({ params }: EditLocalDocumen
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-primary">Chargement...</p>
+          <p className="text-primary">Loading...</p>
         </div>
       </div>
     );
@@ -240,21 +238,19 @@ export default function EditLocalDocumentPageClient({ params }: EditLocalDocumen
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="bg-card rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
           <h1 className="text-2xl font-bold text-foreground mb-4">
-            Erreur
+            Error
           </h1>
           <p className="text-muted-foreground mb-6">{error}</p>
           <Link
             href="/app"
             className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-3 px-6 rounded-lg transition-colors"
           >
-            Retour à l'accueil
+            Back to Home
           </Link>
         </div>
       </div>
     );
   }
-
-  // Supprimé la condition qui empêchait l'affichage pour les nouveaux documents
 
   // Determine the content text for the document
   const contentText = document
@@ -266,37 +262,37 @@ export default function EditLocalDocumentPageClient({ params }: EditLocalDocumen
   return (
     <div className="h-screen bg-background py-8">
       <div className="max-w-4xl mx-auto px-4">
-        {/* En-tête */}
+        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <Link
             href="/app"
             className="text-foreground font-semibold flex items-center"
           >
             <Icon name="arrowLeft" className="h-5 w-5 mr-2" />
-            Retour
+            Back
           </Link>
         </div>
 
-        {/* Banner nouvelle note */}
+        {/* New note banner */}
         {isNewQuery && (
           <div className="mb-4 rounded-lg p-3 bg-muted flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Nouvelle note en création (local)</span>
-            <button onClick={handleCancelCreation} className="text-foreground hover:opacity-80">Annuler la création</button>
+            <span className="text-sm text-muted-foreground">New note being created (local)</span>
+            <button onClick={handleCancelCreation} className="text-foreground hover:opacity-80">Cancel creation</button>
           </div>
         )}
 
-        {/* Message de sauvegarde */}
+        {/* Saved message */}
         {showSavedState && (
           <div className="mb-4 rounded-lg p-4 bg-card border border-primary">
             <p className="text-sm text-primary">
               {isNewDoc
-                ? "Document créé avec succès !"
-                : "Document sauvegardé avec succès !"}
+                ? "Document created successfully!"
+                : "Document saved successfully!"}
             </p>
           </div>
         )}
 
-        {/* Contenu */}
+        {/* Content */}
         <div className="bg-card rounded-2xl border border-border p-6 overflow-hidden">
           <div className="space-y-6">
             {/* Tags */}
@@ -304,7 +300,7 @@ export default function EditLocalDocumentPageClient({ params }: EditLocalDocumen
               <TagsManager
                 tags={tags}
                 onTagsChange={setTags}
-                placeholder="Ajouter un tag..."
+                placeholder="Add a tag..."
                 maxTags={20}
                 className="w-full"
                 currentUserId={localSession?.userId}
@@ -319,7 +315,7 @@ export default function EditLocalDocumentPageClient({ params }: EditLocalDocumen
                 value={title}
                 onChange={(e) => { setTitle(e.target.value); setShowSavedState(false); }}
                 className="w-full px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-ring bg-transparent text-foreground text-xl font-semibold"
-                placeholder="Titre du document"
+                placeholder="Document title"
                 maxLength={255}
               />
             </div>
@@ -348,7 +344,7 @@ export default function EditLocalDocumentPageClient({ params }: EditLocalDocumen
                       setShowSavedState(false);
                     }
                   }}
-                  placeholder="Commencez à écrire votre document..."
+                  placeholder="Start writing your document..."
                   className=""
                   showDebug={false}
                 />
@@ -364,11 +360,11 @@ export default function EditLocalDocumentPageClient({ params }: EditLocalDocumen
               >
                 {showSavedState
                   ? isNewDoc
-                    ? "Créé"
-                    : "Sauvegardé"
+                    ? "Created"
+                    : "Saved"
                   : isNewDoc
-                    ? "Créer le document"
-                    : "Sauvegarder"}
+                    ? "Create document"
+                    : "Save"}
               </Button>
               {isNewQuery ? (
                 <button
@@ -376,14 +372,14 @@ export default function EditLocalDocumentPageClient({ params }: EditLocalDocumen
                   onClick={handleCancelCreation}
                   className="px-6 py-3 rounded-lg text-foreground hover:shadow-md hover:border-primary hover:bg-foreground/5 border border-primary cursor-pointer"
                 >
-                  Annuler
+                  Cancel
                 </button>
               ) : (
                 <Link
                   href="/app"
                   className="px-6 py-3 rounded-lg text-foreground hover:shadow-md hover:border-primary hover:bg-foreground/5 border border-primary cursor-pointer"
                 >
-                  Annuler
+                  Cancel
                 </Link>
               )}
             </div>
@@ -393,4 +389,3 @@ export default function EditLocalDocumentPageClient({ params }: EditLocalDocumen
     </div>
   );
 }
-

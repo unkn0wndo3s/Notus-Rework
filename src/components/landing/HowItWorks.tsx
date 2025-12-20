@@ -2,16 +2,16 @@ import SectionHeading from "./SectionHeading";
 
 const steps = [
   {
-    title: "Configurez votre espace",
-    description: "Invitez vos coéquipiers, définissez vos dossiers et connectez vos outils existants.",
+    title: "Configure your space",
+    description: "Invite your teammates, define your folders and connect your existing tools.",
   },
   {
-    title: "Produisez vos documents",
-    description: "Rédigez briefs, notes et comptes rendus dans un éditeur pensé pour la collaboration.",
+    title: "Produce your documents",
+    description: "Write briefs, notes and reports in an editor designed for collaboration.",
   },
   {
-    title: "Partagez et suivez",
-    description: "Diffusion sécurisée, commentaires ciblés et alertes pour rester alignés.",
+    title: "Share and track",
+    description: "Secure distribution, targeted comments and alerts to stay aligned.",
   },
 ];
 
@@ -20,9 +20,9 @@ export default function HowItWorks() {
     <section id="process" className="py-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionHeading
-          eyebrow="Processus"
-          title="Onboarding simple, adoption immédiate"
-          description="Conçu pour accompagner les équipes métiers comme les équipes projets."
+          eyebrow="Process"
+          title="Simple onboarding, immediate adoption"
+          description="Designed to support business teams and project teams alike."
         />
         <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
           {steps.map((step, index) => (

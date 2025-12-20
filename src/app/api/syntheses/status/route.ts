@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// Vérifier si la synthèse IA est activée (route publique pour le frontend)
+// Check if AI synthesis is enabled (public route for the frontend)
 export async function GET(request: NextRequest) {
   try {
     const setting = await (prisma as any).appSetting.findUnique({
@@ -16,8 +16,8 @@ export async function GET(request: NextRequest) {
       enabled,
     });
   } catch (error) {
-    console.error("❌ Erreur GET /api/syntheses/status:", error);
-    // Par défaut, activé si le setting n'existe pas
+    console.error("❌ Error GET /api/syntheses/status:", error);
+    // Default to enabled if setting doesn't exist
     return NextResponse.json({
       success: true,
       enabled: true,

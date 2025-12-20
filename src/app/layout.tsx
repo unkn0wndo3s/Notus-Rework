@@ -72,22 +72,20 @@ export default async function RootLayout({
         {/* <footer className="bg-background border-t border-border">
           <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col md:flex-row justify-between items-center">
-              <div className="text-muted-foreground text-sm">
-                © 2025 Notus. Tous droits réservés.
-              </div>
+                © 2025 Notus. All rights reserved.
               <div className="mt-4 md:mt-0 flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-6">
                 <div className="flex space-x-4">
                   <Link
                     href="/legal/rgpd"
                     className="text-muted-foreground hover:text-foreground text-sm transition-colors"
                   >
-                    Mentions légales RGPD
+                    GDPR Legal Mentions
                   </Link>
                   <Link
                     href="/legal/cgu"
                     className="text-muted-foreground hover:text-foreground text-sm transition-colors"
                   >
-                    Conditions Générales d&apos;Utilisation
+                    General Terms of Use
                   </Link>
                 </div>
                 {session?.user && (

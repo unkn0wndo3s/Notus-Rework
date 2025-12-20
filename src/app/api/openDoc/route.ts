@@ -11,7 +11,7 @@ export async function GET(request: Request) {
 
     if (!id) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
@@ -19,7 +19,7 @@ export async function GET(request: Request) {
     const documentId = parseInt(id);
     if (isNaN(documentId) || documentId <= 0) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
@@ -43,14 +43,14 @@ export async function GET(request: Request) {
 
     if (!result.success || !result.document) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 404 }
       );
     }
 
     const doc = result.document;
 
-    // Retourner le titre, le contenu, les tags et la date de mise à jour
+    // Return title, content, tags, and update date
     const response = {
       success: true,
       title: doc.title,
@@ -62,7 +62,7 @@ export async function GET(request: Request) {
     return NextResponse.json(response);
   } catch (error) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 500 }
     );
   }

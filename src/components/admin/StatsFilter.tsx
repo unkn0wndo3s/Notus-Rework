@@ -15,17 +15,17 @@ export default function StatsFilter({ value, onValueChange, className }: StatsFi
   return (
     <div className={cn("flex items-center gap-2", className)}>
       <label htmlFor="stats-filter" className="text-sm font-medium text-foreground">
-        Filtrer par :
+        Filter by:
       </label>
       <Select value={value} onValueChange={onValueChange}>
         <SelectTrigger id="stats-filter" className="w-[220px]">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">Toutes les statistiques</SelectItem>
-          <SelectItem value="users">Utilisateurs uniquement</SelectItem>
-          <SelectItem value="documents">Documents uniquement</SelectItem>
-          <SelectItem value="shares">Notes partagées uniquement</SelectItem>
+          <SelectItem value="all">All statistics</SelectItem>
+          <SelectItem value="users">Users only</SelectItem>
+          <SelectItem value="documents">Documents only</SelectItem>
+          <SelectItem value="shares">Shared notes only</SelectItem>
         </SelectContent>
       </Select>
     </div>

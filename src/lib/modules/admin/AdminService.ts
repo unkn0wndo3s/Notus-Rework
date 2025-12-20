@@ -2,7 +2,7 @@ import { UserService } from "../../services/UserService";
 import { ActionResult } from "../../types";
 
 export class AdminService {
-  private userService: UserService;
+  private readonly userService: UserService;
 
   constructor() {
     this.userService = new UserService();
@@ -10,7 +10,7 @@ export class AdminService {
 
   async getAllUsers(): Promise<ActionResult> {
     try {
-      // Vérifier si la base de données est configurée
+      // Check if database is configured
       if (!process.env.DATABASE_URL) {
         return {
           success: true,
@@ -31,17 +31,17 @@ export class AdminService {
         };
       }
 
-      // Initialiser les tables si elles n'existent pas
+      // Initialize tables if they don't exist
       await this.userService.initializeTables();
 
-      // Récupérer tous les utilisateurs
+      // Retrieve all users
       const result = await this.userService.getAllUsers();
 
       if (!result.success) {
-        console.error("❌ Erreur récupération utilisateurs:", result.error);
+        console.error("❌ Error retrieving users:", result.error);
         return {
           success: false,
-          error: "Erreur lors de la récupération des utilisateurs.",
+          error: "Error while retrieving users.",
           users: [],
         };
       }
@@ -51,10 +51,10 @@ export class AdminService {
         users: result.users || [],
       };
     } catch (error: unknown) {
-      console.error("❌ Erreur lors de la récupération des utilisateurs:", error);
+      console.error("❌ Error while retrieving users:", error);
       return {
         success: false,
-        error: "Erreur lors de la récupération des utilisateurs.",
+        error: "Error while retrieving users.",
         users: [],
       };
     }
@@ -62,95 +62,96 @@ export class AdminService {
 
   async toggleUserBan(userId: number): Promise<ActionResult> {
     try {
-      // Vérifier si la base de données est configurée
+      // Check if database is configured
       if (!process.env.DATABASE_URL) {
         return {
           success: true,
-          message: "Statut de bannissement modifié (mode simulation).",
+          message: "Ban status modified (simulation mode).",
         };
       }
 
-      // Initialiser les tables si elles n'existent pas
+      // Initialize tables if they don't exist
       await this.userService.initializeTables();
 
-      // Basculer le statut de bannissement
+      // Toggle ban status
       const result = await this.userService.toggleUserBan(userId, true);
 
       if (!result.success) {
-        console.error("❌ Erreur basculement bannissement:", result.error);
+        console.error("❌ Error toggling ban:", result.error);
         return {
           success: false,
-          error: result.error || "Erreur lors de la modification du statut de bannissement.",
+          error: result.error || "Error while modifying ban status.",
         };
       }
 
       return {
         success: true,
-        message: "Statut de bannissement modifié avec succès.",
+        message: "Ban status successfully modified.",
       };
     } catch (error: unknown) {
-      console.error("❌ Erreur lors de la modification du statut de bannissement:", error);
+      console.error("❌ Error while modifying ban status:", error);
       return {
         success: false,
-        error: "Erreur lors de la modification du statut de bannissement.",
+        error: "Error while modifying ban status.",
       };
     }
   }
 
   async toggleUserAdmin(userId: number): Promise<ActionResult> {
     try {
-      // Vérifier si la base de données est configurée
+      // Check if database is configured
       if (!process.env.DATABASE_URL) {
         return {
           success: true,
-          message: "Statut administrateur modifié (mode simulation).",
+          message: "Admin status modified (simulation mode).",
         };
       }
 
-      // Initialiser les tables si elles n'existent pas
+      // Initialize tables if they don't exist
       await this.userService.initializeTables();
 
-      // Basculer le statut administrateur
+      // Toggle admin status
       const result = await this.userService.toggleUserAdmin(userId, true);
 
       if (!result.success) {
-        console.error("❌ Erreur basculement admin:", result.error);
+        console.error("❌ Error toggling admin:", result.error);
         return {
           success: false,
-          error: result.error || "Erreur lors de la modification du statut administrateur.",
+          error: result.error || "Error while modifying admin status.",
         };
       }
 
       return {
         success: true,
-        message: "Statut administrateur modifié avec succès.",
+        message: "Admin status successfully modified.",
       };
     } catch (error: unknown) {
-      console.error("❌ Erreur lors de la modification du statut administrateur:", error);
+      console.error("❌ Error while modifying admin status:", error);
       return {
         success: false,
-        error: "Erreur lors de la modification du statut administrateur.",
+        error: "Error while modifying admin status.",
       };
     }
   }
 
   async isUserAdmin(userId: number): Promise<boolean> {
     try {
-      // Vérifier si la base de données est configurée
+      // Check if database is configured
       if (!process.env.DATABASE_URL) {
-        return userId === 1; // Simulation : seul l'utilisateur 1 est admin
+        return userId === 1; // Simulation : only user 1 is admin
       }
 
-      // Initialiser les tables si elles n'existent pas
+      // Initialize tables if they don't exist
       await this.userService.initializeTables();
 
-      // Vérifier le statut administrateur
+      // Check admin status
       const result = await this.userService.isUserAdmin(userId);
 
       return result;
     } catch (error: unknown) {
-      console.error("❌ Erreur lors de la vérification du statut administrateur:", error);
+      console.error("❌ Error while checking admin status:", error);
       return false;
     }
   }
 }
+

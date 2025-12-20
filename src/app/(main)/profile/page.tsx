@@ -14,7 +14,7 @@ export default async function ProfilePage() {
 
   const userId = session?.user?.id ? Number(session.user.id) : undefined;
 
-  // Récupérer les données complètes du profil utilisateur
+  // Fetch complete user profile data
   const profileResult = userId
     ? await getUserProfileAction(userId)
     : { success: true, user: null };
@@ -24,11 +24,11 @@ export default async function ProfilePage() {
     userProfile?.username ||
     session?.user?.username ||
     session?.user?.name ||
-    "MonCompte";
+    "MyAccount";
   const displayName = userProfile
     ? `${userProfile.first_name} ${userProfile.last_name}`.trim() ||
     userProfile.username
-    : session?.user?.name || username || "MonCompte";
+    : session?.user?.name || username || "MyAccount";
   const joinDate = userProfile?.created_at
     ? new Date(userProfile.created_at)
     : new Date();
@@ -43,7 +43,7 @@ export default async function ProfilePage() {
 
       {/* Back link */}
       <div className="md:ml-64 md:pl-4 pt-6">
-        <BackHeader href="/app" title="Mon compte" className="max-w-4xl mx-auto px-4 md:px-6 lg:px-8 pb-4 hidden md:flex gap-4" />
+        <BackHeader href="/app" title="My account" className="max-w-4xl mx-auto px-4 md:px-6 lg:px-8 pb-4 hidden md:flex gap-4" />
       </div>
 
       {/* Cover */}
@@ -72,9 +72,12 @@ export default async function ProfilePage() {
           <div className="flex flex-col items-center md:flex-row md:items-end gap-4 relative z-10">
             <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-background overflow-hidden bg-muted ring-2 ring-border/30 shadow-lg">
               {userProfile?.profile_image ? (
-                <img
+                <Image
                   src={userProfile.profile_image}
-                  alt="Photo de profil"
+                  alt="Profile photo"
+                  width={128}
+                  height={128}
+                  unoptimized
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -95,12 +98,12 @@ export default async function ProfilePage() {
               {displayName}
             </h1>
             <p className="text-muted-foreground">
-              @{username || "pseudo"}
+              @{username || "username"}
             </p>
             <div className="flex items-center justify-center md:justify-start gap-2 mt-2 text-sm text-muted-foreground">
               <Icon name="calendar" className="w-4 h-4" />
               <span>
-                A rejoint en {joinDate.toLocaleString("fr-FR", { month: "long" })}{" "}
+                Joined in {joinDate.toLocaleString("en-US", { month: "long" })}{" "}
                 {joinDate.getFullYear()}
               </span>
             </div>
@@ -109,15 +112,15 @@ export default async function ProfilePage() {
           {/* Notes section */}
           <section className="mt-8">
             <h2 className="text-xl font-semibold text-foreground mb-3">
-              Mes notes
+              My notes
             </h2>
 
             {documentsResult.success &&
               documentsResult.documents.length === 0 && (
                 <Card className="p-6">
-                  <Card.Title>Aucune note</Card.Title>
+                  <Card.Title>No notes</Card.Title>
                   <Card.Description>
-                    Créez votre première note depuis la page d'accueil.
+                    Create your first note from the home page.
                   </Card.Description>
                 </Card>
               )}
@@ -128,7 +131,7 @@ export default async function ProfilePage() {
                   .sort((a: any, b: any) => {
                     const dateA = new Date(a.updated_at || a.created_at);
                     const dateB = new Date(b.updated_at || b.created_at);
-                    return dateB.getTime() - dateA.getTime(); // Tri décroissant (plus récent en premier)
+                    return dateB.getTime() - dateA.getTime(); // Sort descending
                   })
                   .map((document: any) => (
                     <div key={document.id} className="w-full">

@@ -27,7 +27,7 @@ export default function FormatButtons({
             ? "bg-primary hover:bg-primary/90 text-primary-foreground"
             : "bg-muted hover:bg-muted/80 text-foreground"
         }`}
-        title="Gras (Ctrl+B)"
+        title="Bold (Ctrl+B)"
       >
         <Icon name="bold" className="h-5 w-5" />
       </button>
@@ -41,7 +41,7 @@ export default function FormatButtons({
             ? "bg-primary hover:bg-primary/90 text-primary-foreground"
             : "bg-muted hover:bg-muted/80 text-foreground"
         }`}
-        title="Italique (Ctrl+I)"
+        title="Italic (Ctrl+I)"
       >
         <Icon name="italic" className="h-5 w-5" />
       </button>
@@ -55,7 +55,7 @@ export default function FormatButtons({
             ? "bg-primary hover:bg-primary/90 text-primary-foreground"
             : "bg-muted hover:bg-muted/80 text-foreground"
         }`}
-        title="Souligné (Ctrl+U)"
+        title="Underline (Ctrl+U)"
       >
         <Icon name="underline" className="h-5 w-5" />
       </button>
@@ -69,7 +69,7 @@ export default function FormatButtons({
             ? "bg-primary hover:bg-primary/90 text-primary-foreground"
             : "bg-muted hover:bg-muted/80 text-foreground"
         }`}
-        title="Barré"
+        title="Strikethrough"
       >
         <Icon name="strikethrough" className="h-5 w-5" />
       </button>

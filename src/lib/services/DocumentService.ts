@@ -16,8 +16,8 @@ export class DocumentService {
     try {
       return await this.documentRepository.createDocument(data);
     } catch (error) {
-      console.error("❌ Erreur création document:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error creating document:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -25,8 +25,8 @@ export class DocumentService {
     try {
       return await this.documentRepository.getUserDocuments(userId, limit, offset);
     } catch (error) {
-      console.error("❌ Erreur récupération documents:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error retrieving documents:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -34,8 +34,8 @@ export class DocumentService {
     try {
       return await this.documentRepository.getDocumentById(documentId);
     } catch (error) {
-      console.error("❌ Erreur récupération document:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error retrieving document:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -43,8 +43,8 @@ export class DocumentService {
     try {
       return await this.documentRepository.updateDocument(data);
     } catch (error) {
-      console.error("❌ Erreur mise à jour document:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error updating document:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -59,8 +59,8 @@ export class DocumentService {
     try {
       return await this.documentRepository.createOrUpdateDocumentById(documentId, userId, title, content, tags, userEmail);
     } catch (error) {
-      console.error("❌ Erreur création/mise à jour document par ID:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error creating/updating document by ID:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -68,8 +68,8 @@ export class DocumentService {
     try {
       return await this.documentRepository.deleteDocument(documentId, userId);
     } catch (error) {
-      console.error("❌ Erreur suppression document:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error deleting document:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -77,8 +77,8 @@ export class DocumentService {
     try {
       return await this.documentRepository.deleteDocumentsBulk(userId, documentIds);
     } catch (error) {
-      console.error("❌ Erreur suppression multiple documents:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error deleting multiple documents:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -87,8 +87,8 @@ export class DocumentService {
     try {
       return await this.documentRepository.fetchSharedWithUser(email);
     } catch (error) {
-      console.error("❌ Erreur récupération documents partagés:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error retrieving shared documents:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -96,8 +96,8 @@ export class DocumentService {
     try {
       return await this.documentRepository.fetchSharedByUser(userId);
     } catch (error) {
-      console.error("❌ Erreur récupération documents partagés par utilisateur:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error retrieving documents shared by user:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -105,8 +105,8 @@ export class DocumentService {
     try {
       return await this.documentRepository.getSharePermission(documentId, email);
     } catch (error) {
-      console.error("❌ Erreur récupération permission de partage:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error retrieving share permission:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -114,8 +114,8 @@ export class DocumentService {
     try {
       return await this.documentRepository.addShare(documentId, email, permission);
     } catch (error) {
-      console.error("❌ Erreur ajout partage:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error adding share:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -123,8 +123,8 @@ export class DocumentService {
     try {
       return await this.documentRepository.getAccessList(documentId);
     } catch (error) {
-      console.error('❌ Erreur récupération access list:', error);
-      return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+      console.error('❌ Error retrieving access list:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 
@@ -132,8 +132,8 @@ export class DocumentService {
     try {
       return await this.documentRepository.updatePermission(documentId, userId, permission);
     } catch (error) {
-      console.error('❌ Erreur mise à jour permission de partage:', error);
-      return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+      console.error('❌ Error updating share permission:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 
@@ -141,8 +141,8 @@ export class DocumentService {
     try {
       return await this.documentRepository.findShare(documentId, userId);
     } catch (error) {
-      console.error('❌ Erreur recherche partage:', error);
-      return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+      console.error('❌ Error finding share:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 
@@ -150,8 +150,8 @@ export class DocumentService {
     try {
       return await this.documentRepository.removeShare(documentId, email);
     } catch (error) {
-      console.error('❌ Erreur suppression partage:', error);
-      return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+      console.error('❌ Error removing share:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 
@@ -159,19 +159,19 @@ export class DocumentService {
     try {
       return await this.documentRepository.ownerIdForDocument(documentId);
     } catch (error) {
-      console.error('❌ Erreur récupération ownerId pour document:', error);
-      return { success: false, error: error instanceof Error ? error.message : 'Erreur inconnue' };
+      console.error('❌ Error retrieving ownerId for document:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 
-  // Méthodes utilitaires pour la validation des données
+  // Utility methods for data validation
   validateDocumentTitle(title: string): { isValid: boolean; error?: string } {
     if (!title || title.trim().length === 0) {
-      return { isValid: false, error: "Le titre du document ne peut pas être vide" };
+      return { isValid: false, error: "Document title cannot be empty" };
     }
 
     if (title.length > 255) {
-      return { isValid: false, error: "Le titre ne peut pas dépasser 255 caractères" };
+      return { isValid: false, error: "Title cannot exceed 255 characters" };
     }
 
     return { isValid: true };
@@ -180,24 +180,24 @@ export class DocumentService {
 
   validateDocumentTags(tags: string[]): { isValid: boolean; error?: string } {
     if (!Array.isArray(tags)) {
-      return { isValid: false, error: "Les tags doivent être un tableau" };
+      return { isValid: false, error: "Tags must be an array" };
     }
 
     if (tags.length > 20) {
-      return { isValid: false, error: "Vous ne pouvez pas avoir plus de 20 tags" };
+      return { isValid: false, error: "You cannot have more than 20 tags" };
     }
 
     for (const tag of tags) {
       if (typeof tag !== 'string') {
-        return { isValid: false, error: "Tous les tags doivent être des chaînes de caractères" };
+        return { isValid: false, error: "All tags must be strings" };
       }
 
       if (tag.length > 50) {
-        return { isValid: false, error: "Chaque tag ne peut pas dépasser 50 caractères" };
+        return { isValid: false, error: "Each tag cannot exceed 50 characters" };
       }
 
       if (tag.trim().length === 0) {
-        return { isValid: false, error: "Les tags ne peuvent pas être vides" };
+        return { isValid: false, error: "Tags cannot be empty" };
       }
     }
 
@@ -223,30 +223,30 @@ export class DocumentService {
       const docUserIdRaw = documentResult.document.user_id;
       const docUserId = typeof docUserIdRaw === "number" ? docUserIdRaw : Number(docUserIdRaw);
       
-      // Vérifier si l'utilisateur est propriétaire (comparaison stricte)
+      // Check if user is owner (strict comparison)
       if (userId && Number.isFinite(userId) && Number.isFinite(docUserId)) {
         if (docUserId === userId) {
           return true;
         }
       }
 
-      // Vérifier si l'utilisateur a un partage (lecture seule ou édition)
-      // On vérifie toujours l'email si disponible, même si userId ne correspond pas
+      // Check if user has a share (read only or edit)
+      // Always check email if available, even if userId doesn't match
       if (email && typeof email === "string" && email.trim().length > 0) {
         const normalizedEmail = email.trim().toLowerCase();
         const shareResult = await this.getSharePermission(documentId, normalizedEmail);
-        // Si un partage existe (même en lecture seule), l'utilisateur a accès
-        // shareResult.success === true signifie qu'un partage a été trouvé dans la base de données
-        // On vérifie explicitement que data existe et n'est pas null
+        // If a share exists (even read only), user has access
+        // shareResult.success === true means a share was found in the database
+        // Explicitly check that data exists and is not null
         if (shareResult.success === true && shareResult.data && shareResult.data !== null) {
           return true;
         }
       }
 
-      // Si on arrive ici, l'utilisateur n'est ni propriétaire ni partagé
+      // If we get here, user is neither owner nor shared
       return false;
     } catch (error) {
-      console.error("❌ Erreur userHasAccessToDocument:", error);
+      console.error("❌ Error userHasAccessToDocument:", error);
       return false;
     }
   }

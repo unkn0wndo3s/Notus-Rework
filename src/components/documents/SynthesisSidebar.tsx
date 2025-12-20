@@ -47,13 +47,13 @@ function getUserInitials(user: SynthesisUser | null): string {
 }
 
 function getUserDisplayName(user: SynthesisUser | null): string {
-  if (!user) return "Utilisateur inconnu";
+  if (!user) return "Unknown user";
   if (user.username) return user.username;
   if (user.first_name || user.last_name) {
     return `${user.first_name ?? ""} ${user.last_name ?? ""}`.trim();
   }
   if (user.email) return user.email;
-  return "Utilisateur";
+  return "User";
 }
 
 function formatDateHeader(date: Date): string {
@@ -64,11 +64,11 @@ function formatDateHeader(date: Date): string {
   yesterday.setDate(yesterday.getDate() - 1);
 
   if (synthesisDate.getTime() === today.getTime()) {
-    return "Aujourd'hui";
+    return "Today";
   } else if (synthesisDate.getTime() === yesterday.getTime()) {
-    return "Hier";
+    return "Yesterday";
   } else {
-    return date.toLocaleDateString("fr-FR", {
+    return date.toLocaleDateString("en-US", {
       weekday: "long",
       day: "numeric",
       month: "long",
@@ -78,72 +78,72 @@ function formatDateHeader(date: Date): string {
 }
 
 function formatTime(date: Date): string {
-  return date.toLocaleTimeString("fr-FR", {
+  return date.toLocaleTimeString("en-US", {
     hour: "2-digit",
     minute: "2-digit",
   });
 }
 
 function getDateKey(date: Date): string {
-  return date.toLocaleDateString("fr-FR", {
+  return date.toLocaleDateString("en-US", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
   });
 }
 
-// Fonction pour extraire le texte sans formatage markdown (identique à l'API)
+// Function to extract text without markdown formatting (identical to API)
 function stripMarkdownFormatting(text: string): string {
   if (!text || typeof text !== "string") return "";
   
   return text
-    // Supprimer les headers markdown
+    // Remove markdown headers
     .replace(/^#{1,6}\s+/gm, "")
-    // Supprimer le gras
+    // Remove bold
     .replace(/\*\*(.*?)\*\*/g, "$1")
     .replace(/__(.*?)__/g, "$1")
-    // Supprimer l'italique
+    // Remove italics
     .replace(/\*(.*?)\*/g, "$1")
     .replace(/_(.*?)_/g, "$1")
-    // Supprimer le strikethrough
+    // Remove strikethrough
     .replace(/~~(.*?)~~/g, "$1")
-    // Supprimer les liens markdown
+    // Remove markdown links
     .replace(/\[([^\]]*)\]\([^\)]*\)/g, "$1")
-    // Supprimer les images markdown
+    // Remove markdown images
     .replace(/!\[([^\]]*)\]\([^\)]*\)/g, "")
-    // Supprimer les listes
+    // Remove lists
     .replace(/^[\*\-\+]\s+/gm, "")
     .replace(/^\d+\.\s+/gm, "")
-    // Supprimer les blockquotes
+    // Remove blockquotes
     .replace(/^>\s+/gm, "")
-    // Supprimer le code inline
+    // Remove inline code
     .replace(/`([^`]*)`/g, "$1")
-    // Supprimer les blocs de code
+    // Remove code blocks
     .replace(/```[\s\S]*?```/g, "")
-    // Supprimer les balises HTML
+    // Remove HTML tags
     .replace(/<[^>]*>/g, "")
-    // Nettoyer les espaces multiples
+    // Clean multiple spaces
     .replace(/\n{3,}/g, "\n\n")
     .replace(/[ \t]+/g, " ")
     .trim();
 }
 
-// Fonction pour estimer les tokens (identique à l'API)
+// Function to estimate tokens (identical to API)
 function estimateTokens(content: string): number {
   if (!content || typeof content !== "string") return 0;
   
   const plainText = stripMarkdownFormatting(content);
   if (!plainText || plainText.trim().length === 0) return 0;
   
-  // Estimation: 1 token ≈ 4 caractères pour le prompt
+  // Estimation: 1 token ≈ 4 characters for the prompt
   const promptTokens = Math.ceil(plainText.length / 4);
-  // Estimation pour la réponse de synthèse
+  // Estimation for synthesis response
   const estimatedResponseTokens = 1000;
   
   return promptTokens + estimatedResponseTokens;
 }
 
-export default function SynthesisSidebar({ documentId, isOpen, onClose, documentContent }: SynthesisSidebarProps) {
+export default function SynthesisSidebar({ documentId, isOpen, onClose, documentContent }: Readonly<SynthesisSidebarProps>) {
   const [syntheses, setSyntheses] = useState<SynthesisItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -153,7 +153,7 @@ export default function SynthesisSidebar({ documentId, isOpen, onClose, document
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const { userId } = useLocalSession();
 
-  // État pour la largeur de la sidebar avec localStorage
+  // State for sidebar width with localStorage
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("synthesis-sidebar-width");
@@ -166,7 +166,7 @@ export default function SynthesisSidebar({ documentId, isOpen, onClose, document
   const [isDesktop, setIsDesktop] = useState(false);
   const resizeRef = useRef<{ startX: number; startWidth: number } | null>(null);
 
-  // Détecter si on est sur desktop
+  // Detect if on desktop
   useEffect(() => {
     const checkDesktop = () => {
       setIsDesktop(window.innerWidth >= 768);
@@ -176,21 +176,21 @@ export default function SynthesisSidebar({ documentId, isOpen, onClose, document
     return () => window.removeEventListener("resize", checkDesktop);
   }, []);
 
-  // Sauvegarder la largeur dans localStorage
+  // Save width in localStorage
   useEffect(() => {
     if (typeof window !== "undefined") {
       localStorage.setItem("synthesis-sidebar-width", sidebarWidth.toString());
     }
   }, [sidebarWidth]);
 
-  // Gérer le redimensionnement
+  // Handle resizing
   useEffect(() => {
     if (!isResizing) return;
 
     const handleMouseMove = (e: MouseEvent) => {
       if (!resizeRef.current) return;
       
-      const deltaX = resizeRef.current.startX - e.clientX; // Inversé car on redimensionne depuis la gauche
+      const deltaX = resizeRef.current.startX - e.clientX; // Inverted because resizing from left
       const newWidth = Math.max(300, Math.min(800, resizeRef.current.startWidth + deltaX));
       setSidebarWidth(newWidth);
     };
@@ -222,7 +222,7 @@ export default function SynthesisSidebar({ documentId, isOpen, onClose, document
     };
   };
 
-  // Calculer l'estimation des tokens pour la génération
+  // Calculate token estimation for generation
   const estimatedTokens = documentContent ? estimateTokens(documentContent) : 0;
 
   const fetchSyntheses = useCallback(async () => {
@@ -239,13 +239,13 @@ export default function SynthesisSidebar({ documentId, isOpen, onClose, document
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        setError(data.error || "Impossible de charger les synthèses");
+        setError(data.error || "Unable to load syntheses");
         setSyntheses([]);
         return;
       }
       setSyntheses(Array.isArray(data.syntheses) ? data.syntheses : []);
     } catch (e) {
-      setError("Erreur lors du chargement des synthèses");
+      setError("Error loading syntheses");
       setSyntheses([]);
     } finally {
       setLoading(false);
@@ -258,7 +258,7 @@ export default function SynthesisSidebar({ documentId, isOpen, onClose, document
     }
   }, [isOpen, documentId, fetchSyntheses]);
 
-  // Vérifier si la synthèse IA est activée et charger l'utilisation de tokens
+  // Check if AI synthesis is enabled and load token usage
   useEffect(() => {
     const checkStatus = async () => {
       try {
@@ -281,8 +281,8 @@ export default function SynthesisSidebar({ documentId, isOpen, onClose, document
           });
         }
       } catch (e) {
-        console.error("Erreur lors de la vérification du statut:", e);
-        // Par défaut, activé
+        console.error("Error verifying status:", e);
+        // Default to enabled
         setAiSynthesisEnabled(true);
       }
     };
@@ -291,7 +291,7 @@ export default function SynthesisSidebar({ documentId, isOpen, onClose, document
     }
   }, [isOpen]);
 
-  // Recharger l'utilisation après génération
+  // Reload usage after generation
   useEffect(() => {
     if (!generating && isOpen) {
       const reloadTokens = async () => {
@@ -306,7 +306,7 @@ export default function SynthesisSidebar({ documentId, isOpen, onClose, document
             });
           }
         } catch (e) {
-          console.error("Erreur lors du rechargement des tokens:", e);
+          console.error("Error reloading tokens:", e);
         }
       };
       void reloadTokens();
@@ -319,7 +319,7 @@ export default function SynthesisSidebar({ documentId, isOpen, onClose, document
     }
   }, [syntheses, isOpen]);
 
-  // Empêcher le scroll du body sur mobile quand le sidebar est ouvert
+  // Prevent body scroll on mobile when sidebar is open
   useEffect(() => {
     if (isOpen) {
       const originalStyle = window.getComputedStyle(document.body).overflow;
@@ -334,7 +334,7 @@ export default function SynthesisSidebar({ documentId, isOpen, onClose, document
 
   const handleGenerateSynthesis = async () => {
     if (!documentId || !documentContent) {
-      setError("Impossible de générer la synthèse : document vide");
+      setError("Unable to generate synthesis: empty document");
       return;
     }
 
@@ -354,19 +354,19 @@ export default function SynthesisSidebar({ documentId, isOpen, onClose, document
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        setError(data.error || "Impossible de générer la synthèse");
+        setError(data.error || "Unable to generate synthesis");
         return;
       }
 
-      // Ajouter la nouvelle synthèse à la liste
+      // Add new synthesis to list
       if (data.synthesis) {
         setSyntheses((prev) => [...prev, data.synthesis as SynthesisItem]);
       } else {
-        // Recharger la liste au cas où
+        // Fallback reload
         void fetchSyntheses();
       }
     } catch (e) {
-      setError("Erreur lors de la génération de la synthèse");
+      setError("Error generating synthesis");
     } finally {
       setGenerating(false);
     }
@@ -376,7 +376,7 @@ export default function SynthesisSidebar({ documentId, isOpen, onClose, document
 
   return (
     <React.Fragment>
-      {/* Handle de redimensionnement */}
+      {/* Resizing handle */}
       <div
         onMouseDown={handleResizeStart}
         className={cn(
@@ -397,7 +397,7 @@ export default function SynthesisSidebar({ documentId, isOpen, onClose, document
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
           <Icon name="sparkles" className="w-5 h-5" />
-          <h2 className="text-xl font-title">Synthèses IA</h2>
+          <h2 className="text-xl font-title">AI Synthesis</h2>
         </div>
         <Button
           variant="ghost"
@@ -413,12 +413,12 @@ export default function SynthesisSidebar({ documentId, isOpen, onClose, document
         <div className="px-4 pt-3 pb-1 space-y-2">
           {!aiSynthesisEnabled && (
             <span className="text-xs text-yellow-600 dark:text-yellow-500 block">
-              La synthèse IA est désactivée par l'administrateur.
+              AI synthesis is disabled by the administrator.
             </span>
           )}
-          {aiSynthesisEnabled && loading && <span className="text-xs text-muted-foreground">Chargement des synthèses…</span>}
+          {aiSynthesisEnabled && loading && <span className="text-xs text-muted-foreground">Loading syntheses…</span>}
           {aiSynthesisEnabled && !loading && !error && syntheses.length === 0 && (
-            <span className="text-xs text-muted-foreground">Aucune synthèse pour l'instant.</span>
+            <span className="text-xs text-muted-foreground">No syntheses yet.</span>
           )}
           {aiSynthesisEnabled && !loading && error && (
             <span className="text-xs text-red-500">{error}</span>
@@ -596,7 +596,7 @@ export default function SynthesisSidebar({ documentId, isOpen, onClose, document
         </ScrollArea>
       </div>
       
-      {/* Section estimation tokens et génération en bas */}
+      {/* Token estimation and generation section at bottom */}
       {aiSynthesisEnabled && (
         <div className="border-t border-border px-4 py-3 space-y-2">
           <div className="flex items-center justify-between gap-2">
@@ -634,21 +634,21 @@ export default function SynthesisSidebar({ documentId, isOpen, onClose, document
             className="w-full h-9 rounded-sm"
             title={
               tokenUsage !== null && tokenUsage.remaining <= 0 
-                ? "Limite de tokens atteinte pour aujourd'hui" 
+                ? "Token limit reached for today" 
                 : tokenUsage !== null && estimatedTokens > tokenUsage.remaining
-                ? `Pas assez de tokens disponibles (${estimatedTokens.toLocaleString()} nécessaires, ${tokenUsage.remaining.toLocaleString()} disponibles)`
+                ? `Not enough tokens available (${estimatedTokens.toLocaleString()} needed, ${tokenUsage.remaining.toLocaleString()} available)`
                 : undefined
             }
           >
             {generating ? (
               <>
                 <Icon name="spinner" className="w-4 h-4 mr-2 animate-spin" />
-                Génération...
+                Generating...
               </>
             ) : (
               <>
                 <Icon name="sparkles" className="w-4 h-4 mr-2" />
-                Générer
+                Generate
               </>
             )}
           </Button>
@@ -658,4 +658,3 @@ export default function SynthesisSidebar({ documentId, isOpen, onClose, document
     </React.Fragment>
   );
 }
-

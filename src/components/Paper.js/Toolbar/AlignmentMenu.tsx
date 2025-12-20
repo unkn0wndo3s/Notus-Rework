@@ -27,7 +27,7 @@ export default function AlignmentMenu({ onFormatChange }: AlignmentMenuProps) {
         type="button"
         onClick={() => setShowAlignMenu(!showAlignMenu)}
         className="p-2 rounded transition-colors bg-muted hover:bg-muted/80 text-foreground"
-        title="Alignement"
+        title="Alignment"
       >
         <Icon name="align" className="h-5 w-5" />
       </button>
@@ -36,7 +36,7 @@ export default function AlignmentMenu({ onFormatChange }: AlignmentMenuProps) {
         <div className="absolute top-full left-1/2 mt-1 transform -translate-x-1/2 bg-card rounded shadow-lg border border-border z-50">
           <div className="py-1 flex flex-row">
             <button
-              title="Aligner à gauche"
+              title="Align left"
               type="button"
               onClick={() => {
                 onFormatChange('justifyLeft');
@@ -47,7 +47,7 @@ export default function AlignmentMenu({ onFormatChange }: AlignmentMenuProps) {
               <Icon name="alignLeft" className="w-6 h-6" />
             </button>
             <button
-              title="Centrer"
+              title="Center"
               type="button"
               onClick={() => {
                 onFormatChange('justifyCenter');
@@ -58,7 +58,7 @@ export default function AlignmentMenu({ onFormatChange }: AlignmentMenuProps) {
               <Icon name="alignCenter" className="w-6 h-6" />
             </button>
             <button
-              title="Aligner à droite"
+              title="Align right"
               type="button"
               onClick={() => {
                 onFormatChange('justifyRight');
@@ -69,7 +69,7 @@ export default function AlignmentMenu({ onFormatChange }: AlignmentMenuProps) {
               <Icon name="alignRight" className="w-6 h-6" />
             </button>
             <button
-              title="Justifier"
+              title="Justify"
               type="button"
               onClick={() => {
                 onFormatChange('justifyFull');

@@ -9,15 +9,15 @@ const documentService = new DocumentService();
 
 export async function GET(request: NextRequest) {
   try {
-    // L'authentification et la vérification d'accès au document sont gérées par le middleware
-    // Mais on vérifie aussi explicitement ici pour garantir la sécurité
+    // Authentication and document access verification are handled by the middleware
+    // But we also check explicitly here to guarantee security
     const session = await getServerSession(authOptions);
     const userId = session?.user?.id ? Number(session.user.id) : undefined;
     const userEmail = session?.user?.email as string | undefined;
 
     if (!userId && !userEmail) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 401 }
       );
     }
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
 
     if (!id) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
@@ -35,12 +35,12 @@ export async function GET(request: NextRequest) {
     const documentId = parseInt(id, 10);
     if (isNaN(documentId) || documentId <= 0) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
 
-    // Vérifier explicitement l'accès au document
+    // Explicitly verify document access
     const hasAccess = await documentService.userHasAccessToDocument(
       documentId,
       userId,
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
 
     if (!hasAccess) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 403 }
       );
     }
@@ -76,9 +76,9 @@ export async function GET(request: NextRequest) {
       syntheses,
     });
   } catch (error) {
-    console.error("❌ Erreur GET /api/syntheses:", error);
+    console.error("❌ Error GET /api/syntheses:", error);
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 500 }
     );
   }
@@ -86,13 +86,13 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // L'authentification et la vérification d'accès au document sont gérées par le middleware
+    // Authentication and document access verification are handled by the middleware
     const session = await getServerSession(authOptions);
     const userId = session?.user?.id ? Number(session.user.id) : null;
 
     if (!userId) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 401 }
       );
     }
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => null);
     if (!body || typeof body !== "object") {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
@@ -116,14 +116,14 @@ export async function POST(request: NextRequest) {
 
     if (!parsedDocumentId || isNaN(parsedDocumentId) || parsedDocumentId <= 0) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
 
     if (typeof content !== "string" || content.trim().length === 0) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
     const trimmed = content.trim();
     if (trimmed.length > 10000) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
@@ -161,9 +161,9 @@ export async function POST(request: NextRequest) {
       synthesis,
     });
   } catch (error) {
-    console.error("❌ Erreur POST /api/syntheses:", error);
+    console.error("❌ Error POST /api/syntheses:", error);
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 500 }
     );
   }

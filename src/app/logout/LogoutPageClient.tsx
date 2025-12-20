@@ -47,7 +47,7 @@ export default function LogoutPageClient() {
         isOpen={open}
         onClose={handleCancel}
         size="sm"
-        title="Se déconnecter ?"
+        title="Log out?"
         className="bg-background text-foreground border-2 border-primary text-center text-xl"
       >
         <div className="flex flex-col items-center text-center gap-5 bg-background">
@@ -61,14 +61,14 @@ export default function LogoutPageClient() {
               className="px-6 py-2"
               onClick={handleConfirm}
             >
-              Continuer
+              Continue
             </Button>
             <Button
               variant="ghost"
               className="px-6 py-2"
               onClick={handleCancel}
             >
-              Annuler
+              Cancel
             </Button>
           </div>
         </div>

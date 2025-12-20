@@ -7,7 +7,7 @@ export default function PromoteAdminButton() {
   const [isPromoting, setIsPromoting] = useState(false);
 
   const handlePromoteToAdmin = async () => {
-    if (!confirm("Êtes-vous sûr de vouloir vous promouvoir administrateur ?")) {
+    if (!globalThis.window.confirm("Are you sure you want to promote yourself to administrator?")) {
       return;
     }
 
@@ -22,16 +22,16 @@ export default function PromoteAdminButton() {
       });
 
       if (response.ok) {
-        alert(
-          "Vous avez été promu administrateur ! Rechargez la page pour voir les changements."
+        globalThis.window.alert(
+          "You have been promoted to administrator! Reload the page to see the changes."
         );
-        window.location.reload();
+        globalThis.window.location.reload();
       } else {
         const error = await response.json();
-        alert(`Erreur: ${error.message}`);
+        globalThis.window.alert(`Error: ${error.message}`);
       }
     } catch (error) {
-      alert(`Erreur: ${(error as Error).message}`);
+      globalThis.window.alert(`Error: ${(error as Error).message}`);
     } finally {
       setIsPromoting(false);
     }
@@ -48,7 +48,7 @@ export default function PromoteAdminButton() {
       ) : (
         <Icon name="shieldCheck" className="w-3 h-3 mr-1" />
       )}
-      {isPromoting ? "Promotion..." : "Devenir Admin"}
+      {isPromoting ? "Promoting..." : "Become Admin"}
     </button>
   );
 }

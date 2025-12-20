@@ -1,8 +1,7 @@
 "use client";
 
-import { useActionState, startTransition } from "react";
+import { useActionState, startTransition, useState } from "react";
 import { deleteDocumentAction } from "@/lib/actions";
-import { useState } from "react";
 import Icon from "@/components/Icon";
 
 interface Note {
@@ -21,7 +20,7 @@ interface NoteCardProps {
   onDelete?: (noteId: string) => void;
 }
 
-export default function NoteCard({ note, currentUserId, onDelete }: NoteCardProps) {
+export default function NoteCard({ note, currentUserId, onDelete }: Readonly<NoteCardProps>) {
   const [message, formAction, isPending] = useActionState(
     deleteDocumentAction,
     undefined
@@ -65,17 +64,30 @@ export default function NoteCard({ note, currentUserId, onDelete }: NoteCardProp
         </div>
         {isOwner && (
           <div className="relative">
-            <button onClick={() => setShowDeleteConfirm(!showDeleteConfirm)} className="text-muted-foreground hover:text-destructive transition-colors" title="Supprimer la note">
+            <button
+              onClick={() => setShowDeleteConfirm(!showDeleteConfirm)}
+              className="text-muted-foreground hover:text-destructive transition-colors"
+              title="Delete note"
+            >
               <Icon name="trash" className="w-5 h-5" />
             </button>
             {showDeleteConfirm && (
               <div className="absolute right-0 top-8 bg-card rounded-lg shadow-lg p-4 border border-border z-10">
-                <p className="text-sm text-foreground mb-3">Supprimer cette note ?</p>
+                <p className="text-sm text-foreground mb-3">Delete this note?</p>
                 <div className="flex space-x-2">
-                  <button onClick={() => setShowDeleteConfirm(false)} className="text-sm px-3 py-1 bg-muted text-foreground rounded hover:bg-muted/80">Annuler</button>
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="text-sm px-3 py-1 bg-muted text-foreground rounded hover:bg-muted/80"
+                  >
+                    Cancel
+                  </button>
                   <form action={handleDelete}>
-                    <button type="submit" disabled={isPending} className="text-sm px-3 py-1 bg-destructive text-destructive-foreground rounded hover:bg-destructive/90 disabled:opacity-50">
-                      {isPending ? "Suppression..." : "Supprimer"}
+                    <button
+                      type="submit"
+                      disabled={isPending}
+                      className="text-sm px-3 py-1 bg-destructive text-destructive-foreground rounded hover:bg-destructive/90 disabled:opacity-50"
+                    >
+                      {isPending ? "Deleting..." : "Delete"}
                     </button>
                   </form>
                 </div>
@@ -97,11 +109,20 @@ export default function NoteCard({ note, currentUserId, onDelete }: NoteCardProp
 function getTimeAgo(date: Date): string {
   const now = new Date();
   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-  if (diffInSeconds < 60) return "À l'instant";
-  if (diffInSeconds < 3600) { const minutes = Math.floor(diffInSeconds / 60); return `Il y a ${minutes} minute${minutes > 1 ? "s" : ""}`; }
-  if (diffInSeconds < 86400) { const hours = Math.floor(diffInSeconds / 3600); return `Il y a ${hours} heure${hours > 1 ? "s" : ""}`; }
-  if (diffInSeconds < 2592000) { const days = Math.floor(diffInSeconds / 86400); return `Il y a ${days} jour${days > 1 ? "s" : ""}`; }
-  return date.toLocaleDateString("fr-FR");
+  if (diffInSeconds < 60) return "Just now";
+  if (diffInSeconds < 3600) {
+    const minutes = Math.floor(diffInSeconds / 60);
+    return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
+  }
+  if (diffInSeconds < 86400) {
+    const hours = Math.floor(diffInSeconds / 3600);
+    return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+  }
+  if (diffInSeconds < 2592000) {
+    const days = Math.floor(diffInSeconds / 86400);
+    return `${days} day${days > 1 ? "s" : ""} ago`;
+  }
+  return date.toLocaleDateString("en-US");
 }
 
 

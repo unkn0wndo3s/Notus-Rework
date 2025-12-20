@@ -3,8 +3,6 @@ import { useSession as useNextAuthSession } from "next-auth/react";
 import type { Session } from "next-auth";
 import {
   clearUserSession as clearSessionUtils,
-  getUserSession as getSessionUtils,
-  saveUserSession as saveSessionUtils,
 } from "@/lib/session-utils";
 import { createDocumentAction } from "@/lib/actions";
 
@@ -46,7 +44,7 @@ const getLocalUserSession = (): UserSession | null => {
     const session = localStorage.getItem("userSession");
     return session ? JSON.parse(session) : null;
   } catch (error) {
-    console.error("Erreur lors de la récupération de la session:", error);
+    console.error("Error while retrieving session:", error);
     return null;
   }
 };
@@ -57,7 +55,7 @@ const saveLocalUserSession = (sessionData: UserSession): boolean => {
     localStorage.setItem("userSession", JSON.stringify(sessionData));
     return true;
   } catch (error) {
-    console.error("Erreur lors de la sauvegarde de la session:", error);
+    console.error("Error while saving session:", error);
     return false;
   }
 };
@@ -99,7 +97,7 @@ export function useLocalSession(serverSession: Session | null = null): UseLocalS
           setLocalSession(null);
         }
       } catch (error) {
-        console.error("❌ Erreur lors du chargement de la session:", error);
+        console.error("❌ Error while loading session:", error);
       } finally {
         setLoading(false);
       }
@@ -107,7 +105,7 @@ export function useLocalSession(serverSession: Session | null = null): UseLocalS
     loadSession();
   }, [serverSession, nextAuthSession, status]);
 
-  // Fonction de migration des documents locaux
+  // Function to migrate local documents
   const migrateLocalDocuments = useCallback(async (userId: string) => {
     if (typeof window === "undefined") return;
     if (migrationInProgress) return;
@@ -140,13 +138,13 @@ export function useLocalSession(serverSession: Session | null = null): UseLocalS
         tags?: string[];
       }> = raw ? JSON.parse(raw) : [];
 
-      console.log(`[Migration] Documents locaux détectés: ${localDocs.length}`);
+      console.log(`[Migration] Local documents detected: ${localDocs.length}`);
       if (localDocs.length > 0) {
-        console.log(`[Migration] Liste des documents:`, localDocs.map(d => ({ id: d.id, title: d.title })));
+        console.log(`[Migration] List of documents:`, localDocs.map(d => ({ id: d.id, title: d.title })));
       }
 
       if (!Array.isArray(localDocs) || localDocs.length === 0) {
-        console.log(`[Migration] Aucun document local à migrer`);
+        console.log(`[Migration] No local document to migrate`);
         return;
       }
 
@@ -158,7 +156,7 @@ export function useLocalSession(serverSession: Session | null = null): UseLocalS
       for (const doc of localDocs) {
         const formData = new FormData();
         formData.append("userId", String(userId));
-        formData.append("title", (doc.title || "Sans titre").trim());
+        formData.append("title", (doc.title || "Untitled").trim());
 
         let contentStr = "";
         try {
@@ -178,50 +176,50 @@ export function useLocalSession(serverSession: Session | null = null): UseLocalS
         formData.append("tags", JSON.stringify(tagList));
 
         try {
-          console.log(`[Migration] Tentative de migration du document local: ${doc.id} - "${doc.title}"`);
+          console.log(`[Migration] Attempting to migrate local document: ${doc.id} - "${doc.title}"`);
           const result: any = await createDocumentAction(undefined as unknown as never, formData);
-          console.log(`[Migration] Résultat de création:`, result);
+          console.log(`[Migration] Creation result:`, result);
           
-          // Vérification plus robuste du succès
+          // Robust success check
           let ok = false;
           if (typeof result === "object" && result !== null && "success" in result) {
             ok = Boolean(result.success);
           } else if (typeof result === "string") {
-            ok = false; // Les erreurs sont retournées comme des strings
+            ok = false; // Errors are returned as strings
           } else {
-            ok = false; // Type inattendu
+            ok = false; // Unexpected type
           }
           
-          console.log(`[Migration] Succès de migration: ${ok} (type: ${typeof result}, result:`, result, ")");
+          console.log(`[Migration] Migration success: ${ok} (type: ${typeof result}, result:`, result, ")");
           
           if (ok) {
-            console.log(`[Migration] ✅ Document ${doc.id} migré avec succès, suppression du localStorage`);
+            console.log(`[Migration] ✅ Document ${doc.id} migrated successfully, removing from localStorage`);
             remainingDocs = remainingDocs.filter((d) => String(d.id) !== String(doc.id));
             localStorage.setItem(LOCAL_DOCS_KEY, JSON.stringify(remainingDocs));
-            console.log(`[Migration] Documents restants: ${remainingDocs.length}`);
+            console.log(`[Migration] Remaining documents: ${remainingDocs.length}`);
             
             if (String(doc.id) in tagsMap) {
               delete tagsMap[String(doc.id)];
               localStorage.setItem("notus.tags", JSON.stringify(tagsMap));
-              console.log(`[Migration] Tags supprimés pour le document ${doc.id}`);
+              console.log(`[Migration] Tags deleted for document ${doc.id}`);
             }
           } else {
-            console.warn(`[Migration] ❌ Échec de migration du document ${doc.id}:`, result);
+            console.warn(`[Migration] ❌ Failed to migrate document ${doc.id}:`, result);
           }
         } catch (e) {
-          console.warn(`[Migration] ❌ Erreur lors de la migration du document ${doc.id}:`, e);
+          console.warn(`[Migration] ❌ Error during migration of document ${doc.id}:`, e);
         }
       }
       
-      // Log final de l'état du localStorage
+      // Final log of localStorage state
       const finalRaw = localStorage.getItem(LOCAL_DOCS_KEY);
       const finalDocs = finalRaw ? JSON.parse(finalRaw) : [];
-      console.log(`[Migration] Migration terminée. Documents restants dans localStorage: ${finalDocs.length}`);
+      console.log(`[Migration] Migration finished. Remaining documents in localStorage: ${finalDocs.length}`);
       if (finalDocs.length > 0) {
-        console.log(`[Migration] Documents non migrés:`, finalDocs.map((d: any) => ({ id: d.id, title: d.title })));
+        console.log(`[Migration] Documents not migrated:`, finalDocs.map((d: any) => ({ id: d.id, title: d.title })));
       }
     } catch (e) {
-      console.error("Erreur de migration des documents locaux:", e);
+      console.error("Error migrating local documents:", e);
     } finally {
       setMigrationInProgress(false);
       try {
@@ -245,14 +243,14 @@ export function useLocalSession(serverSession: Session | null = null): UseLocalS
     setLocalSession(null);
   };
 
-  // Fonction utilitaire pour forcer la migration (utile pour les tests)
+  // Utility function to force migration (useful for tests)
   const forceMigration = async (): Promise<void> => {
     const activeUserId = (nextAuthSession?.user?.id || serverSession?.user?.id) as unknown as string | undefined;
     if (activeUserId) {
-      console.log(`[Migration] Migration forcée pour l'utilisateur ${activeUserId}`);
+      console.log(`[Migration] Forced migration for user ${activeUserId}`);
       await migrateLocalDocuments(String(activeUserId));
     } else {
-      console.warn(`[Migration] Aucun utilisateur actif pour forcer la migration`);
+      console.warn(`[Migration] No active user to force migration`);
     }
   };
 

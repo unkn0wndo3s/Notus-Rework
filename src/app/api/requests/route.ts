@@ -20,14 +20,14 @@ export async function POST(request: Request) {
 
     if (!type || !title || !description) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
 
     if (!["help", "data_restoration", "other"].includes(type)) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
@@ -41,16 +41,16 @@ export async function POST(request: Request) {
 
     if (!result.success) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 500 }
       );
     }
 
     return NextResponse.json({ success: true, request: result.request }, { status: 201 });
   } catch (error) {
-    console.error("❌ Erreur création requête:", error);
+    console.error("❌ Error creating request:", error);
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 500 }
     );
   }
@@ -92,16 +92,16 @@ export async function GET(request: Request) {
 
     if (!result.success) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 500 }
       );
     }
 
     return NextResponse.json({ success: true, requests: result.requests || [] });
   } catch (error) {
-    console.error("❌ Erreur récupération requêtes:", error);
+    console.error("❌ Error retrieving requests:", error);
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 500 }
     );
   }

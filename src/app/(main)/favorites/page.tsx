@@ -30,14 +30,14 @@ export default async function FavoritesPage() {
         <section className="space-y-8">
           <header>
             <h1 className="font-title text-4xl font-regular text-foreground hidden md:block">
-              Favoris
+              Favorites
             </h1>
           </header>
 
           {!favoritesResult.success && session?.user && (
             <Alert variant="error">
               <Alert.Description>
-                Erreur lors du chargement des favoris: {favoritesResult.error}
+                Error loading favorites: {favoritesResult.error}
               </Alert.Description>
             </Alert>
           )}

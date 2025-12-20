@@ -117,18 +117,18 @@ export default function DocumentCard({
   const isOwner = ('user_id' in document) ? (document as any).user_id === currentUserId : false;
   const updatedDate = new Date((document as any).updated_at || new Date());
   const [accessList, setAccessList] = useState<any[]>([]);
-  // Normalize favori which can come from different sources (document.favori or Share.favori)
+  // Normalize is_favorite which can come from different sources (document.is_favorite or Share.is_favorite)
   // and may be truthy but not strictly `true` in some codepaths. Keep local state
   // synchronized when the prop changes.
-  const [isFavorite, setIsFavorite] = useState<boolean>(Boolean((document as any).favori));
+  const [isFavorite, setIsFavorite] = useState<boolean>(Boolean((document as any).is_favorite));
   useEffect(() => {
     try {
-      setIsFavorite(Boolean((document as any).favori));
+      setIsFavorite(Boolean((document as any).is_favorite));
     } catch (e) {
       // ignore
     }
-  }, [(document as any).favori]);
-  const formattedDate = updatedDate.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
+  }, [(document as any).is_favorite]);
+  const formattedDate = updatedDate.toLocaleDateString("en-US", { day: "2-digit", month: "2-digit", year: "numeric" });
   const updatedAtIso = (
     typeof (document as any).updated_at === 'string'
       ? (document as any).updated_at
@@ -216,7 +216,7 @@ export default function DocumentCard({
     const fd = new FormData();
     fd.append("documentId", String((document as any).id));
     fd.append("userId", String(currentUserId));
-    fd.append("title", (document as any).title || "Sans titre");
+    fd.append("title", (document as any).title || "Untitled");
     fd.append("content", (document as any).content || "");
     fd.append("tags", JSON.stringify(nextTags));
     startTransition(() => { updateFormAction(fd); });
@@ -228,12 +228,12 @@ export default function DocumentCard({
     const isRemoval = newTags.length < prevTags.length;
     if (isAddition) {
       if (!currentUserId) {
-        window.dispatchEvent(new CustomEvent("notus:offline-popin", { detail: { message: "Vous pourrez accéder à cette fonctionnalité une fois la connexion rétablie.", durationMs: 5000 } }));
+        window.dispatchEvent(new CustomEvent("notus:offline-popin", { detail: { message: "You will be able to access this feature once connectivity is restored.", durationMs: 5000 } }));
         return;
       }
       const online = await checkConnectivity();
       if (!online) {
-        window.dispatchEvent(new CustomEvent("notus:offline-popin", { detail: { message: "Vous pourrez accéder à cette fonctionnalité une fois la connexion rétablie.", durationMs: 5000 } }));
+        window.dispatchEvent(new CustomEvent("notus:offline-popin", { detail: { message: "You will be able to access this feature once connectivity is restored.", durationMs: 5000 } }));
         return;
       }
       setTags(newTags);
@@ -245,7 +245,7 @@ export default function DocumentCard({
       if (!currentUserId) return;
       const online = await checkConnectivity();
       if (online) { persistTags(newTags); }
-      else { window.dispatchEvent(new CustomEvent("notus:offline-popin", { detail: { message: "Vous pourrez accéder à cette fonctionnalité une fois la connexion rétablie.", durationMs: 5000 } })); }
+      else { window.dispatchEvent(new CustomEvent("notus:offline-popin", { detail: { message: "You will be able to access this feature once connectivity is restored.", durationMs: 5000 } })); }
       return;
     }
   };
@@ -324,11 +324,8 @@ export default function DocumentCard({
       const resp = await fetch("/api/admin/check-status", { method: "GET", cache: "no-store", credentials: "include", headers: { "cache-control": "no-cache" }, signal: controller.signal });
       window.clearTimeout(timeoutId);
       if (resp.ok) { window.location.href = documentUrl; }
-      else {
-        window.dispatchEvent(new CustomEvent("notus:offline-popin", { detail: { message: "Vous pourrez accéder à cette fonctionnalité une fois la connexion rétablie.", durationMs: 5000 } }));
-      }
-    } catch (error) {
-      window.dispatchEvent(new CustomEvent("notus:offline-popin", { detail: { message: "Vous pourrez accéder à cette fonctionnalité une fois la connexion rétablie.", durationMs: 5000 } }));
+    } catch (err: any) {
+      window.dispatchEvent(new CustomEvent("notus:offline-popin", { detail: { message: "You will be able to access this feature once connectivity is restored.", durationMs: 5000 } }));
     }
   };
 
@@ -359,7 +356,7 @@ export default function DocumentCard({
             onTouchEnd={(e) => { e.stopPropagation(); }}
             onWheel={(e) => { e.stopPropagation(); }}
           >
-            <TagsManager tags={tags} onTagsChange={handleTagsChange} placeholder="Nouveau tag..." maxTags={10} disabled={!currentUserId || selectMode} />
+            <TagsManager tags={tags} onTagsChange={handleTagsChange} placeholder="New tag..." maxTags={10} disabled={!currentUserId || selectMode} />
           </div>
         </div>
         {!selectMode && (
@@ -375,13 +372,13 @@ export default function DocumentCard({
             previewHtml ? (
               <div className="prose max-w-full" dangerouslySetInnerHTML={{ __html: previewHtml }} />
             ) : (
-              <p className="text-muted-foreground/70 italic">Chargement...</p>
+              <p className="text-muted-foreground/70 italic">Loading...</p>
             )
           ) : (
             !isEmpty ? (
               <p className="text-muted-foreground">{firstLine}</p>
             ) : (
-              <p className="text-muted-foreground italic">Document vide</p>
+              <p className="text-muted-foreground italic">Empty document</p>
             )
           )}
         </div>
@@ -403,7 +400,7 @@ export default function DocumentCard({
           </div>
         )}
         {selectMode && (
-          <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleSelect((document as any).id, !selected); }} className={cn("h-5 w-5 border-2 rounded transition-all duration-200 cursor-pointer flex items-center justify-center animate-fade-in", selected ? "border-primary bg-primary" : "border-input bg-background")} role="checkbox" aria-checked={selected} aria-label="Sélectionner ce document">
+          <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleSelect((document as any).id, !selected); }} className={cn("h-5 w-5 border-2 rounded transition-all duration-200 cursor-pointer flex items-center justify-center animate-fade-in", selected ? "border-primary bg-primary" : "border-input bg-background")} role="checkbox" aria-checked={selected} aria-label="Select this document">
             {selected && (<Icon name="check" className="w-4 h-4 text-primary-foreground" />)}
           </div>
         )}
@@ -411,7 +408,7 @@ export default function DocumentCard({
       {message && (
         <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg"><p className="text-sm text-destructive">{message}</p></div>
       )}
-      <LoginRequiredModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} message="Vous devez être connecté pour gérer les tags de ce document." />
+      <LoginRequiredModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} message="You must be logged in to manage this document's tags." />
     </article>
   );
 }

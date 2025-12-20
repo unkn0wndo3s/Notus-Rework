@@ -40,7 +40,7 @@ export default function ListMenu({ onFormatChange }: ListMenuProps) {
           else window.dispatchEvent(new CustomEvent('wysiwyg:open-menu', { detail: '' }));
         }}
         className="p-2 rounded transition-colors bg-muted hover:bg-muted/80 text-foreground"
-        title="Liste"
+        title="List"
       >
         <Icon name="list" className="h-5 w-5" />
       </button>
@@ -49,7 +49,7 @@ export default function ListMenu({ onFormatChange }: ListMenuProps) {
         <div className="absolute top-full left-0 mt-1 bg-card rounded shadow-lg border border-border z-50">
           <div className="py-1">
             <button
-              title="Liste à puces"
+              title="Bulleted list"
               type="button"
               onClick={() => {
                 onFormatChange('insertUnorderedList');
@@ -60,7 +60,7 @@ export default function ListMenu({ onFormatChange }: ListMenuProps) {
               <Icon name="listBulleted" className="w-6 h-6" />
             </button>
             <button
-              title="Liste numérotée"
+              title="Numbered list"
               type="button"
               onClick={() => {
                 onFormatChange('insertOrderedList');

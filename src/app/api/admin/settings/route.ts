@@ -7,18 +7,18 @@ import { UserService } from "@/lib/services/UserService";
 
 const userService = new UserService();
 
-// Vérifier si l'utilisateur est admin
+// Check if user is admin
 async function checkAdmin(userId: number | undefined): Promise<boolean> {
   if (!userId) return false;
   try {
     return await userService.isUserAdmin(userId);
   } catch (error) {
-    console.error("❌ Erreur vérification admin:", error);
+    console.error("❌ Error verifying admin:", error);
     return false;
   }
 }
 
-// GET - Récupérer tous les settings
+// GET - Retrieve all settings
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
 
     if (!userId) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 401 }
       );
     }
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     const isAdmin = await checkAdmin(userId);
     if (!isAdmin) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 403 }
       );
     }
@@ -43,14 +43,14 @@ export async function GET(request: NextRequest) {
       orderBy: { key: "asc" },
     });
 
-    // Convertir en objet clé-valeur
-    // Ne pas exposer les valeurs sensibles (tokens, clés API, etc.)
+    // Convert to key-value object
+    // Do not expose sensitive values (tokens, API keys, etc.)
     const settingsMap: Record<string, string> = {};
     const sensitiveKeys = ["ollama_token"];
     
     for (const setting of settings) {
       if (sensitiveKeys.includes(setting.key)) {
-        // Ne pas renvoyer les valeurs sensibles, juste indiquer qu'elles existent
+        // Do not return sensitive values, just indicate they exist
         settingsMap[setting.key] = setting.value ? "***" : "";
       } else {
         settingsMap[setting.key] = setting.value;
@@ -62,15 +62,15 @@ export async function GET(request: NextRequest) {
       settings: settingsMap,
     });
   } catch (error) {
-    console.error("❌ Erreur GET /api/admin/settings:", error);
+    console.error("❌ Error GET /api/admin/settings:", error);
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 500 }
     );
   }
 }
 
-// POST - Mettre à jour un setting
+// POST - Update a setting
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
 
     if (!userId) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 401 }
       );
     }
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
     const isAdmin = await checkAdmin(userId);
     if (!isAdmin) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 403 }
       );
     }
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => null);
     if (!body || typeof body !== "object") {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
@@ -107,19 +107,19 @@ export async function POST(request: NextRequest) {
 
     if (typeof key !== "string" || key.trim().length === 0) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
 
     if (typeof value !== "string") {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
 
-    // Créer ou mettre à jour le setting
+    // Create or update the setting
     const setting = await (prisma as any).appSetting.upsert({
       where: { key },
       update: {
@@ -138,9 +138,9 @@ export async function POST(request: NextRequest) {
       setting,
     });
   } catch (error) {
-    console.error("❌ Erreur POST /api/admin/settings:", error);
+    console.error("❌ Error POST /api/admin/settings:", error);
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 500 }
     );
   }

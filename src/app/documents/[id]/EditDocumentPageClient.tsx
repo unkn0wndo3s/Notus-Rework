@@ -45,12 +45,12 @@ type SaveStatus = "synchronized" | "saving" | "unsynchronized";
 const getSaveStatusLabel = (status: SaveStatus): string => {
   switch (status) {
     case "synchronized":
-      return "Note synchronisée";
+      return "Note synchronized";
     case "saving":
-      return "Enregistrement...";
+      return "Saving...";
     case "unsynchronized":
     default:
-      return "Non synchronisé";
+      return "Not synchronized";
   }
 };
 
@@ -70,7 +70,7 @@ const toPositiveNumber = (raw: unknown): number | undefined => {
   return undefined;
 };
 
-export default function EditDocumentPageClient(props: EditDocumentPageClientProps) {
+export default function EditDocumentPageClient(props: Readonly<EditDocumentPageClientProps>) {
   // -------- All Hooks must be called unconditionally first --------
 
   const {
@@ -139,7 +139,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
   // Load access list for this document and update `users` state
   const loadAccessList = async () => {
     if (!document?.id) return;
-    // Ne pas charger la liste d'accès en mode offline
+    // Do not load the access list in offline mode
     if (isOffline || !navigator.onLine) {
       return;
     }
@@ -154,7 +154,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
           data.accessList.map((user: any) => ({
             ...user,
             avatarUrl: user.profile_image || "",
-            name: user.username || user.email || "Utilisateur",
+            name: user.username || user.email || "User",
           }))
         );
       } else {
@@ -166,7 +166,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
   };
   const [offlineBaseline, setOfflineBaseline] = useState<string>("");
 
-  // État de sauvegarde : 'synchronized' | 'saving' | 'unsynchronized'
+  // Save status: 'synchronized' | 'saving' | 'unsynchronized'
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("synchronized");
   const lastSavedContentRef = useRef<string>("");
   const lastSavedTitleRef = useRef<string>("");
@@ -261,7 +261,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
         title: nextTitle,
         tags,
       }).catch((error) => {
-        console.error("❌ Échec de la synchronisation du titre via websocket:", error);
+        console.error("❌ Failed to synchronize title via websocket:", error);
         setSaveStatus('unsynchronized');
       });
     },
@@ -274,14 +274,14 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
       try {
         const copyForm = new FormData();
         copyForm.append("userId", String(realtimeUserId));
-        const baseTitle = title || "Sans titre";
-        copyForm.append("title", `${baseTitle} (copie personnelle)`);
+        const baseTitle = title || "Untitled";
+        copyForm.append("title", `${baseTitle} (personal copy)`);
         copyForm.append("content", JSON.stringify(snapshot));
         copyForm.append("tags", JSON.stringify(tags));
         await createDocumentAction(undefined as unknown as never, copyForm);
-        console.log("📄 Copie personnelle créée suite à une modification distante.");
+        console.log("📄 Personal copy created following a remote modification.");
       } catch (error) {
-        console.error("❌ Impossible de créer une copie personnelle:", error);
+        console.error("❌ Unable to create a personal copy:", error);
       }
     },
     [realtimeUserId, title, tags]
@@ -342,7 +342,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
     try {
       setIsLoading(true);
 
-      // Si on est hors ligne, charger depuis localStorage
+      // If offline, load from localStorage
       if (typeof navigator !== "undefined" && !navigator.onLine) {
         const cached = localStorage.getItem(`notus:doc:${props.params.id}`);
         if (cached) {
@@ -370,10 +370,10 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
             setIsLoading(false);
             return;
           } catch (e) {
-            console.error("Erreur lors du chargement depuis localStorage:", e);
+            console.error("Error loading from localStorage:", e);
           }
         }
-        setError("Document non disponible hors ligne");
+        setError("Document not available offline");
         setIsLoading(false);
         return;
       }
@@ -397,7 +397,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
         setContent(normalizedContent);
         setTags(Array.isArray(result.tags) ? result.tags : []);
 
-        // Initialiser les refs avec le contenu chargé
+        // Initialize refs with the loaded content
         const contentString = JSON.stringify(normalizedContent);
         lastSavedContentRef.current = contentString;
         lastSavedTitleRef.current = result.title;
@@ -439,7 +439,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
               setContent(normalizeContent(c.content));
               setTags(Array.isArray(c.tags) ? c.tags : []);
 
-              // Initialiser les refs avec le contenu en cache
+              // Initialize refs with the cached content
               const cachedContentString = JSON.stringify(normalizeContent(c.content));
               lastSavedContentRef.current = cachedContentString;
               lastSavedTitleRef.current = c.title;
@@ -451,7 +451,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
             }
           }
         } catch { }
-        setError(result.error || "Erreur lors du chargement du document");
+        setError(result.error || "Error loading document");
       }
     } catch (err) {
       try {
@@ -472,7 +472,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
             setContent(normalizeContent(c.content));
             setTags(Array.isArray(c.tags) ? c.tags : []);
 
-            // Initialiser les refs avec le contenu en cache
+            // Initialize refs with the cached content
             const cachedContentString = JSON.stringify(normalizeContent(c.content));
             lastSavedContentRef.current = cachedContentString;
             lastSavedTitleRef.current = c.title;
@@ -484,7 +484,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
           }
         }
       } catch { }
-      setError("Erreur lors du chargement du document");
+      setError("Error loading document");
     } finally {
       setIsLoading(false);
     }
@@ -502,7 +502,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
       const normalizedContent = normalizeContent(document.content);
       setContent(normalizedContent);
 
-      // Initialiser les refs si elles ne sont pas déjà initialisées
+      // Initialize refs if they are not already initialized
       if (lastSavedContentRef.current === "") {
         const contentString = JSON.stringify(normalizedContent);
         lastSavedContentRef.current = contentString;
@@ -511,7 +511,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
         setSaveStatus('synchronized');
       }
 
-      // Ne pas charger la liste d'accès en mode offline
+      // Do not load the access list in offline mode
       if (!isOffline && navigator.onLine) {
         checkConnectivity().then(onlineOk => {
           if (!onlineOk) return;
@@ -523,7 +523,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
                   data.accessList.map((user: any) => ({
                     ...user,
                     avatarUrl: user.profile_image || "",
-                    name: user.username || user.email || "Utilisateur",
+                    name: user.username || user.email || "User",
                   }))
                 );
               } else {
@@ -534,7 +534,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
         });
       }
     }
-  }, [document, normalizeContent]);
+  }, [document, normalizeContent, checkConnectivity, isOffline]);
 
   const isOwner = document ? Number(document.user_id) === Number(userId) : false;
 
@@ -583,8 +583,8 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
     }
   }, [props.params.id, title, tags, userId, props.session]);
 
-  // Fonction pour déclencher la sauvegarde automatique avec debounce
-  // Note: handleSubmit sera défini plus tard, on utilisera une ref pour l'appeler
+  // Function to trigger automatic save with debounce
+  // Note: handleSubmit will be defined later, we will use a ref to call it
   const handleSubmitRef = useRef<(() => Promise<void>) | null>(null);
 
   const triggerAutoSave = useCallback(() => {
@@ -602,12 +602,12 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
       return;
     }
 
-    // Annuler le timeout précédent s'il existe
+    // Cancel the previous timeout if it exists
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
 
-    // Marquer comme non synchronisé immédiatement
+    // Mark as unsynchronized immediately
     setSaveStatus((prevStatus) => {
       if (prevStatus !== 'saving') {
         return 'unsynchronized';
@@ -615,9 +615,9 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
       return prevStatus;
     });
 
-    // Déclencher la sauvegarde après 2 secondes d'inactivité
+    // Trigger save after 2 seconds of inactivity
     saveTimeoutRef.current = setTimeout(async () => {
-      // Vérifier les changements au moment de la sauvegarde
+      // Check for changes at the time of saving
       const currentContentString = JSON.stringify(content);
       const hasChanges =
         currentContentString !== lastSavedContentRef.current ||
@@ -625,7 +625,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
         JSON.stringify(tags) !== JSON.stringify(lastSavedTagsRef.current);
 
       if (!hasChanges || isSavingRef.current) {
-        // Pas de changements, remettre à synchronisé
+        // No changes, set back to synchronized
         setSaveStatus('synchronized');
         return;
       }
@@ -646,7 +646,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
         isSavingRef.current = true;
         setSaveStatus('saving');
 
-        // Appeler handleSubmit via la ref
+        // Call handleSubmit via the ref
         if (handleSubmitRef.current) {
           await handleSubmitRef.current();
         }
@@ -655,7 +655,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
         isSavingRef.current = false;
         setSaveStatus('unsynchronized');
       }
-    }, 2000); // 2 secondes d'inactivité avant sauvegarde
+    }, 2000); // 2 seconds of inactivity before saving
   }, [document?.id, hasEditAccess, content, title, tags, checkConnectivity, shouldUseRealtime, isOffline]);
 
   const handleContentChange = useCallback((newContent: unknown) => {
@@ -674,7 +674,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
         userId ?? (localSession as { id?: number } | null)?.id ?? (props.session?.user?.id ?? "")
       );
       if (!submittingUserId) {
-        alert("Session invalide. Veuillez vous reconnecter.");
+        alert("Invalid session. Please log in again.");
         return;
       }
 
@@ -741,7 +741,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
         triggerPersistIndicators();
         setSaveStatus('synchronized');
       } catch (error) {
-        console.error("❌ Erreur lors de la sauvegarde fallback:", error);
+        console.error("❌ Error during fallback save:", error);
         setSaveStatus('unsynchronized');
       } finally {
         setIsManualSaving(false);
@@ -764,13 +764,13 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
     ]
   );
 
-  // Assigner handleSubmit à la ref pour l'auto-save
+  // Assign handleSubmit to the ref for auto-save
   useEffect(() => {
     handleSubmitRef.current = handleSubmit;
   }, [handleSubmit]);
 
-  // Mettre à jour les refs et le statut après une sauvegarde réussie
-  // Nettoyer le timeout lors du démontage
+  // Update refs and status after a successful save
+  // Clear timeout on unmount
   useEffect(() => {
     return () => {
       if (saveTimeoutRef.current) {
@@ -790,7 +790,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
       setOfflineBaseline(baseline);
       localStorage.setItem(`notus:offline-baseline:${document.id}`, baseline);
 
-      // Sauvegarder le document complet dans localStorage avec l'état complet
+      // Save the complete document in localStorage with the full state
       try {
         const key = `notus:doc:${document.id}`;
         const snapshot = buildContentSnapshot();
@@ -798,32 +798,32 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
           id: Number(document.id),
           title: title || "",
           content: content,
-          contentSnapshot: snapshot, // Inclure le snapshot complet
+          contentSnapshot: snapshot, // Include the full snapshot
           tags: tags,
           updated_at: new Date().toISOString(),
           user_id: Number(document.user_id ?? userId ?? 0),
           cachedAt: Date.now(),
-          offline: true, // Marquer comme sauvegarde offline
+          offline: true, // Mark as offline save
         };
         if (typeof window !== "undefined") {
           localStorage.setItem(key, JSON.stringify(payload));
-          // Sauvegarder aussi dans une clé spécifique pour les documents offline
+          // Also save in a specific key for offline documents
           localStorage.setItem(`notus:offline-doc:${document.id}`, JSON.stringify(payload));
         }
-        console.log('📴 Mode hors ligne activé - Document sauvegardé dans localStorage:', {
+        console.log('📴 Offline mode activated - Document saved in localStorage:', {
           documentId: document.id,
           title: title,
           contentLength: content.text?.length || 0,
           snapshotTimestamp: snapshot?.timestamp,
         });
       } catch (err) {
-        console.error("Erreur lors de la sauvegarde offline:", err);
+        console.error("Error during offline save:", err);
       }
     };
 
     const handleOnline = async () => {
       setIsOffline(false);
-      console.log('🌐 Reconnexion détectée - Début de la résolution des conflits');
+      console.log('🌐 Reconnection detected - Starting conflict resolution');
 
       try {
         // Fetch current state from database
@@ -836,7 +836,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
           const storedBaseline = localStorage.getItem(`notus:offline-baseline:${document.id}`) || "";
           const currentText = content.text || "";
 
-          console.log('📊 Données récupérées de la base de données:', {
+          console.log('📊 Data retrieved from database:', {
             documentId: document.id,
             title: result.title,
             updatedAt: result.updated_at,
@@ -847,7 +847,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
             contentType: typeof result.content
           });
 
-          console.log('🔍 Analyse des conflits:', {
+          console.log('🔍 Conflict analysis:', {
             documentId: document.id,
             baselineLength: storedBaseline.length,
             remoteLength: remoteText.length,
@@ -860,24 +860,24 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
           // Compare remote content with stored baseline
           if (remoteText !== storedBaseline) {
             // Remote changes occurred while offline - create a copy
-            console.log('⚠️ Conflit détecté - Changements distants trouvés pendant la déconnexion');
-            console.log('📄 Création d\'une copie avec les modifications locales');
+            console.log('⚠️ Conflict detected - Remote changes found during disconnection');
+            console.log('📄 Creating a copy with local modifications');
 
             const offlineSnapshot = buildContentSnapshot();
 
-            // Créer une copie avec "name - copie"
+            // Create a copy with "name - copy"
             if (realtimeUserId) {
               try {
                 const copyForm = new FormData();
                 copyForm.append("userId", String(realtimeUserId));
-                const baseTitle = title || result.title || "Sans titre";
-                copyForm.append("title", `${baseTitle} - copie`);
+                const baseTitle = title || result.title || "Untitled";
+                copyForm.append("title", `${baseTitle} - copy`);
                 copyForm.append("content", JSON.stringify(offlineSnapshot));
                 copyForm.append("tags", JSON.stringify(tags));
                 await createDocumentAction(undefined as unknown as never, copyForm);
-                console.log("📄 Copie créée avec les modifications hors ligne.");
+                console.log("📄 Copy created with offline modifications.");
               } catch (error) {
-                console.error("❌ Impossible de créer une copie:", error);
+                console.error("❌ Unable to create copy:", error);
               }
             }
 
@@ -898,21 +898,21 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
 
             setOfflineBaseline("");
             localStorage.removeItem(`notus:offline-baseline:${document.id}`);
-            console.log('✅ Résolution terminée - Copie créée et données distantes appliquées');
+            console.log('✅ Resolution complete - Copy created and remote data applied');
           } else {
             // No remote changes - our offline changes are safe to persist
-            console.log('✅ Aucun conflit - Aucun changement distant détecté');
-            console.log('💾 Sauvegarde des modifications hors ligne');
+            console.log('✅ No conflict - No remote changes detected');
+            console.log('💾 Saving offline modifications');
             await handleSubmit();
             setOfflineBaseline("");
             localStorage.removeItem(`notus:offline-baseline:${document.id}`);
-            console.log('✅ Modifications hors ligne sauvegardées avec succès');
+            console.log('✅ Offline modifications saved successfully');
           }
         } else {
-          console.log('❌ Échec de la récupération du contenu distant:', result.error);
+          console.log('❌ Failed to fetch remote content:', result.error);
         }
       } catch (err) {
-        console.error('❌ Erreur lors de la résolution des conflits:', err);
+        console.error('❌ Error resolving conflicts:', err);
       }
     };
 
@@ -920,7 +920,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
     if (typeof navigator !== 'undefined') {
       const initialOffline = !navigator.onLine;
       setIsOffline(initialOffline);
-      console.log('🔌 État de connexion initial:', { isOffline: initialOffline });
+      console.log('🔌 Initial connection state:', { isOffline: initialOffline });
     }
 
     window.addEventListener('online', handleOnline);
@@ -934,7 +934,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
 
   const persistTags = (nextTags: string[]) => {
     if (!userId) return;
-    // Ne pas persister les tags en mode offline
+    // Do not persist tags in offline mode
     if (isOffline || !navigator.onLine) {
       return;
     }
@@ -942,11 +942,11 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
     const fd = new FormData();
     fd.append("documentId", String(props.params?.id || ""));
     fd.append("userId", String(userId));
-    fd.append("title", title || "Sans titre");
+    fd.append("title", title || "Untitled");
     fd.append("content", JSON.stringify(content || ""));
     fd.append("tags", JSON.stringify(nextTags));
     
-    // Vérifier la connectivité avant d'appeler l'API
+    // Check connectivity before calling the API
     checkConnectivity().then(onlineOk => {
       if (onlineOk) {
         startTransition(() => {
@@ -975,19 +975,19 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
       if (!userEmail) {
         setHasEditAccess(false);
         setHasReadAccess(false);
-        setError('Accès refusé: email utilisateur manquant');
+        setError('Access denied: missing user email');
         return;
       }
       try {
         if (!document) {
           setHasEditAccess(false);
           setHasReadAccess(false);
-          setError('Accès refusé: document introuvable');
+          setError('Access denied: document not found');
           return;
         }
-        // Ne pas vérifier l'accès en mode offline
+        // Do not verify access in offline mode
         if (isOffline || !navigator.onLine) {
-          // En offline, on assume l'accès basé sur le document chargé
+          // In offline, we assume access based on loaded document
           const isOwner = Number(document.user_id) === Number(userId);
           setHasEditAccess(isOwner);
           setHasReadAccess(true);
@@ -996,7 +996,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
         
         const onlineOk = await checkConnectivity();
         if (!onlineOk) {
-          // En offline, on assume l'accès basé sur le document chargé
+          // In offline, we assume access based on loaded document
           const isOwner = Number(document.user_id) === Number(userId);
           setHasEditAccess(isOwner);
           setHasReadAccess(true);
@@ -1030,21 +1030,21 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
           } else {
             setHasEditAccess(false);
             setHasReadAccess(false);
-            setError('Accès refusé: vous n\'avez pas accès à ce document');
+            setError('Access denied: you do not have access to this document');
           }
         } else {
           setHasEditAccess(false);
           setHasReadAccess(false);
-          setError('Accès refusé: liste d\'accès non trouvée');
+          setError('Access denied: access list not found');
         }
       } catch (err) {
         setHasEditAccess(false);
         setHasReadAccess(false);
-        setError('Erreur lors de la récupération de la liste d\'accès');
+        setError('Error retrieving access list');
       }
     }
     checkAccess();
-  }, [document, userEmail, userId]);
+  }, [document, userEmail, userId, isOffline, checkConnectivity]);
 
   // -------- Share functionality --------
   const handleShareButtonClick = async () => {
@@ -1059,17 +1059,17 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
   const handleShareSubmit = async () => {
     // Prevent non-owners from submitting share
     if (!isOwner) {
-      setShareError("Vous n'avez pas le droit de partager ce document");
+      setShareError("You do not have the right to share this document");
       return;
     }
     if (!document) return;
     const ok = await checkConnectivity();
     if (!ok) {
-      setShareError("Connexion requise pour partager la note.");
+      setShareError("Connection required to share the note.");
       return;
     }
     if (!shareEmail || shareEmail.trim().length === 0) {
-      setShareError("Email requis");
+      setShareError("Email required");
       return;
     }
 
@@ -1077,9 +1077,9 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
     setShareError(null);
     setShareSuccess(null);
 
-    // Ne pas partager en mode offline
+    // Do not share in offline mode
     if (isOffline || !navigator.onLine) {
-      setShareError("Connexion requise pour partager la note.");
+      setShareError("Connection required to share the note.");
       setShareLoading(false);
       return;
     }
@@ -1087,7 +1087,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
     try {
       const onlineOk = await checkConnectivity();
       if (!onlineOk) {
-        setShareError("Connexion requise pour partager la note.");
+        setShareError("Connection required to share the note.");
         setShareLoading(false);
         return;
       }
@@ -1106,15 +1106,15 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
       const data = await res.json();
 
       if (res.ok) {
-        setShareSuccess(data.message || "Partage enregistré.");
+        setShareSuccess(data.message || "Share registered.");
         setIsShareModalOpen(false);
         router.refresh();
       } else {
-        setShareError(data.error || "Erreur lors du partage.");
+        setShareError(data.error || "Error during sharing.");
       }
     } catch (err) {
       console.error(err);
-      setShareError("Erreur lors du partage.");
+      setShareError("Error during sharing.");
     } finally {
       setShareLoading(false);
     }
@@ -1129,7 +1129,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-primary">
-            Chargement de la session...
+            Loading session...
           </p>
         </div>
       </div>
@@ -1141,16 +1141,16 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="bg-card rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
           <h1 className="text-2xl font-bold text-foreground mb-4">
-            Accès refusé
+            Access denied
           </h1>
           <p className="text-muted-foreground mb-6">
-            Vous devez être connecté pour modifier un document.
+            You must be logged in to modify a document.
           </p>
           <Link
             href="/login"
             className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-3 px-6 rounded-lg transition-colors"
           >
-            Se connecter
+            Log in
           </Link>
         </div>
       </div>
@@ -1162,7 +1162,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-primary">Chargement...</p>
+          <p className="text-primary">Loading...</p>
         </div>
       </div>
     );
@@ -1173,14 +1173,14 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="bg-card rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
           <h1 className="text-2xl font-bold text-foreground mb-4">
-            Erreur
+            Error
           </h1>
           <p className="text-foreground mb-6">{error}</p>
           <Link
             href="/app"
             className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-3 px-6 rounded-lg transition-colors"
           >
-            Retour à l'accueil
+            Back to Home
           </Link>
         </div>
       </div>
@@ -1192,16 +1192,16 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="bg-card rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
           <h1 className="text-2xl font-bold text-foreground mb-4">
-            Document non trouvé
+            Document not found
           </h1>
           <p className="text-muted-foreground mb-6">
-            Ce document n'existe pas ou a été supprimé.
+            This document does not exist or has been deleted.
           </p>
           <Link
             href="/app"
             className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-3 px-6 rounded-lg transition-colors"
           >
-            Retour à l'accueil
+            Back to Home
           </Link>
         </div>
       </div>
@@ -1214,16 +1214,16 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="bg-card rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
           <h1 className="text-2xl font-bold text-foreground mb-4">
-            Accès refusé
+            Access denied
           </h1>
           <p className="text-muted-foreground mb-6">
-            Vous n'êtes pas autorisé à accéder à ce document.
+            You are not authorized to access this document.
           </p>
           <Link
             href="/app"
             className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-3 px-6 rounded-lg transition-colors"
           >
-            Retour à l'accueil
+            Back to Home
           </Link>
         </div>
       </div>
@@ -1269,7 +1269,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
             className="text-foreground font-semibold flex items-center"
           >
             <Icon name="arrowLeft" className="h-5 w-5 mr-2" />
-            Retour
+            Back
           </Link>
           <div className="flex flex-row items-center gap-4">
             {hasEditAccess !== false && (
@@ -1284,7 +1284,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
             <UserListButton users={users} className="self-center" documentId={document.id} onAccessListRefresh={loadAccessList} isOwner={isOwner} currentUserId={userId} />
             {hasEditAccess === false && (
               <div className="px-3 py-1 bg-[var(--muted)] text-foreground text-sm font-medium rounded-full border border-[var(--border)]">
-                Mode lecture seule
+                Read-only mode
               </div>
             )}
             <div className="relative inline-block">
@@ -1314,15 +1314,15 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
                           (async () => {
                             const ok = await checkConnectivity();
                             if (!ok) {
-                              setShareError("Connexion requise pour partager la note.");
+                              setShareError("Connection required to share the note.");
                             }
                           })();
                         }
                       }}
                       disabled={hasEditAccess === false}
                       icon={<Icon name="share" className={hasEditAccess === false ? "w-4 h-4 text-muted-foreground" : "w-4 h-4 text-primary"} />}
-                    >
-                      {hasEditAccess === false ? "Lecture seule" : "Partager"}
+                      >
+                      {hasEditAccess === false ? "Read-only" : "Share"}
                     </MenuItem>
 
                     <MenuItem
@@ -1332,7 +1332,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
                       }}
                       icon={<Icon name="clock" className="w-4 h-4 text-primary" />}
                     >
-                      Historique
+                      History
                     </MenuItem>
 
                     <MenuItem
@@ -1345,7 +1345,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
                       disabled={hasEditAccess === false || isManualSaving}
                       icon={<Icon name="save" className={hasEditAccess === false || isManualSaving ? "w-4 h-4 text-muted-foreground" : "w-4 h-4 text-primary"} />}
                     >
-                      {isManualSaving ? "Sauvegarde..." : hasEditAccess === false ? "Lecture seule" : "Sauvegarder"}
+                      {isManualSaving ? "Saving..." : hasEditAccess === false ? "Read-only" : "Save"}
                     </MenuItem>
 
                     <MenuItem
@@ -1355,7 +1355,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
                       }}
                       icon={<Icon name="export" className="w-4 h-4 text-primary" />}
                     >
-                      Exporter
+                      Export
                     </MenuItem>
                   </div>
                 </>
@@ -1368,7 +1368,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
         <Modal
           isOpen={isShareModalOpen}
           onClose={() => setIsShareModalOpen(false)}
-          title="Partager la note"
+          title="Share note"
           size="md"
           className="flex flex-col justify-center"
         >
@@ -1393,7 +1393,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" className="w-full justify-between">
-                        {permission === "write" ? "Peut modifier" : "Peut lire"}
+                        {permission === "write" ? "Can edit" : "Can read"}
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
@@ -1401,13 +1401,13 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
                         onClick={() => setPermission("read")}
                         className={permission === "read" ? "bg-muted" : ""}
                       >
-                        Peut lire
+                        Can read
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => setPermission("write")}
                         className={permission === "write" ? "bg-muted" : ""}
                       >
-                        Peut modifier
+                        Can edit
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -1421,7 +1421,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
                     onClick={handleShareSubmit}
                     disabled={shareLoading}
                   >
-                    {shareLoading ? "Envoi..." : "Envoyer"}
+                    {shareLoading ? "Sending..." : "Send"}
                   </Button>
                   <Button
                     type="button"
@@ -1432,7 +1432,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
                       setIsShareModalOpen(false);
                     }}
                   >
-                    Annuler
+                    Cancel
                   </Button>
                 </div>
 
@@ -1445,9 +1445,9 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
               </div>
             ) : (
               <div className="py-1 text-center">
-                <p className="text-lg font-medium text-foreground mb-4">Vous n'avez pas l'autorisation de partager ce document</p>
+                <p className="text-lg font-medium text-foreground mb-4">You do not have permission to share this document</p>
                 <div className="flex justify-center">
-                  <Button variant="ghost" onClick={() => setIsShareModalOpen(false)}>Fermer</Button>
+                  <Button variant="ghost" onClick={() => setIsShareModalOpen(false)}>Close</Button>
                 </div>
               </div>
             )}
@@ -1459,8 +1459,8 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
         {/* New doc banner/cancel */}
         {isNew && hasEditAccess !== false && (
           <div className="mb-4 rounded-lg p-3 bg-muted flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Nouvelle note en création</span>
-            <Button variant="ghost" onClick={handleCancelCreation}>Annuler la création</Button>
+            <span className="text-sm text-muted-foreground">New note being created</span>
+            <Button variant="ghost" onClick={handleCancelCreation}>Cancel creation</Button>
           </div>
         )}
 
@@ -1472,7 +1472,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
               <TagsManager
                 tags={tags}
                 onTagsChange={handleTagsChange}
-                placeholder="Ajouter un tag..."
+                placeholder="Add a tag..."
                 maxTags={20}
                 className="w-full"
                 disabled={hasEditAccess === false}
@@ -1497,7 +1497,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
                 }}
                 readOnly={hasEditAccess === false}
                 className={`w-full px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-ring bg-transparent text-foreground text-xl font-semibold ${hasEditAccess === false ? 'cursor-default opacity-75' : ''}`}
-                placeholder="Titre du document"
+                placeholder="Document title"
                 maxLength={255}
               />
             </div>
@@ -1514,12 +1514,12 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
                     setContent(remoteContent);
                     // Persist to localStorage like local edits do
                     updateLocalStorage(remoteContent);
-                    // Mettre à jour les refs car c'est un changement distant (synchronisé)
+                    // Update refs because it's a remote change (synchronized)
                     const contentString = JSON.stringify(remoteContent);
                     lastSavedContentRef.current = contentString;
                     setSaveStatus('synchronized');
                   }}
-                  placeholder="Commencez à écrire votre document..."
+                  placeholder="Start writing your document..."
                   className=""
                   showDebug={false}
                   readOnly={hasEditAccess === false}
@@ -1559,7 +1559,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
           <div className="fixed bottom-4 left-4 z-50 pointer-events-none">
             <div className="bg-primary text-primary-foreground border border-primary rounded-lg px-3 py-2 shadow-lg pointer-events-auto flex items-center">
               <Icon name="check" className="w-4 h-4 mr-2 text-primary-foreground" />
-              <span className="text-sm font-medium">Note enregistrée</span>
+              <span className="text-sm font-medium">Note saved</span>
             </div>
           </div>
         )}
@@ -1580,7 +1580,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
         onClose={() => setIsSynthesisOpen(false)}
         documentContent={content?.text || ""}
       />
-      {/* Bouton flottant pour les commentaires */}
+      {/* Floating button for comments */}
       <button
         onClick={() => {
           setIsCommentsOpen((open) => !open);
@@ -1588,7 +1588,7 @@ export default function EditDocumentPageClient(props: EditDocumentPageClientProp
           setIsSynthesisOpen(false);
         }}
         disabled={!document?.id}
-        title="Afficher les commentaires"
+        title="Show comments"
         className={cn(
           "fixed bottom-6 right-6 z-40 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] shadow-lg flex items-center justify-center",
           "hover:bg-[var(--primary)]/90 active:scale-95",

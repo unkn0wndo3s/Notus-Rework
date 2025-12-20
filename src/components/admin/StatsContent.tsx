@@ -49,41 +49,41 @@ export default function StatsContent({ stats }: StatsContentProps) {
           <Card className="bg-background border-none p-0">
             <Card.Header>
               <Card.Title className="text-foreground text-2xl font-semibold">
-                Utilisateurs
+                Users
               </Card.Title>
             </Card.Header>
             <Card.Content>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatCard
-                  title="Total utilisateurs"
+                  title="Total users"
                   value={stats.users.total}
                   icon="users"
                 />
                 <StatCard
-                  title="Utilisateurs vérifiés"
+                  title="Verified users"
                   value={stats.users.verified}
                   icon="circleCheck"
-                  subtitle={`${Math.round((stats.users.verified / stats.users.total) * 100) || 0}% du total`}
+                  subtitle={`${Math.round((stats.users.verified / stats.users.total) * 100) || 0}% of the total`}
                 />
                 <StatCard
-                  title="Utilisateurs bannis"
+                  title="Banned users"
                   value={stats.users.banned}
                   icon="alert"
                 />
                 <StatCard
-                  title="Administrateurs"
+                  title="Administrators"
                   value={stats.users.admins}
                   icon="shieldCheck"
                 />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <StatCard
-                  title="Nouveaux utilisateurs (7 jours)"
+                  title="New users (7 days)"
                   value={stats.users.last7Days}
                   icon="users"
                 />
                 <StatCard
-                  title="Nouveaux utilisateurs (30 jours)"
+                  title="New users (30 days)"
                   value={stats.users.last30Days}
                   icon="users"
                 />
@@ -92,7 +92,7 @@ export default function StatsContent({ stats }: StatsContentProps) {
           </Card>
           <StatChartSection
             type="users"
-            title="Évolution"
+            title="Evolution"
             initialPeriod="week"
             className="border-none p-0"
           />
@@ -115,12 +115,12 @@ export default function StatsContent({ stats }: StatsContentProps) {
                   icon="document"
                 />
                 <StatCard
-                  title="Documents créés (7 jours)"
+                  title="Documents created (7 days)"
                   value={stats.documents.last7Days}
                   icon="document"
                 />
                 <StatCard
-                  title="Documents créés (30 jours)"
+                  title="Documents created (30 days)"
                   value={stats.documents.last30Days}
                   icon="document"
                 />
@@ -129,7 +129,7 @@ export default function StatsContent({ stats }: StatsContentProps) {
           </Card>
           <StatChartSection
             type="documents"
-            title="Évolution"
+            title="Evolution"
             initialPeriod="week"
             className="border-none p-0"
           />
@@ -141,23 +141,23 @@ export default function StatsContent({ stats }: StatsContentProps) {
           <Card className="bg-background border-none p-0">
             <Card.Header>
               <Card.Title className="text-foreground text-2xl font-semibold">
-                Partages
+                Shares
               </Card.Title>
             </Card.Header>
             <Card.Content>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <StatCard
-                  title="Total partages"
+                  title="Total shares"
                   value={stats.shares.total}
                   icon="share"
                 />
                 <StatCard
-                  title="Partages créés (7 jours)"
+                  title="Shares created (7 days)"
                   value={stats.shares.last7Days}
                   icon="share"
                 />
                 <StatCard
-                  title="Partages créés (30 jours)"
+                  title="Shares created (30 days)"
                   value={stats.shares.last30Days}
                   icon="share"
                 />
@@ -166,7 +166,7 @@ export default function StatsContent({ stats }: StatsContentProps) {
           </Card>
           <StatChartSection
             type="shares"
-            title="Évolution"
+            title="Evolution"
             initialPeriod="week"
             className="border-none p-0"
           />

@@ -17,7 +17,7 @@ export async function requireAuth(): Promise<NextResponse | AuthResult> {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 401 }
     );
   }
@@ -25,7 +25,7 @@ export async function requireAuth(): Promise<NextResponse | AuthResult> {
   const userId = parseInt(session.user.id);
   if (!Number.isFinite(userId) || userId <= 0) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 401 }
     );
   }
@@ -44,7 +44,7 @@ export async function requireAdmin(): Promise<NextResponse | AuthResult> {
 
   if (!authResult.isAdmin) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 403 }
     );
   }
@@ -59,7 +59,7 @@ export async function requireDocumentAccess(
 ): Promise<NextResponse | null> {
   if (!documentId || documentId <= 0) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 400 }
     );
   }
@@ -72,7 +72,7 @@ export async function requireDocumentAccess(
 
   if (!hasAccess) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 403 }
     );
   }
@@ -87,7 +87,7 @@ export async function requireDocumentOwnership(
 ): Promise<NextResponse | null> {
   if (!documentId || documentId <= 0) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 400 }
     );
   }
@@ -95,7 +95,7 @@ export async function requireDocumentOwnership(
   const ownerResult = await documentService.ownerIdForDocument(documentId);
   if (!ownerResult.success || !ownerResult.data?.ownerId) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 404 }
     );
   }
@@ -108,13 +108,13 @@ export async function requireDocumentOwnership(
       const isAdmin = await userService.isUserAdmin(userId);
       if (!isAdmin) {
         return NextResponse.json(
-          { success: false, error: "Accès refusé" },
+          { success: false, error: "Access denied" },
           { status: 403 }
         );
       }
     } else {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 403 }
       );
     }
@@ -123,24 +123,25 @@ export async function requireDocumentOwnership(
   return null;
 }
 
-export async function requireDossierOwnership(
-  dossierId: number,
+export async function requireFolderOwnership(
+  folderId: number,
   userId: number
 ): Promise<NextResponse | null> {
-  if (!dossierId || dossierId <= 0) {
+  if (!folderId || folderId <= 0) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 400 }
     );
   }
 
-  const dossier = await prisma.dossier.findFirst({
-    where: { id: dossierId, user_id: userId },
+  // Using prisma.folder
+  const folder = await prisma.folder.findFirst({
+    where: { id: folderId, user_id: userId },
   });
 
-  if (!dossier) {
+  if (!folder) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 403 }
     );
   }
@@ -154,7 +155,7 @@ export async function requireNotificationOwnership(
 ): Promise<NextResponse | null> {
   if (!notificationId || notificationId <= 0) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 400 }
     );
   }
@@ -167,14 +168,14 @@ export async function requireNotificationOwnership(
 
   if (!result.rows || result.rows.length === 0) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 404 }
     );
   }
 
   if (result.rows[0].id_receiver !== userId) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 403 }
     );
   }
@@ -189,7 +190,7 @@ export async function requireRequestAccess(
 ): Promise<NextResponse | null> {
   if (!requestId || requestId <= 0) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 400 }
     );
   }
@@ -201,7 +202,7 @@ export async function requireRequestAccess(
   const result = await requestService.getRequestById(requestId);
   if (!result.success || !result.request) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 404 }
     );
   }
@@ -212,13 +213,13 @@ export async function requireRequestAccess(
       const isAdmin = await userService.isUserAdmin(userId);
       if (!isAdmin) {
         return NextResponse.json(
-          { success: false, error: "Accès refusé" },
+          { success: false, error: "Access denied" },
           { status: 403 }
         );
       }
     } else {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 403 }
       );
     }
@@ -233,7 +234,7 @@ export async function requireUserMatch(
 ): Promise<NextResponse | null> {
   if (!requestedUserId) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 400 }
     );
   }
@@ -245,7 +246,7 @@ export async function requireUserMatch(
 
   if (!Number.isFinite(parsedId) || parsedId !== currentUserId) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 403 }
     );
   }
@@ -259,7 +260,7 @@ export async function requireEmailMatch(
 ): Promise<NextResponse | null> {
   if (!requestedEmail) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 400 }
     );
   }
@@ -269,7 +270,7 @@ export async function requireEmailMatch(
 
   if (normalizedRequested !== normalizedCurrent) {
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 403 }
     );
   }

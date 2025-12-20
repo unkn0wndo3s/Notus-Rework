@@ -16,9 +16,9 @@ interface FileUploadButtonProps {
 }
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
-const MAX_VIDEO_SIZE = 10 * 1024 * 1024; // 10MB pour les vidéos
+const MAX_VIDEO_SIZE = 10 * 1024 * 1024; // 10MB for videos
 
-export default function FileUploadButton({ onFileSelect, disabled = false }: FileUploadButtonProps) {
+export default function FileUploadButton({ onFileSelect, disabled = false }: Readonly<FileUploadButtonProps>) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -50,22 +50,22 @@ export default function FileUploadButton({ onFileSelect, disabled = false }: Fil
       reader.onload = () => {
         resolve(typeof reader.result === "string" ? reader.result : "");
       };
-      reader.onerror = () => reject(reader.error);
+      reader.onerror = () => reject(reader.error || new Error("Unknown file reading error"));
       reader.readAsDataURL(file);
     });
   };
 
   const validateFile = (file: File): string | null => {
-    // Vérifier si c'est une vidéo
+    // Check if it's a video
     const isVideo = file.type.startsWith('video/') || file.type.startsWith('audio/');
     
-    // Vérifier la taille selon le type
+    // Check size according to type
     if (isVideo && file.size > MAX_VIDEO_SIZE) {
-      return `Le fichier vidéo est trop volumineux. Taille maximale: 10MB`;
+      return `The video file is too large. Maximum size: 10MB`;
     }
     
     if (!isVideo && file.size > MAX_FILE_SIZE) {
-      return `Le fichier est trop volumineux. Taille maximale: 25MB`;
+      return `The file is too large. Maximum size: 25MB`;
     }
 
     return null;
@@ -83,7 +83,7 @@ export default function FileUploadButton({ onFileSelect, disabled = false }: Fil
     setIsProcessing(true);
 
     try {
-      // Valider le fichier
+      // Validate the file
       const validationError = validateFile(file);
       if (validationError) {
         setError(validationError);
@@ -95,7 +95,7 @@ export default function FileUploadButton({ onFileSelect, disabled = false }: Fil
       const dataUrl = await readFileAsDataUrl(file);
 
       if (!dataUrl) {
-        setError("Impossible de lire le fichier sélectionné");
+        setError("Unable to read the selected file");
         setIsProcessing(false);
         return;
       }
@@ -107,13 +107,13 @@ export default function FileUploadButton({ onFileSelect, disabled = false }: Fil
         size: file.size,
       });
       
-      // Réinitialiser l'input
+      // Reset the input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
     } catch (err) {
-      setError('Erreur lors de l\'upload du fichier');
-      console.error('Erreur upload fichier:', err);
+      setError('Error during file upload');
+      console.error('File upload error:', err);
     } finally {
       setIsProcessing(false);
     }
@@ -131,7 +131,7 @@ export default function FileUploadButton({ onFileSelect, disabled = false }: Fil
         onClick={handleClick}
         disabled={isProcessing || disabled}
         className="p-2 rounded transition-colors bg-muted hover:bg-muted/80 text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
-        title={disabled ? "Placez le curseur dans le document pour ajouter un fichier" : "Ajouter un fichier joint"}
+        title={disabled ? "Place the cursor in the document to add a file" : "Add an attachment"}
       >
         <Icon name="document" className="h-5 w-5" />
       </button>

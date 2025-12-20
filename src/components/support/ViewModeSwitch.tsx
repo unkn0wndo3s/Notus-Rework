@@ -26,7 +26,7 @@ export default function ViewModeSwitch({ value, onChange }: ViewModeSwitchProps)
       >
         <span className="flex items-center justify-center gap-2">
           <Icon name="plus" className="w-4 h-4" />
-          Nouvelle demande
+          New request
         </span>
       </button>
       <button
@@ -42,10 +42,9 @@ export default function ViewModeSwitch({ value, onChange }: ViewModeSwitchProps)
       >
         <span className="flex items-center justify-center gap-2">
           <Icon name="clock" className="w-4 h-4" />
-          Mes demandes
+          My requests
         </span>
       </button>
     </div>
   );
 }
-

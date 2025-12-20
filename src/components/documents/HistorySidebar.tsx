@@ -46,13 +46,13 @@ function getUserInitials(user: HistoryUser | null): string {
 }
 
 function getUserDisplayName(user: HistoryUser | null): string {
-  if (!user) return "Utilisateur inconnu";
+  if (!user) return "Unknown user";
   if (user.username) return user.username;
   if (user.first_name || user.last_name) {
     return `${user.first_name ?? ""} ${user.last_name ?? ""}`.trim();
   }
   if (user.email) return user.email;
-  return "Utilisateur";
+  return "User";
 }
 
 function formatDateHeader(date: Date): string {
@@ -63,11 +63,11 @@ function formatDateHeader(date: Date): string {
   yesterday.setDate(yesterday.getDate() - 1);
 
   if (historyDate.getTime() === today.getTime()) {
-    return "Aujourd'hui";
+    return "Today";
   } else if (historyDate.getTime() === yesterday.getTime()) {
-    return "Hier";
+    return "Yesterday";
   } else {
-    return date.toLocaleDateString("fr-FR", {
+    return date.toLocaleDateString("en-US", {
       weekday: "long",
       day: "numeric",
       month: "long",
@@ -77,14 +77,14 @@ function formatDateHeader(date: Date): string {
 }
 
 function formatTime(date: Date): string {
-  return date.toLocaleTimeString("fr-FR", {
+  return date.toLocaleTimeString("en-US", {
     hour: "2-digit",
     minute: "2-digit",
   });
 }
 
 function getDateKey(date: Date): string {
-  return date.toLocaleDateString("fr-FR", {
+  return date.toLocaleDateString("en-US", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -99,25 +99,25 @@ function groupHistoryEntries(entries: HistoryItem[]): GroupedHistoryItem[] {
   if (entries.length === 0) return [];
 
   const grouped: GroupedHistoryItem[] = [];
-  const GROUPING_WINDOW_MS = 60000; // 1 minute pour regrouper les modifications
+  const GROUPING_WINDOW_MS = 60000; // 1 minute to group modifications
 
   for (const entry of entries) {
     const entryDate = new Date(entry.created_at);
     const entryUserId = entry.user?.id ?? null;
 
-    // Chercher un groupe existant auquel cette entrée peut être ajoutée
+    // Search for an existing group to which this entry can be added
     let foundGroup = false;
     for (let i = 0; i < grouped.length; i++) {
       const group = grouped[i];
       const groupDate = new Date(group.created_at);
       const groupUserId = group.user?.id ?? null;
 
-      // Vérifier si l'entrée appartient à ce groupe (même utilisateur et timestamp proche)
+      // Check if entry belongs to this group (same user and close timestamp)
       const timeDiff = Math.abs(entryDate.getTime() - groupDate.getTime());
       const sameUser = entryUserId === groupUserId;
 
       if (sameUser && timeDiff <= GROUPING_WINDOW_MS) {
-        // Fusionner les diffs
+        // Merge diffs
         const existingAdded = group.diff_added || "";
         const existingRemoved = group.diff_removed || "";
         const newAdded = entry.diff_added || "";
@@ -126,7 +126,7 @@ function groupHistoryEntries(entries: HistoryItem[]): GroupedHistoryItem[] {
         group.diff_added = (existingAdded + newAdded).trim() || null;
         group.diff_removed = (existingRemoved + newRemoved).trim() || null;
         group.groupedIds.push(entry.id);
-        // Garder le timestamp le plus ancien du groupe (première modification)
+        // Keep the oldest timestamp of the group (first modification)
         if (entryDate.getTime() < groupDate.getTime()) {
           group.created_at = entry.created_at;
         }
@@ -135,7 +135,7 @@ function groupHistoryEntries(entries: HistoryItem[]): GroupedHistoryItem[] {
       }
     }
 
-    // Si aucun groupe trouvé, créer un nouveau groupe
+    // If no group found, create a new one
     if (!foundGroup) {
       grouped.push({
         ...entry,
@@ -147,8 +147,8 @@ function groupHistoryEntries(entries: HistoryItem[]): GroupedHistoryItem[] {
   return grouped;
 }
 
-// Composant pour afficher le contenu en preview HTML + MD
-function HistoryContentPreview({ content, isRemoved }: { content: string; isRemoved?: boolean }) {
+// Component to display content in HTML + MD preview
+function HistoryContentPreview({ content, isRemoved }: Readonly<{ content: string; isRemoved?: boolean }>) {
   const [htmlContent, setHtmlContent] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const markdownConverterRef = useRef<MarkdownConverter | null>(null);
@@ -166,17 +166,16 @@ function HistoryContentPreview({ content, isRemoved }: { content: string; isRemo
       }
 
       try {
-        // Vérifier si le contenu est déjà du HTML (simple détection)
+        // Check if content is already HTML (simple detection)
         const trimmed = content.trim();
         const isHtml = trimmed.startsWith("<") && (trimmed.includes("</") || trimmed.endsWith("/>") || trimmed.endsWith(">"));
         
         let html: string;
         if (isHtml) {
-          // Si c'est déjà du HTML, on le sanitize directement
+          // If already HTML, sanitize directly
           html = sanitizeHtml(trimmed, EDITOR_SANITIZE_CONFIG);
         } else {
-          // Sinon, on convertit le markdown en HTML
-          // Le markdownToHtml retourne déjà du HTML sanitized
+          // Otherwise convert markdown to HTML
           if (markdownConverterRef.current) {
             html = await markdownConverterRef.current.markdownToHtml(content);
           } else {
@@ -186,8 +185,8 @@ function HistoryContentPreview({ content, isRemoved }: { content: string; isRemo
         
         setHtmlContent(html);
       } catch (error) {
-        console.error("Erreur lors de la conversion du contenu:", error);
-        // En cas d'erreur, afficher le contenu brut (sanitized)
+        console.error("Error converting content:", error);
+        // On error, show raw sanitized content
         setHtmlContent(sanitizeHtml(content, EDITOR_SANITIZE_CONFIG));
       } finally {
         setIsLoading(false);
@@ -198,7 +197,7 @@ function HistoryContentPreview({ content, isRemoved }: { content: string; isRemo
   }, [content]);
 
   if (isLoading) {
-    return <span className="text-muted-foreground text-xs">Chargement...</span>;
+    return <span className="text-muted-foreground text-xs">Loading...</span>;
   }
 
   if (!htmlContent) {
@@ -217,7 +216,7 @@ function HistoryContentPreview({ content, isRemoved }: { content: string; isRemo
   );
 }
 
-export default function HistorySidebar({ documentId, isOpen, onClose }: HistorySidebarProps) {
+export default function HistorySidebar({ documentId, isOpen, onClose }: Readonly<HistorySidebarProps>) {
   const [entries, setEntries] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -238,7 +237,7 @@ export default function HistorySidebar({ documentId, isOpen, onClose }: HistoryS
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        setError(data.error || "Impossible de charger l'historique");
+        setError(data.error || "Unable to load history");
         setEntries([]);
         return;
       }
@@ -252,7 +251,7 @@ export default function HistorySidebar({ documentId, isOpen, onClose }: HistoryS
       }));
       setEntries(normalized);
     } catch (e) {
-      setError("Erreur lors du chargement de l'historique");
+      setError("Error loading history");
       setEntries([]);
     } finally {
       setLoading(false);
@@ -271,7 +270,7 @@ export default function HistorySidebar({ documentId, isOpen, onClose }: HistoryS
     }
   }, [entries, isOpen]);
 
-  // Empêcher le scroll du body sur mobile quand le sidebar est ouvert
+  // Prevent body scroll on mobile when sidebar is open
   useEffect(() => {
     if (isOpen) {
       const originalStyle = window.getComputedStyle(document.body).overflow;
@@ -291,7 +290,7 @@ export default function HistorySidebar({ documentId, isOpen, onClose }: HistoryS
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
           <Icon name="clock" className="w-5 h-5" />
-          <h2 className="text-xl font-title">Historique de la note</h2>
+          <h2 className="text-xl font-title">Note History</h2>
         </div>
         <Button
           variant="ghost"
@@ -305,9 +304,9 @@ export default function HistorySidebar({ documentId, isOpen, onClose }: HistoryS
 
       <div className="flex-1 min-h-0 flex flex-col">
         <div className="px-4 pt-3 pb-1 text-xs text-muted-foreground">
-          {loading && <span>Chargement de l'historique…</span>}
+          {loading && <span>Loading history…</span>}
           {!loading && !error && entries.length === 0 && (
-            <span>Aucune modification enregistrée pour l’instant.</span>
+            <span>No modifications recorded yet.</span>
           )}
           {!loading && error && (
             <span className="text-red-500">{error}</span>
@@ -370,7 +369,7 @@ export default function HistorySidebar({ documentId, isOpen, onClose }: HistoryS
                             <div className="border-l-2 border-emerald-500 pl-2 w-full">
                               <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 mb-0.5">
                                 <Icon name="plus" className="w-3 h-3 flex-shrink-0" />
-                                <span className="font-medium">Ajouts</span>
+                                <span className="font-medium">Additions</span>
                               </div>
                               <HistoryContentPreview content={entry.diff_added || ""} />
                             </div>
@@ -379,7 +378,7 @@ export default function HistorySidebar({ documentId, isOpen, onClose }: HistoryS
                             <div className="border-l-2 border-rose-500 pl-2 w-full">
                               <div className="flex items-center gap-1 text-rose-600 dark:text-rose-400 mb-0.5">
                                 <Icon name="minus" className="w-3 h-3 flex-shrink-0" />
-                                <span className="font-medium">Suppressions</span>
+                                <span className="font-medium">Deletions</span>
                               </div>
                               <HistoryContentPreview content={entry.diff_removed || ""} isRemoved />
                             </div>
@@ -389,7 +388,7 @@ export default function HistorySidebar({ documentId, isOpen, onClose }: HistoryS
                       {!hasAdded && !hasRemoved && (
                         <div className="px-3">
                           <p className="text-muted-foreground text-[11px]">
-                            Aucune différence textuelle détectée pour cet envoi.
+                            No textual differences detected for this edit.
                           </p>
                         </div>
                       )}
@@ -406,5 +405,3 @@ export default function HistorySidebar({ documentId, isOpen, onClose }: HistoryS
     </div>
   );
 }
-
-

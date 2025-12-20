@@ -8,7 +8,7 @@ import { Ollama } from "ollama";
 
 const documentService = new DocumentService();
 
-// Fonctions pour gérer les tokens (réutilisées depuis /api/syntheses/tokens)
+// Token management functions (reused from /api/syntheses/tokens)
 async function getTokenLimit(): Promise<number> {
   try {
     const setting = await (prisma as any).appSetting.findUnique({
@@ -16,7 +16,7 @@ async function getTokenLimit(): Promise<number> {
     });
     return setting ? parseInt(setting.value, 10) : 10000;
   } catch (error) {
-    console.error("❌ Erreur lors de la récupération de la limite:", error);
+    console.error("❌ Error retrieving limit:", error);
     return 10000;
   }
 }
@@ -37,7 +37,7 @@ async function getTodayTokenUsage(userId: number): Promise<number> {
     
     return usage?.tokens_used || 0;
   } catch (error) {
-    console.error("❌ Erreur lors de la récupération de l'utilisation:", error);
+    console.error("❌ Error retrieving usage:", error);
     return 0;
   }
 }
@@ -66,12 +66,12 @@ async function incrementTokenUsage(userId: number, tokens: number): Promise<void
       },
     });
   } catch (error) {
-    console.error("❌ Erreur lors de l'incrémentation des tokens:", error);
+    console.error("❌ Error incrementing tokens:", error);
     throw error;
   }
 }
 
-// Vérifier si la synthèse IA est activée
+// Check if AI synthesis is enabled
 async function isAiSynthesisEnabled(): Promise<boolean> {
   try {
     const setting = await (prisma as any).appSetting.findUnique({
@@ -79,8 +79,8 @@ async function isAiSynthesisEnabled(): Promise<boolean> {
     });
     return setting?.value === "true";
   } catch (error) {
-    console.error("❌ Erreur lors de la vérification du setting:", error);
-    // Par défaut, activé si le setting n'existe pas
+    console.error("❌ Error checking setting:", error);
+    // Enabled by default if setting doesn't exist
     return true;
   }
 }
@@ -128,16 +128,16 @@ export async function POST(request: NextRequest) {
 
     if (!userId) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 401 }
       );
     }
 
-    // Vérifier si la synthèse IA est activée
+    // Check if AI synthesis is enabled
     const enabled = await isAiSynthesisEnabled();
     if (!enabled) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 403 }
       );
     }
@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => null);
     if (!body || typeof body !== "object") {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
@@ -161,19 +161,19 @@ export async function POST(request: NextRequest) {
 
     if (!parsedDocumentId || isNaN(parsedDocumentId) || parsedDocumentId <= 0) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
 
     if (typeof content !== "string") {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
 
-    // Vérifier l'accès au document
+    // Verify document access
     const userEmail = session?.user?.email as string | undefined;
     const hasAccess = await documentService.userHasAccessToDocument(
       parsedDocumentId,
@@ -183,28 +183,28 @@ export async function POST(request: NextRequest) {
 
     if (!hasAccess) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 403 }
       );
     }
 
-    // Extraire le texte sans formatage
+    // Extract text without formatting
     const plainText = stripMarkdownFormatting(content);
 
     if (!plainText || plainText.trim().length === 0) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
 
-    // Estimer le nombre de tokens nécessaires (approximation: 1 token ≈ 4 caractères)
-    // On estime les tokens pour le prompt + la réponse attendue
+    // Estimate the number of tokens needed (approximation: 1 token ≈ 4 characters)
+    // We estimate tokens for the prompt + expected response
     const promptTokens = Math.ceil(plainText.length / 4);
-    const estimatedResponseTokens = 1000; // Estimation pour une synthèse
+    const estimatedResponseTokens = 1000; // Estimation for a synthesis
     const estimatedTotalTokens = promptTokens + estimatedResponseTokens;
 
-    // Vérifier la limite de tokens avant de générer
+    // Check token limit before generating
     const limit = await getTokenLimit();
     const used = await getTodayTokenUsage(userId);
     const remaining = limit - used;
@@ -213,7 +213,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: "Accès refusé",
+          error: "Access denied",
           tokenLimit: limit,
           tokenUsed: used,
           tokenRemaining: remaining,
@@ -222,7 +222,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Récupérer la configuration Ollama depuis les settings
+    // Retrieve Ollama configuration from settings
     async function getOllamaConfig(): Promise<{ url: string; model: string; token?: string }> {
       try {
         const [urlSetting, modelSetting, tokenSetting] = await Promise.all([
@@ -237,7 +237,7 @@ export async function POST(request: NextRequest) {
           token: tokenSetting?.value || process.env.OLLAMA_TOKEN || undefined,
         };
       } catch (error) {
-        console.error("❌ Erreur lors de la récupération de la config Ollama:", error);
+        console.error("❌ Error retrieving Ollama configuration:", error);
         return {
           url: process.env.OLLAMA_URL || "http://localhost:11434",
           model: process.env.OLLAMA_MODEL || "llama3.2",
@@ -250,17 +250,17 @@ export async function POST(request: NextRequest) {
     const ollamaUrl = ollamaConfig.url;
     const ollamaModel = ollamaConfig.model;
 
-    const prompt = `Tu es un assistant qui crée des synthèses de documents. Crée une synthèse concise et structurée du document suivant. La synthèse doit être en français et mettre en évidence les points clés.
+    const prompt = `You are an assistant that creates document summaries. Create a concise and structured summary of the following document. The summary must be in English and highlight key points.
 
 Document:
-${plainText.substring(0, 8000)}${plainText.length > 8000 ? "\n\n[... document tronqué ...]" : ""}
+${plainText.substring(0, 8000)}${plainText.length > 8000 ? "\n\n[... document truncated ...]" : ""}
 
-Synthèse:`;
+Summary:`;
 
     let synthesisText = "";
     let actualTokens = estimatedTotalTokens;
     try {
-      // Initialiser le client Ollama
+      // Initialize Ollama client
       const ollama = new Ollama({
         host: ollamaUrl,
         headers: ollamaConfig.token
@@ -270,51 +270,51 @@ Synthèse:`;
           : undefined,
       });
 
-      // Appeler l'API Ollama avec streaming désactivé pour récupérer toute la réponse
+      // Call Ollama API with streaming disabled to retrieve the full response
       const response = await ollama.chat({
         model: ollamaModel,
         messages: [{ role: "user", content: prompt }],
         stream: false,
       });
 
-      // Récupérer le contenu de la réponse
+      // Retrieve response content
       synthesisText = response.message.content || "";
       
-      // Calculer le nombre réel de tokens utilisés si disponible
-      // Le package ollama peut retourner des informations sur les tokens
+      // Calculate actual tokens used if available
+      // The ollama package may return token info
       if (response.prompt_eval_count && response.eval_count) {
         actualTokens = response.prompt_eval_count + response.eval_count;
       }
     } catch (error) {
-      console.error("❌ Erreur lors de l'appel à Ollama:", error);
-      // En cas d'erreur, on ne décompte pas les tokens car la génération a échoué
+      console.error("❌ Error calling Ollama:", error);
+      // In case of error, we don't count tokens as generation failed
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 500 }
       );
     }
 
     if (!synthesisText || synthesisText.trim().length === 0) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 500 }
       );
     }
 
-    // Utiliser les tokens réels d'Ollama si disponibles, sinon utiliser l'estimation
+    // Use real Ollama tokens if available, otherwise use estimation
     const finalTokens = actualTokens !== estimatedTotalTokens 
       ? actualTokens 
       : promptTokens + Math.ceil(synthesisText.length / 4);
     
-    // Incrémenter l'utilisation de tokens avec le nombre réel
+    // Increment token usage with actual number
     try {
       await incrementTokenUsage(userId, finalTokens);
     } catch (error) {
-      console.error("❌ Erreur lors de l'incrémentation des tokens:", error);
-      // On continue quand même car la synthèse est déjà générée
+      console.error("❌ Error incrementing tokens:", error);
+      // We still continue as the synthesis is already generated
     }
 
-    // Sauvegarder la synthèse dans la base de données
+    // Save synthesis in database
     const synthesis = await (prisma as any).synthesis.create({
       data: {
         document_id: parsedDocumentId,
@@ -340,9 +340,9 @@ Synthèse:`;
       synthesis,
     });
   } catch (error) {
-    console.error("❌ Erreur POST /api/syntheses/generate:", error);
+    console.error("❌ Error POST /api/syntheses/generate:", error);
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 500 }
     );
   }

@@ -15,7 +15,7 @@ export async function GET() {
 
     if (!result.success) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 404 }
       );
     }
@@ -25,9 +25,9 @@ export async function GET() {
     });
   } catch (error) {
     console.error(
-      "Erreur lors de la récupération de l'image de profil:",
+      "Error retrieving profile image:",
       error
     );
-    return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 500 });
+    return NextResponse.json({ success: false, error: "Access denied" }, { status: 500 });
   }
 }

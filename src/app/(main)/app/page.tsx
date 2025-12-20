@@ -12,7 +12,7 @@ import { SearchableDocumentsList } from "@/components/documents/SearchableDocume
 export default async function AppHome() {
   const session = await getServerSession(authOptions);
 
-  // Récupérer les documents seulement si l'utilisateur est connecté
+  // Fetch documents only if user is logged in
   const userDocumentsResult = session?.user?.id
     ? await getUserDocumentsAction(parseInt(session.user.id))
     : { success: true, documents: [] };
@@ -21,7 +21,7 @@ export default async function AppHome() {
     ? await fetchSharedDocumentsAction()
     : { success: true, documents: [] };
 
-  // Combiner les documents en évitant les doublons
+  // Combine documents avoiding duplicates
   const userDocuments = userDocumentsResult.success && Array.isArray(userDocumentsResult.documents)
     ? userDocumentsResult.documents
     : [];
@@ -30,10 +30,10 @@ export default async function AppHome() {
     ? sharedDocumentsResult.documents
     : [];
 
-  // Créer un Set des IDs des documents de l'utilisateur pour éviter les doublons
+  // Create a Set of user document IDs to avoid duplicates
   const userDocumentIds = new Set(userDocuments.map(d => d.id));
   
-  // Filtrer les documents partagés pour ne garder que ceux qui ne sont PAS déjà dans les documents de l'utilisateur
+  // Filter shared documents to keep only those NOT already in user's documents
   const uniqueSharedDocuments = sharedDocuments.filter((d: any) => !userDocumentIds.has(d.id));
 
   const allDocuments = [
@@ -62,14 +62,14 @@ export default async function AppHome() {
         <section className="space-y-6">
           <header>
             <h1 className="font-title text-4xl font-regular text-foreground hidden md:block">
-              Mes notes
+              My notes
             </h1>
           </header>
 
           {!documentsResult.success && session?.user && (
             <Alert variant="error">
               <Alert.Description>
-                Erreur lors du chargement des documents: {documentsResult.error}
+                Error loading documents: {documentsResult.error}
               </Alert.Description>
             </Alert>
           )}
@@ -92,4 +92,3 @@ export default async function AppHome() {
     </main>
   );
 }
-

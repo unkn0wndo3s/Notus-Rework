@@ -17,10 +17,10 @@ export default async function AdminRequestsPage() {
     <main className="space-y-6">
       <header className="text-center pt-10">
         <h1 className="text-3xl font-bold text-foreground">
-          Gestion des requêtes utilisateurs
+          User Request Management
         </h1>
         <p className="mt-2 text-muted-foreground">
-          Gérez les demandes d'aide et de restauration de données des utilisateurs.
+          Manage help requests and data restoration requests from users.
         </p>
       </header>
 
@@ -29,22 +29,22 @@ export default async function AdminRequestsPage() {
           <Card.Header>
             <div className="flex items-center justify-between">
               <Card.Title className="text-foreground text-2xl font-semibold">
-                Liste des requêtes ({requests.length})
+                Request List ({requests.length})
               </Card.Title>
             </div>
           </Card.Header>
           <Card.Content>
             <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-                <div className="text-sm text-muted-foreground">En attente</div>
+                <div className="text-sm text-muted-foreground">Pending</div>
                 <div className="text-2xl font-bold text-yellow-600">{pendingCount}</div>
               </div>
               <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                <div className="text-sm text-muted-foreground">En cours</div>
+                <div className="text-sm text-muted-foreground">In Progress</div>
                 <div className="text-2xl font-bold text-blue-600">{inProgressCount}</div>
               </div>
               <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
-                <div className="text-sm text-muted-foreground">Résolues</div>
+                <div className="text-sm text-muted-foreground">Resolved</div>
                 <div className="text-2xl font-bold text-green-600">{resolvedCount}</div>
               </div>
             </div>

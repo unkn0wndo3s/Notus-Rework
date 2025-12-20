@@ -32,20 +32,20 @@ export async function GET(request: Request, { params }: RouteParams) {
     const { id } = await params;
     await requestService.initializeTables();
 
-    const result = await requestService.getRequestById(parseInt(id));
+    const result = await requestService.getRequestById(Number.parseInt(id));
 
     if (!result.success) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 404 }
       );
     }
 
     return NextResponse.json({ success: true, request: result.request });
   } catch (error) {
-    console.error("❌ Erreur récupération requête:", error);
+    console.error("❌ Error retrieving request:", error);
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 500 }
     );
   }
@@ -64,10 +64,10 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     await requestService.initializeTables();
     await notificationService.initializeTables();
 
-    const requestBeforeUpdate = await requestService.getRequestById(parseInt(id));
+    const requestBeforeUpdate = await requestService.getRequestById(Number.parseInt(id));
     if (!requestBeforeUpdate.success || !requestBeforeUpdate.request) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 404 }
       );
     }
@@ -78,109 +78,110 @@ export async function PATCH(request: Request, { params }: RouteParams) {
         ? (status as "pending" | "in_progress" | "resolved" | "rejected")
         : undefined;
 
-    // Mettre à jour la requête
+    // Update the request
     const updateData: UpdateRequestData = {};
     if (status !== undefined) {
       if (!isValidRequestStatus(status)) {
         return NextResponse.json(
-          { success: false, error: "Accès refusé" },
+          { success: false, error: "Access denied" },
           { status: 400 }
         );
       }
       updateData.status = status;
     }
-    const result = await requestService.updateRequest(parseInt(id), updateData);
+    const result = await requestService.updateRequest(Number.parseInt(id), updateData);
 
     if (!result.success) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 500 }
       );
     }
 
-    // Envoyer une notification si le statut a changé ou si un message est fourni
-    const statusChanged = newStatus && String(newStatus) !== String(oldStatus);
-    const hasMessage = message && typeof message === "string" && message.trim();
+    // Send a notification if status changed or a message is provided
+    const statusChanged = !!(newStatus && String(newStatus) !== String(oldStatus));
+    const hasMessage = !!(message && typeof message === "string" && message.trim());
     
-    // Envoyer une notification si le statut a changé (même sans message) ou si un message est fourni
     if ((statusChanged || hasMessage) && result.request) {
-      const typeLabels: Record<string, string> = {
-        help: "Demande d'aide",
-        data_restoration: "Restauration de données",
-        other: "Autre",
-      };
-
-      const statusLabels: Record<string, string> = {
-        pending: "En attente",
-        in_progress: "En cours",
-        resolved: "Résolu",
-        rejected: "Rejeté",
-      };
-
-      const statusLabel = newStatus ? (statusLabels[newStatus] || newStatus) : "mise à jour";
-      
-      // Construire le message : toujours mentionner le changement de statut si le statut a changé, puis ajouter le message personnalisé s'il existe
-      let notificationMessageText: string;
-      
-      if (statusChanged) {
-        // Le statut a changé
-        const statusChangeText = `Le statut de votre requête "${result.request.title}" a été modifié : ${statusLabel}.`;
-        
-        if (hasMessage) {
-          // Combiner le changement de statut avec le message personnalisé
-          notificationMessageText = `${statusChangeText}\n\n${message.trim()}`;
-        } else {
-          // Message par défaut selon le nouveau statut
-          if (newStatus === "resolved") {
-            notificationMessageText = `Votre requête "${result.request.title}" a été résolue.`;
-          } else {
-            notificationMessageText = statusChangeText;
-          }
-        }
-      } else if (hasMessage) {
-        // Pas de changement de statut mais un message est fourni
-        notificationMessageText = message.trim();
-      } else {
-        // Ne devrait pas arriver ici, mais au cas où
-        notificationMessageText = `Mise à jour de votre requête "${result.request.title}".`;
-      }
-
-      // Déterminer le type de notification
-      const notificationType = statusChanged && newStatus === "resolved" 
-        ? "request-resolved" 
-        : "request-response";
-
-      const notificationMessage = {
-        type: notificationType,
-        requestId: result.request.id,
-        requestTitle: result.request.title,
-        requestType: result.request.type,
-        requestTypeLabel: typeLabels[result.request.type] || "Autre",
-        status: newStatus || result.request.status,
-        message: notificationMessageText,
-        from: "Administration",
-      };
-
-      const notificationResult = await notificationService.sendNotification(
+      await sendRequestUpdateNotification(
         adminResult.userId,
-        result.request.user_id,
-        notificationMessage
+        result.request as unknown as RequestWithDetails,
+        newStatus,
+        statusChanged,
+        hasMessage ? message.trim() : undefined
       );
-
-      if (!notificationResult.success) {
-        const errorMessage = 'error' in notificationResult ? notificationResult.error : "Erreur inconnue";
-        console.error("❌ Erreur envoi notification:", errorMessage);
-        // On continue quand même, la notification n'est pas critique
-      }
     }
 
     return NextResponse.json({ success: true, request: result.request });
   } catch (error) {
-    console.error("❌ Erreur mise à jour requête:", error);
+    console.error("❌ Error updating request:", error);
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 500 }
     );
+  }
+}
+
+interface RequestWithDetails {
+  id: number;
+  title: string;
+  type: string;
+  status: RequestStatus;
+  user_id: number;
+}
+
+async function sendRequestUpdateNotification(
+  adminId: number,
+  request: RequestWithDetails,
+  newStatus: RequestStatus | undefined,
+  statusChanged: boolean,
+  message?: string
+) {
+  const typeLabels: Record<string, string> = {
+    help: "Help request",
+    data_restoration: "Data restoration",
+    other: "Other",
+  };
+
+  const statusLabels: Record<string, string> = {
+    pending: "Pending",
+    in_progress: "In progress",
+    resolved: "Resolved",
+    rejected: "Rejected",
+  };
+
+  const statusLabel = newStatus ? (statusLabels[newStatus] || newStatus) : "update";
+  let notificationMessageText = `Update for your request "${request.title}".`;
+  
+  if (statusChanged) {
+    notificationMessageText = `The status of your request "${request.title}" has been modified: ${statusLabel}.`;
+    if (message) {
+      notificationMessageText = `${notificationMessageText}\n\n${message}`;
+    } else if (newStatus === "resolved") {
+      notificationMessageText = `Your request "${request.title}" has been resolved.`;
+    }
+  } else if (message) {
+    notificationMessageText = message;
+  }
+
+  const notificationType = statusChanged && newStatus === "resolved" ? "request-resolved" : "request-response";
+
+  const notificationContent = {
+    type: notificationType,
+    requestId: request.id,
+    requestTitle: request.title,
+    requestType: request.type,
+    requestTypeLabel: typeLabels[request.type] || "Other",
+    status: newStatus || request.status,
+    message: notificationMessageText,
+    from: "Administration",
+  };
+
+  const result = await notificationService.sendNotification(adminId, request.user_id, notificationContent);
+
+  if (!result.success) {
+    const errorMessage = 'error' in result ? result.error : "Unknown error";
+    console.error("❌ Error sending notification:", errorMessage);
   }
 }
 
@@ -194,20 +195,20 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     const { id } = await params;
     await requestService.initializeTables();
 
-    const result = await requestService.deleteRequest(parseInt(id));
+    const result = await requestService.deleteRequest(Number.parseInt(id));
 
     if (!result.success) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 500 }
       );
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("❌ Erreur suppression requête:", error);
+    console.error("❌ Error deleting request:", error);
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 500 }
     );
   }

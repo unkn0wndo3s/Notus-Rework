@@ -5,22 +5,22 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { DEFAULT_COLOR } from "@/lib/colorPalette";
 
 /**
- * Composant qui met à jour dynamiquement le favicon en fonction de la couleur principale
- * Génère un SVG favicon avec l'icône de bulle de discussion du logo, colorée selon primaryColor
+ * Component that dynamically updates the favicon based on the main color
+ * Generates an SVG favicon with the logo's speech bubble icon, colored according to primaryColor
  */
 export default function DynamicFavicon() {
   const { primaryColor } = useTheme();
 
   useEffect(() => {
-    // Utiliser la couleur principale ou la couleur par défaut
+    // Use the primary color or the default color
     const color = primaryColor || DEFAULT_COLOR;
 
-    // Générer le SVG favicon avec la couleur actuelle
-    // Utilise exactement les mêmes paths que l'icône de bulle de discussion du logo
-    // L'icône originale est dans un viewBox "0 0 196 56", l'icône va de x:56 à x:93.5, y:9 à y:46.5
-    // Zone de l'icône: x:56, y:9, width:37.5, height:37.5
-    // Pour remplir 32x32: scale = 32/37.5 ≈ 0.8533, puis translate(-56, -9) pour repositionner
-    // Petit padding (1px) pour respecter les bords arrondis: scale = 30/37.5 = 0.8
+    // Generate the SVG favicon with the current color
+    // Uses exactly the same paths as the logo's speech bubble icon
+    // The original icon is in a "0 0 196 56" viewBox, the icon goes from x:56 to x:93.5, y:9 to y:46.5
+    // Icon zone: x:56, y:9, width:37.5, height:37.5
+    // To fill 32x32: scale = 32/37.5 ≈ 0.8533, then translate(-56, -9) to reposition
+    // Small padding (1px) to respect rounded edges: scale = 30/37.5 = 0.8
     const svgFavicon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
       <rect width="32" height="32" fill="transparent" rx="5"/>
       <g transform="translate(1, 1) scale(0.8) translate(-56, -9)">
@@ -29,10 +29,10 @@ export default function DynamicFavicon() {
       </g>
     </svg>`.trim();
 
-    // Encoder le SVG en data URL
+    // Encode the SVG as a data URL
     const svgDataUrl = `data:image/svg+xml,${encodeURIComponent(svgFavicon)}`;
 
-    // Trouver ou créer le lien favicon
+    // Find or create the favicon link
     let faviconLink = document.querySelector("link[rel='icon']") as HTMLLinkElement;
     
     if (!faviconLink) {
@@ -41,10 +41,10 @@ export default function DynamicFavicon() {
       document.head.appendChild(faviconLink);
     }
 
-    // Mettre à jour le href avec le nouveau favicon
+    // Update the href with the new favicon
     faviconLink.href = svgDataUrl;
 
-    // Mettre à jour aussi apple-touch-icon pour iOS
+    // Also update apple-touch-icon for iOS
     let appleTouchIcon = document.querySelector("link[rel='apple-touch-icon']") as HTMLLinkElement;
     if (!appleTouchIcon) {
       appleTouchIcon = document.createElement("link");
@@ -54,7 +54,7 @@ export default function DynamicFavicon() {
     appleTouchIcon.href = svgDataUrl;
   }, [primaryColor]);
 
-  // Ce composant ne rend rien visuellement
+  // This component doesn't render anything visually
   return null;
 }
 

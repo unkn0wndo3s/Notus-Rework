@@ -470,7 +470,7 @@ export default function DrawingCanvas({
       pathsRef.current.clear();
       setDrawings([]);
       // Ensure we don't immediately reload the old `drawings` value
-      return; // <-- ajouté : sortir pour éviter de recharger les anciens dessins
+      return; // <-- added: exit to avoid reloading old drawings
     }
 
     // Clear existing paths

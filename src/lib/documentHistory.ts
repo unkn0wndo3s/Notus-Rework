@@ -1,8 +1,8 @@
 import { prisma } from "./prisma";
 
 /**
- * Système de debounce pour réduire les insertions d'historique en base.
- * On ne crée une entrée qu'après un délai d'inactivité (10 secondes).
+ * Debounce system to reduce history insertions in the database.
+ * An entry is only created after a timeout period of inactivity (10 seconds).
  */
 interface PendingHistoryEntry {
   documentId: number;
@@ -16,45 +16,49 @@ interface PendingHistoryEntry {
 
 const pendingHistoryEntries = new Map<string, PendingHistoryEntry>();
 
-const HISTORY_DEBOUNCE_MS = 10000; // 10 secondes d'inactivité avant d'enregistrer
+const HISTORY_DEBOUNCE_MS = 10000; // 10 seconds of inactivity before saving
 
 function getHistoryKey(documentId: number, userId?: number, userEmail?: string | null): string {
   return `${documentId}:${userId ?? 'null'}:${userEmail ?? 'null'}`;
 }
 
 /**
- * Extrait le texte stocké dans le champ `content` d'un document.
- * Le contenu peut être soit une chaîne brute, soit une chaîne JSON
- * contenant un objet { text: string; timestamp?: number }.
+ * Extracts the text stored in a document's `content` field.
+ * Content can be either raw string, or a JSON string
+ * containing an object { text: string; timestamp?: number }.
  */
+function tryParseJsonText(raw: string): string | null {
+  if (raw.startsWith("{") && raw.endsWith("}")) {
+    try {
+      const parsed = JSON.parse(raw) as { text?: unknown };
+      if (typeof parsed?.text === "string") {
+        return parsed.text;
+      }
+    } catch {
+      // Ignore
+    }
+  }
+  return null;
+}
+
 export function extractTextFromStoredContent(stored: unknown): string {
   if (!stored) return "";
 
   if (typeof stored === "string") {
     const raw = stored.trim();
     if (!raw) return "";
+    return tryParseJsonText(raw) ?? raw;
+  }
 
-    // Tenter de parser comme snapshot JSON { text, timestamp }
-    if (raw.startsWith("{") && raw.endsWith("}")) {
-      try {
-        const parsed = JSON.parse(raw) as { text?: unknown };
-        if (typeof parsed?.text === "string") {
-          return parsed.text;
-        }
-      } catch {
-        // Si le parse échoue, on considère que c'est du texte brut
-      }
+  if (stored !== null && typeof stored === "object") {
+    try {
+      return JSON.stringify(stored);
+    } catch {
+      return "";
     }
-
-    return raw;
   }
 
-  try {
-    const asString = String(stored);
-    return asString;
-  } catch {
-    return "";
-  }
+  return String(stored as any);
 }
 
 export interface TextDiff {
@@ -63,12 +67,12 @@ export interface TextDiff {
 }
 
 /**
- * Calcule un diff très simple entre deux textes :
- * - on cherche le préfixe commun
- * - puis le suffixe commun
- * - tout ce qui diffère au milieu est considéré comme ajouté / supprimé
+ * Computes a very simple diff between two texts:
+ * - find common prefix
+ * - then common suffix
+ * - everything that differs in between is considered added/removed
  *
- * L'objectif est de résumer un "envoi" complet, pas de produire un diff exhaustif.
+ * The goal is to summarize a complete "send", not to produce an exhaustive diff.
  */
 export function computeTextDiff(previous: string, next: string): TextDiff {
   if (previous === next) {
@@ -111,7 +115,7 @@ interface RecordHistoryParams {
 }
 
 /**
- * Enregistre réellement une entrée d'historique en base de données.
+ * Actually records a history entry in the database.
  */
 async function commitHistoryEntry({
   documentId,
@@ -127,7 +131,7 @@ async function commitHistoryEntry({
   const nextText = extractTextFromStoredContent(nextContent);
 
   if (prevText === nextText) {
-    // Rien n'a changé, pas besoin d'entrée d'historique
+    // Nothing changed, no need for history entry
     return;
   }
 
@@ -146,15 +150,15 @@ async function commitHistoryEntry({
       },
     } as any);
   } catch (error) {
-    console.error("❌ Erreur lors de l'enregistrement de l'historique du document:", error);
+    console.error("❌ Error recording document history:", error);
   }
 }
 
 /**
- * Enregistre une entrée d'historique pour un document avec debounce.
- * - Utilise un système de debounce pour regrouper les modifications rapides.
- * - Ne crée une entrée qu'après 10 secondes d'inactivité.
- * - Si une nouvelle modification arrive avant le délai, on annule le timeout précédent et on le relance.
+ * Records a history entry for a document with debounce.
+ * - Uses a debounce system to group rapid modifications.
+ * - Only creates an entry after 10 seconds of inactivity.
+ * - If a new modification arrives before the timeout, cancels previous timeout and restarts.
  */
 export async function recordDocumentHistory({
   documentId,
@@ -168,34 +172,34 @@ export async function recordDocumentHistory({
   const key = getHistoryKey(documentId, userId, userEmail);
   const now = Date.now();
 
-  // Si une entrée en attente existe déjà, annuler son timeout
+  // If a pending entry already exists, cancel its timeout
   const existing = pendingHistoryEntries.get(key);
   if (existing) {
     clearTimeout(existing.timeout);
-    // Mettre à jour avec le nouveau contenu, mais garder le previousContent original
+    // Update with new content, but keep original previousContent
     existing.nextContent = nextContent;
     existing.lastUpdate = now;
   } else {
-    // Créer une nouvelle entrée en attente
+    // Create a new pending entry
     const entry: PendingHistoryEntry = {
       documentId,
       userId,
       userEmail,
       previousContent: previousContent ?? null,
       nextContent,
-      timeout: setTimeout(() => {}, 0), // Sera remplacé ci-dessous
+      timeout: setTimeout(() => {}, 0), // Will be replaced below
       lastUpdate: now,
     };
     pendingHistoryEntries.set(key, entry);
   }
 
-  // Créer un nouveau timeout qui enregistrera l'historique après le délai d'inactivité
+  // Create a new timeout that will record history after inactivity delay
   const entry = pendingHistoryEntries.get(key)!;
   entry.timeout = setTimeout(async () => {
-    // Vérifier que l'entrée n'a pas été modifiée entre-temps
+    // Check that entry hasn't been modified in the meantime
     const current = pendingHistoryEntries.get(key);
     if (current && current.lastUpdate === entry.lastUpdate) {
-      // Enregistrer l'historique
+      // Record history
       await commitHistoryEntry({
         documentId: entry.documentId,
         userId: entry.userId,
@@ -203,15 +207,15 @@ export async function recordDocumentHistory({
         previousContent: entry.previousContent,
         nextContent: entry.nextContent,
       });
-      // Retirer de la Map
+      // Remove from Map
       pendingHistoryEntries.delete(key);
     }
   }, HISTORY_DEBOUNCE_MS);
 }
 
 /**
- * Force l'enregistrement immédiat de l'historique (sans debounce).
- * Utile pour les sauvegardes HTTP explicites où on veut enregistrer immédiatement.
+ * Forces immediate recording of history (no debounce).
+ * Useful for explicit HTTP saves where we want to record immediately.
  */
 export async function recordDocumentHistoryImmediate({
   documentId,
@@ -220,18 +224,18 @@ export async function recordDocumentHistoryImmediate({
   previousContent,
   nextContent,
 }: RecordHistoryParams): Promise<void> {
-  // Annuler toute entrée en attente pour cette clé
+  // Cancel any pending entry for this key
   const key = getHistoryKey(documentId, userId, userEmail);
   const existing = pendingHistoryEntries.get(key);
   if (existing) {
     clearTimeout(existing.timeout);
     pendingHistoryEntries.delete(key);
-    // Utiliser le previousContent de l'entrée en attente si disponible
+    // Use previousContent from pending entry if available
     previousContent = existing.previousContent ?? previousContent ?? null;
     nextContent = existing.nextContent;
   }
 
-  // Enregistrer immédiatement
+  // Record immediately
   await commitHistoryEntry({
     documentId,
     userId,

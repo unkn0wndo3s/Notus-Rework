@@ -17,10 +17,10 @@ export default function UsersTable({ users }: UsersTableProps) {
 
   const handleBanClick = (user: User) => {
     if (user.is_banned) {
-      // Débannir directement sans modal
+      // Unban directly without modal
       handleBanUser(user.id, false);
     } else {
-      // Bannir avec modal pour la raison
+      // Ban with modal for reason
       setUserToBan(user);
       setBanReason("");
       setShowBanModal(true);
@@ -43,19 +43,19 @@ export default function UsersTable({ users }: UsersTableProps) {
         const result = await response.json();
         if (result.emailSent) {
           alert(
-            `Utilisateur ${isBanned ? "banni" : "débanni"} avec succès. Email de notification envoyé.`
+            `User ${isBanned ? "banned" : "unbanned"} successfully. Notification email sent.`
           );
         } else {
-          alert(`Utilisateur ${isBanned ? "banni" : "débanni"} avec succès.`);
+          alert(`User ${isBanned ? "banned" : "unbanned"} successfully.`);
         }
-        // Recharger la page pour mettre à jour les données
+        // Reload page to update data
         window.location.reload();
       } else {
         const error = await response.json();
-        alert(`Erreur: ${error.message}`);
+        alert(`Error: ${error.message}`);
       }
     } catch (error) {
-      alert(`Erreur: ${(error as Error).message}`);
+      alert(`Error: ${(error as Error).message}`);
     } finally {
       setBanningUsers((prev) => {
         const newSet = new Set(prev);
@@ -87,14 +87,14 @@ export default function UsersTable({ users }: UsersTableProps) {
       });
 
       if (response.ok) {
-        // Recharger la page pour mettre à jour les données
+        // Reload page to update data
         window.location.reload();
       } else {
         const error = await response.json();
-        alert(`Erreur: ${error.message}`);
+        alert(`Error: ${error.message}`);
       }
     } catch (error) {
-      alert(`Erreur: ${(error as Error).message}`);
+      alert(`Error: ${(error as Error).message}`);
     } finally {
       setAdminUsers((prev) => {
         const newSet = new Set(prev);
@@ -108,7 +108,7 @@ export default function UsersTable({ users }: UsersTableProps) {
     if (user.is_banned) {
       return (
         <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-destructive/10 text-destructive">
-          Banni
+          Banned
         </span>
       );
     }
@@ -116,14 +116,14 @@ export default function UsersTable({ users }: UsersTableProps) {
     if (!user.email_verified) {
       return (
         <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-accent/10 text-accent-foreground">
-          En attente
+          Pending
         </span>
       );
     }
 
     return (
       <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-primary/10 text-primary">
-        Actif
+        Active
       </span>
     );
   };
@@ -144,22 +144,22 @@ export default function UsersTable({ users }: UsersTableProps) {
         <thead className="bg-background">
           <tr>
             <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider">
-              Utilisateur
+              User
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider">
               Email
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider">
-              Statut
+              Status
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider">
-              Rôle
+              Role
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider">
-              Inscription
+              Registration
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider">
-              Conditions acceptées
+              Terms Accepted
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider">
               Actions
@@ -208,26 +208,26 @@ export default function UsersTable({ users }: UsersTableProps) {
                   </span>
                 ) : (
                   <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-foreground/10 text-foreground">
-                    Utilisateur
+                    User
                   </span>
                 )}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                {new Date(user.created_at).toLocaleDateString("fr-FR")}
+                {new Date(user.created_at).toLocaleDateString("en-US")}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                 {user.terms_accepted_at ? (
                   <div>
                     <div className="text-primary font-medium">
-                      ✓ Acceptées
+                      ✓ Accepted
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {new Date(user.terms_accepted_at).toLocaleString("fr-FR")}
+                      {new Date(user.terms_accepted_at).toLocaleString("en-US")}
                     </div>
                   </div>
                 ) : (
                   <div className="text-destructive font-medium">
-                    ✗ Non acceptées
+                    ✗ Not accepted
                   </div>
                 )}
               </td>
@@ -244,7 +244,7 @@ export default function UsersTable({ users }: UsersTableProps) {
                     {banningUsers.has(user.id) ? (
                       <Icon name="spinner" className="animate-spin -ml-1 mr-1 h-3 w-3" />
                     ) : null}
-                    {user.is_banned ? "Débannir" : "Bannir"}
+                    {user.is_banned ? "Unban" : "Ban"}
                   </button>
 
                   {!user.is_admin && (
@@ -255,8 +255,8 @@ export default function UsersTable({ users }: UsersTableProps) {
                     >
                       {adminUsers.has(user.id) ? (
                         <Icon name="spinner" className="animate-spin -ml-1 mr-1 h-3 w-3" />
-                      ) : null}
-                      Promouvoir
+                       ) : null}
+                      Promote
                     </button>
                   )}
 
@@ -269,7 +269,7 @@ export default function UsersTable({ users }: UsersTableProps) {
                       {adminUsers.has(user.id) ? (
                         <Icon name="spinner" className="animate-spin -ml-1 mr-1 h-3 w-3" />
                       ) : null}
-                      Rétrograder
+                      Demote
                     </button>
                   )}
                 </div>
@@ -283,15 +283,15 @@ export default function UsersTable({ users }: UsersTableProps) {
         <div className="text-center py-12">
           <Icon name="users" className="mx-auto h-12 w-12 text-muted-foreground" />
           <h3 className="mt-2 text-sm font-medium text-foreground">
-            Aucun utilisateur
+            No users
           </h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            Aucun utilisateur trouvé dans la base de données.
+            No users found in the database.
           </p>
         </div>
       )}
 
-      {/* Modal de confirmation de bannissement */}
+      {/* Ban confirmation modal */}
       {showBanModal && (
         <div className="fixed inset-0 bg-foreground/30 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-card">
@@ -301,18 +301,18 @@ export default function UsersTable({ users }: UsersTableProps) {
               </div>
               <div className="mt-2 text-center">
                 <h3 className="text-lg font-medium text-foreground">
-                  Confirmer le bannissement
+                  Confirm Ban
                 </h3>
                 <div className="mt-2 px-7 py-3">
                   <p className="text-sm text-muted-foreground">
-                    Êtes-vous sûr de vouloir bannir{" "}
+                    Are you sure you want to ban{" "}
                     <strong>
                       {userToBan?.first_name} {userToBan?.last_name}
                     </strong>{" "}
                     ?
                   </p>
                   <p className="text-xs text-muted-foreground mt-2">
-                    Un email de notification sera envoyé à l'utilisateur.
+                    A notification email will be sent to the user.
                   </p>
                 </div>
                 <div className="mt-4">
@@ -320,7 +320,7 @@ export default function UsersTable({ users }: UsersTableProps) {
                     htmlFor="banReason"
                     className="block text-sm font-medium text-foreground text-left"
                   >
-                    Raison du bannissement (optionnel)
+                    Ban reason (optional)
                   </label>
                   <textarea
                     id="banReason"
@@ -328,7 +328,7 @@ export default function UsersTable({ users }: UsersTableProps) {
                     onChange={(e) => setBanReason(e.target.value)}
                     className="mt-1 block w-full px-3 py-2 border border-border rounded-md shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring bg-card text-foreground"
                     rows={3}
-                    placeholder="Expliquez la raison du bannissement..."
+                    placeholder="Explain the reason for the ban..."
                   />
                 </div>
               </div>
@@ -338,7 +338,7 @@ export default function UsersTable({ users }: UsersTableProps) {
                     onClick={confirmBan}
                     className="px-4 py-2 bg-destructive text-destructive-foreground text-base font-medium rounded-md shadow-sm hover:bg-destructive/90 focus:outline-none focus:ring-2 focus:ring-ring"
                   >
-                    Confirmer le bannissement
+                    Confirm Ban
                   </button>
                   <button
                     onClick={() => {
@@ -348,7 +348,7 @@ export default function UsersTable({ users }: UsersTableProps) {
                     }}
                     className="px-4 py-2 bg-muted text-foreground text-base font-medium rounded-md shadow-sm hover:bg-muted/80 focus:outline-none focus:ring-2 focus:ring-ring"
                   >
-                    Annuler
+                    Cancel
                   </button>
                 </div>
               </div>

@@ -10,16 +10,16 @@ interface RequestsTableProps {
 }
 
 const typeLabels: Record<Request["type"], string> = {
-  help: "Demande d'aide",
-  data_restoration: "Restauration de données",
-  other: "Autre",
+  help: "Help Request",
+  data_restoration: "Data Restoration",
+  other: "Other",
 };
 
 const statusLabels: Record<Request["status"], string> = {
-  pending: "En attente",
-  in_progress: "En cours",
-  resolved: "Résolu",
-  rejected: "Rejeté",
+  pending: "Pending",
+  in_progress: "In Progress",
+  resolved: "Resolved",
+  rejected: "Rejected",
 };
 
 const statusVariants: Record<Request["status"], "warning" | "info" | "success" | "destructive"> = {
@@ -42,10 +42,10 @@ export default function RequestsTable({ requests }: RequestsTableProps) {
               Type
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider">
-              Utilisateur
+              User
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider">
-              Statut
+              Status
             </th>
           </tr>
         </thead>
@@ -53,7 +53,7 @@ export default function RequestsTable({ requests }: RequestsTableProps) {
           {requests.length === 0 ? (
             <tr>
               <td colSpan={3} className="px-6 py-8 text-center text-muted-foreground">
-                Aucune requête trouvée
+                No requests found
               </td>
             </tr>
           ) : (
@@ -70,7 +70,7 @@ export default function RequestsTable({ requests }: RequestsTableProps) {
                       router.push(`/admin/requests/${request.id}`);
                     }
                   }}
-                  aria-label={`Voir les détails de la requête ${request.id}`}
+                  aria-label={`View details of request ${request.id}`}
                 >
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                     {typeLabels[request.type]}

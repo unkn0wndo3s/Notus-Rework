@@ -32,19 +32,19 @@ export async function POST(request: Request) {
     const email = String(body?.email || "").trim().toLowerCase();
     const password = String(body?.password || "");
     if (!email) {
-      return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Access denied" }, { status: 400 });
     }
 
     const record = await prisma.deletedAccount.findFirst({ where: { email } });
     if (!record) {
-      return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 404 });
+      return NextResponse.json({ success: false, error: "Access denied" }, { status: 404 });
     }
 
     const now = new Date();
     const expiresAt = record.expires_at ?? null;
     const expired = !!(expiresAt && expiresAt.getTime() <= now.getTime());
     if (expired) {
-      return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 410 });
+      return NextResponse.json({ success: false, error: "Access denied" }, { status: 410 });
     }
 
     const snapshot = (record.user_snapshot as any) || {};
@@ -52,11 +52,11 @@ export async function POST(request: Request) {
 
     if (hasPassword) {
       if (!password) {
-        return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 400 });
+        return NextResponse.json({ success: false, error: "Access denied" }, { status: 400 });
       }
       const ok = await bcrypt.compare(password, String(snapshot.password_hash));
       if (!ok) {
-        return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 401 });
+        return NextResponse.json({ success: false, error: "Access denied" }, { status: 401 });
       }
     }
 
@@ -93,8 +93,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, userId: restored.id });
   } catch (error) {
-    console.error("❌ Erreur API reactivate-account:", error);
-    return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 500 });
+    console.error("❌ API Error reactivate-account:", error);
+    return NextResponse.json({ success: false, error: "Access denied" }, { status: 500 });
   }
 }
 

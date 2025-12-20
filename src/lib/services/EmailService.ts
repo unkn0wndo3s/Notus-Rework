@@ -2,7 +2,7 @@ import crypto from "crypto";
 import { Resend } from "resend";
 import { EmailResult } from "../types";
 
-// Configuration Resend - initialiser seulement si la clé API est présente
+// Resend Configuration - only initialize if API key is present
 const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
   : null;
@@ -16,7 +16,7 @@ export class EmailService {
     const verificationUrl = `${process.env.NEXTAUTH_URL}/verify-email?token=${token}`;
     const from = process.env.EMAIL_FROM || "Notus <noreply@notus.com>";
 
-    // Si pas de clé API Resend, simuler l'envoi
+    // If no Resend API key, simulate sending
     if (!process.env.RESEND_API_KEY || !resend) {
       return { success: true, messageId: `sim-${Date.now()}` };
     }
@@ -25,26 +25,26 @@ export class EmailService {
       const { data, error } = await resend.emails.send({
         from: from,
         to: [email],
-        subject: "Vérification de votre compte Notus",
+        subject: "Verify your Notus account",
         html: this.getVerificationEmailTemplate(verificationUrl, firstName),
       });
 
       if (error) {
-        console.error("❌ Erreur Resend:", error);
+        console.error("❌ Resend Error:", error);
         return { success: false, error: error.message };
       }
 
       return { success: true, messageId: data.id };
     } catch (error: unknown) {
-      console.error("❌ Erreur envoi email:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error sending email:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
   async sendWelcomeEmail(email: string, firstName: string): Promise<EmailResult> {
     const from = process.env.EMAIL_FROM || "Notus <noreply@notus.com>";
 
-    // Si pas de clé API Resend, simuler l'envoi
+    // If no Resend API key, simulate sending
     if (!process.env.RESEND_API_KEY || !resend) {
       return { success: true, messageId: `sim-welcome-${Date.now()}` };
     }
@@ -53,19 +53,19 @@ export class EmailService {
       const { data, error } = await resend.emails.send({
         from: from,
         to: [email],
-        subject: "Bienvenue sur Notus - Votre compte est activé !",
+        subject: "Welcome to Notus - Your account is activated!",
         html: this.getWelcomeEmailTemplate(firstName),
       });
 
       if (error) {
-        console.error("❌ Erreur Resend:", error);
+        console.error("❌ Resend Error:", error);
         return { success: false, error: error.message };
       }
 
       return { success: true, messageId: data.id };
     } catch (error: unknown) {
-      console.error("❌ Erreur envoi email de bienvenue:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error sending welcome email:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -73,7 +73,7 @@ export class EmailService {
     const resetUrl = `${process.env.NEXTAUTH_URL}/reset-password?token=${token}`;
     const from = process.env.EMAIL_FROM || "Notus <noreply@notus.com>";
 
-    // Si pas de clé API Resend, simuler l'envoi
+    // If no Resend API key, simulate sending
     if (!process.env.RESEND_API_KEY || !resend) {
       return { success: true, messageId: `sim-reset-${Date.now()}` };
     }
@@ -82,26 +82,26 @@ export class EmailService {
       const { data, error } = await resend.emails.send({
         from: from,
         to: [email],
-        subject: "Réinitialisation de votre mot de passe Notus",
+        subject: "Notus Password Reset",
         html: this.getPasswordResetEmailTemplate(resetUrl, firstName),
       });
 
       if (error) {
-        console.error("❌ Erreur Resend:", error);
+        console.error("❌ Resend Error:", error);
         return { success: false, error: error.message };
       }
 
       return { success: true, messageId: data.id };
     } catch (error: unknown) {
-      console.error("❌ Erreur envoi email de réinitialisation:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error sending reset email:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
   async sendBanNotificationEmail(email: string, firstName: string, reason: string | null = null): Promise<EmailResult> {
     const from = process.env.EMAIL_FROM || "Notus <noreply@notus.com>";
 
-    // Si pas de clé API Resend, simuler l'envoi
+    // If no Resend API key, simulate sending
     if (!process.env.RESEND_API_KEY || !resend) {
       return { success: true, messageId: `sim-ban-${Date.now()}` };
     }
@@ -110,26 +110,26 @@ export class EmailService {
       const { data, error } = await resend.emails.send({
         from: from,
         to: [email],
-        subject: "Votre compte Notus a été suspendu",
+        subject: "Your Notus account has been suspended",
         html: this.getBanNotificationEmailTemplate(firstName, reason),
       });
 
       if (error) {
-        console.error("❌ Erreur Resend:", error);
+        console.error("❌ Resend Error:", error);
         return { success: false, error: error.message };
       }
 
       return { success: true, messageId: data.id };
     } catch (error: unknown) {
-      console.error("❌ Erreur envoi email de bannissement:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error sending ban email:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
   async sendUnbanNotificationEmail(email: string, firstName: string): Promise<EmailResult> {
     const from = process.env.EMAIL_FROM || "Notus <noreply@notus.com>";
 
-    // Si pas de clé API Resend, simuler l'envoi
+    // If no Resend API key, simulate sending
     if (!process.env.RESEND_API_KEY || !resend) {
       return { success: true, messageId: `sim-unban-${Date.now()}` };
     }
@@ -138,19 +138,19 @@ export class EmailService {
       const { data, error } = await resend.emails.send({
         from: from,
         to: [email],
-        subject: "Votre compte Notus a été réactivé",
+        subject: "Your Notus account has been reactivated",
         html: this.getUnbanNotificationEmailTemplate(firstName),
       });
 
       if (error) {
-        console.error("❌ Erreur Resend:", error);
+        console.error("❌ Resend Error:", error);
         return { success: false, error: error.message };
       }
 
       return { success: true, messageId: data.id };
     } catch (error: unknown) {
-      console.error("❌ Erreur envoi email de débannissement:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error sending unban email:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -166,10 +166,10 @@ export class EmailService {
     console.log("[EmailService] RESEND_API_KEY:", process.env.RESEND_API_KEY ? "set" : "NOT SET");
     console.log("[EmailService] EMAIL_FROM:", process.env.EMAIL_FROM);
     console.log("[EmailService] To:", email);
-    console.log("[EmailService] Subject:", `${inviterName} vous a invité à collaborer sur "${docTitle}"`);
+    console.log("[EmailService] Subject:", `${inviterName} invited you to collaborate on "${docTitle}"`);
     console.log("[EmailService] Link:", link);
 
-    // Simuler si pas de clé API Resend
+    // Simulate if no Resend API key
     if (!process.env.RESEND_API_KEY || !resend) {
       console.warn("[EmailService] Simulation mode: email not actually sent.");
       return { success: true, messageId: `sim-share-invite-${Date.now()}` };
@@ -179,20 +179,20 @@ export class EmailService {
       const { data, error } = await resend.emails.send({
         from: from,
         to: [email],
-        subject: `${inviterName} vous a invité à collaborer sur "${docTitle}"`,
+        subject: `${inviterName} invited you to collaborate on "${docTitle}"`,
         html: this.getShareInviteEmailTemplate(link, inviterName, docTitle),
       });
 
       if (error) {
-        console.error("❌ Erreur Resend:", error);
+        console.error("❌ Resend Error:", error);
         return { success: false, error: error.message };
       }
 
       console.log("[EmailService] Email sent successfully. Message ID:", data.id);
       return { success: true, messageId: data.id };
     } catch (error: unknown) {
-      console.error("❌ Erreur envoi email d'invitation de partage:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error sending share invite email:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -208,19 +208,19 @@ export class EmailService {
       const { data, error } = await resend.emails.send({
         from: from,
         to: [email],
-        subject: "Votre compte Notus a été supprimé",
+        subject: "Your Notus account has been deleted",
         html: this.getDeletionCompletedEmailTemplate(firstName),
       });
 
       if (error) {
-        console.error("❌ Erreur Resend:", error);
+        console.error("❌ Resend Error:", error);
         return { success: false, error: error.message };
       }
 
       return { success: true, messageId: data.id };
     } catch (error: unknown) {
-      console.error("❌ Erreur envoi email de confirmation de suppression:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error sending deletion confirmation email:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -228,18 +228,18 @@ export class EmailService {
     return `
       <div style="background:#F7F8FA; padding:24px; font-family: Nunito, Arial, sans-serif; color:#0f172a;">
         <div style="max-width:640px; margin:0 auto; background:#ffffff; border:1px solid #e5e7eb; border-radius:12px; overflow:hidden;">
-          <div style="background:linear-gradient(135deg,#A855F7 0%,#EC4899 100%); padding:28px; text-align:center;">
-            <h1 style="margin:0; font-size:26px; line-height:1.2; color:#ffffff; font-family:'Roboto Condensed', Arial, sans-serif;">Bienvenue sur Notus</h1>
+            <div style="background:linear-gradient(135deg,#A855F7 0%,#EC4899 100%); padding:28px; text-align:center;">
+            <h1 style="margin:0; font-size:26px; line-height:1.2; color:#ffffff; font-family:'Roboto Condensed', Arial, sans-serif;">Welcome to Notus</h1>
           </div>
           <div style="padding:28px;">
-            <h2 style="margin:0 0 12px; font-size:20px; font-family:'Roboto Condensed', Arial, sans-serif;">Bonjour ${firstName} 👋</h2>
-            <p style="margin:0 0 16px; color:#475569; line-height:1.65;">Merci pour votre inscription. Vérifiez votre adresse email pour activer votre compte.</p>
+            <h2 style="margin:0 0 12px; font-size:20px; font-family:'Roboto Condensed', Arial, sans-serif;">Hello ${firstName} 👋</h2>
+            <p style="margin:0 0 16px; color:#475569; line-height:1.65;">Thanks for signing up. Please verify your email address to activate your account.</p>
             <div style="text-align:center; margin:28px 0;">
-              <a href="${verificationUrl}" style="background:#A855F7; color:#ffffff; padding:14px 24px; text-decoration:none; border-radius:12px; font-weight:700; display:inline-block; font-size:16px;">Vérifier mon email</a>
+              <a href="${verificationUrl}" style="background:#A855F7; color:#ffffff; padding:14px 24px; text-decoration:none; border-radius:12px; font-weight:700; display:inline-block; font-size:16px;">Verify my email</a>
             </div>
-            <p style="margin:0; color:#94a3b8; font-size:13px;">Si le bouton ne fonctionne pas :</p>
+            <p style="margin:0; color:#94a3b8; font-size:13px;">If the button doesn't work:</p>
             <p style="margin:6px 0 0; color:#94a3b8; font-size:13px; word-break:break-all;"><a href="${verificationUrl}" style="color:#A855F7;">${verificationUrl}</a></p>
-            <p style="margin:16px 0 0; color:#94a3b8; font-size:13px;">Lien valide 24 heures.</p>
+            <p style="margin:16px 0 0; color:#94a3b8; font-size:13px;">Link valid for 24 hours.</p>
           </div>
           <div style="background:#0f172a; color:#ffffff; text-align:center; padding:16px; font-size:12px;">© 2025 Notus</div>
         </div>
@@ -251,13 +251,13 @@ export class EmailService {
       <div style="background:#F7F8FA; padding:24px; font-family: Nunito, Arial, sans-serif; color:#0f172a;">
         <div style="max-width:640px; margin:0 auto; background:#ffffff; border:1px solid #e5e7eb; border-radius:12px; overflow:hidden;">
           <div style="background:linear-gradient(135deg,#A855F7 0%,#EC4899 100%); padding:28px; text-align:center;">
-            <h1 style="margin:0; font-size:26px; line-height:1.2; color:#ffffff; font-family:'Roboto Condensed', Arial, sans-serif;">🎉 Compte activé</h1>
+            <h1 style="margin:0; font-size:26px; line-height:1.2; color:#ffffff; font-family:'Roboto Condensed', Arial, sans-serif;">🎉 Account Activated</h1>
           </div>
           <div style="padding:28px;">
-            <h2 style="margin:0 0 12px; font-size:20px; font-family:'Roboto Condensed', Arial, sans-serif;">Bienvenue ${firstName} !</h2>
-            <p style="margin:0 0 16px; color:#475569; line-height:1.65;">Votre compte Notus est prêt. Commencez dès maintenant.</p>
+            <h2 style="margin:0 0 12px; font-size:20px; font-family:'Roboto Condensed', Arial, sans-serif;">Welcome ${firstName}!</h2>
+            <p style="margin:0 0 16px; color:#475569; line-height:1.65;">Your Notus account is ready. Get started now.</p>
             <div style="text-align:center; margin:28px 0;">
-              <a href="${process.env.NEXTAUTH_URL}/login" style="background:#A855F7; color:#ffffff; padding:14px 24px; text-decoration:none; border-radius:12px; font-weight:700; display:inline-block; font-size:16px;">Se connecter</a>
+              <a href="${process.env.NEXTAUTH_URL}/login" style="background:#A855F7; color:#ffffff; padding:14px 24px; text-decoration:none; border-radius:12px; font-weight:700; display:inline-block; font-size:16px;">Login</a>
             </div>
           </div>
           <div style="background:#0f172a; color:#ffffff; text-align:center; padding:16px; font-size:12px;">© 2025 Notus</div>
@@ -270,17 +270,17 @@ export class EmailService {
       <div style="background:#F7F8FA; padding:24px; font-family: Nunito, Arial, sans-serif; color:#0f172a;">
         <div style="max-width:640px; margin:0 auto; background:#ffffff; border:1px solid #e5e7eb; border-radius:12px; overflow:hidden;">
           <div style="background:linear-gradient(135deg,#A855F7 0%,#EC4899 100%); padding:28px; text-align:center;">
-            <h1 style="margin:0; font-size:26px; line-height:1.2; color:#ffffff; font-family:'Roboto Condensed', Arial, sans-serif;">🔐 Réinitialisation du mot de passe</h1>
+            <h1 style="margin:0; font-size:26px; line-height:1.2; color:#ffffff; font-family:'Roboto Condensed', Arial, sans-serif;">🔐 Password Reset</h1>
           </div>
           <div style="padding:28px;">
-            <h2 style="margin:0 0 12px; font-size:20px; font-family:'Roboto Condensed', Arial, sans-serif;">Bonjour ${firstName}</h2>
-            <p style="margin:0 0 16px; color:#475569; line-height:1.65;">Cliquez sur le bouton ci-dessous pour créer un nouveau mot de passe.</p>
+            <h2 style="margin:0 0 12px; font-size:20px; font-family:'Roboto Condensed', Arial, sans-serif;">Hello ${firstName}</h2>
+            <p style="margin:0 0 16px; color:#475569; line-height:1.65;">Click the button below to create a new password.</p>
             <div style="text-align:center; margin:28px 0;">
-              <a href="${resetUrl}" style="background:#A855F7; color:#ffffff; padding:14px 24px; text-decoration:none; border-radius:12px; font-weight:700; display:inline-block; font-size:16px;">Réinitialiser mon mot de passe</a>
+              <a href="${resetUrl}" style="background:#A855F7; color:#ffffff; padding:14px 24px; text-decoration:none; border-radius:12px; font-weight:700; display:inline-block; font-size:16px;">Reset my password</a>
             </div>
-            <p style="margin:0; color:#94a3b8; font-size:13px;">Si le bouton ne fonctionne pas :</p>
+            <p style="margin:0; color:#94a3b8; font-size:13px;">If the button doesn't work:</p>
             <p style="margin:6px 0 0; color:#94a3b8; font-size:13px; word-break:break-all;"><a href="${resetUrl}" style="color:#A855F7;">${resetUrl}</a></p>
-            <p style="margin:16px 0 0; color:#94a3b8; font-size:13px;">Lien valable 24 heures.</p>
+            <p style="margin:16px 0 0; color:#94a3b8; font-size:13px;">Link valid for 24 hours.</p>
           </div>
           <div style="background:#0f172a; color:#ffffff; text-align:center; padding:16px; font-size:12px;">© 2025 Notus</div>
         </div>
@@ -292,28 +292,28 @@ export class EmailService {
       <div style="background:#F7F8FA; padding:24px; font-family: Nunito, Arial, sans-serif; color:#0f172a;">
         <div style="max-width:640px; margin:0 auto; background:#ffffff; border:1px solid #e5e7eb; border-radius:12px; overflow:hidden;">
           <div style="background:linear-gradient(135deg,#A855F7 0%,#EC4899 100%); padding:28px; text-align:center;">
-            <h1 style="margin:0; font-size:26px; line-height:1.2; color:#ffffff; font-family:'Roboto Condensed', Arial, sans-serif;">⚠️ Compte suspendu</h1>
+            <h1 style="margin:0; font-size:26px; line-height:1.2; color:#ffffff; font-family:'Roboto Condensed', Arial, sans-serif;">⚠️ Account Suspended</h1>
           </div>
           <div style="padding:28px;">
-            <h2 style="margin:0 0 12px; font-size:20px; font-family:'Roboto Condensed', Arial, sans-serif;">Bonjour ${firstName}</h2>
-            <p style="margin:0 0 16px; color:#475569; line-height:1.65;">Votre compte Notus a été suspendu par notre équipe.</p>
+            <h2 style="margin:0 0 12px; font-size:20px; font-family:'Roboto Condensed', Arial, sans-serif;">Hello ${firstName}</h2>
+            <p style="margin:0 0 16px; color:#475569; line-height:1.65;">Your Notus account has been suspended by our team.</p>
             ${reason ? `
             <div style="background:#fff7ed; border:1px solid #fed7aa; border-radius:12px; padding:16px; margin:20px 0;">
-              <h3 style="margin:0 0 8px; font-size:16px; color:#9a3412; font-family:'Roboto Condensed', Arial, sans-serif;">Raison :</h3>
+              <h3 style="margin:0 0 8px; font-size:16px; color:#9a3412; font-family:'Roboto Condensed', Arial, sans-serif;">Reason:</h3>
               <p style="margin:0; color:#9a3412;">${reason}</p>
             </div>
             ` : ""}
             <div style="background:#f8fafc; border-radius:12px; padding:16px; margin:20px 0;">
-              <h3 style="margin:0 0 10px; font-size:16px; color:#0f172a; font-family:'Roboto Condensed', Arial, sans-serif;">Que faire ?</h3>
+              <h3 style="margin:0 0 10px; font-size:16px; color:#0f172a; font-family:'Roboto Condensed', Arial, sans-serif;">What to do?</h3>
               <ul style="margin:0; padding-left:20px; color:#475569; line-height:1.65;">
-                <li>Si vous pensez à une erreur, contactez le support</li>
-                <li>Respectez les conditions d'utilisation</li>
+                <li>If you think this is a mistake, contact support</li>
+                <li>Respect the terms of service</li>
               </ul>
             </div>
             <div style="text-align:center; margin:24px 0;">
-              <a href="mailto:${process.env.ADMIN_EMAIL || "admin@notus.com"}" style="background:#0f172a; color:#ffffff; padding:12px 20px; text-decoration:none; border-radius:12px; font-weight:700; display:inline-block; font-size:15px;">Contacter le support</a>
+              <a href="mailto:${process.env.ADMIN_EMAIL || "admin@notus.com"}" style="background:#0f172a; color:#ffffff; padding:12px 20px; text-decoration:none; border-radius:12px; font-weight:700; display:inline-block; font-size:15px;">Contact support</a>
             </div>
-            <p style="margin:0; color:#94a3b8; font-size:13px;">Cet email est automatique, merci de ne pas y répondre.</p>
+            <p style="margin:0; color:#94a3b8; font-size:13px;">This is an automated email, please do not reply.</p>
           </div>
           <div style="background:#0f172a; color:#ffffff; text-align:center; padding:16px; font-size:12px;">© 2025 Notus</div>
         </div>
@@ -325,19 +325,19 @@ export class EmailService {
       <div style="background:#F7F8FA; padding:24px; font-family: Nunito, Arial, sans-serif; color:#0f172a;">
         <div style="max-width:640px; margin:0 auto; background:#ffffff; border:1px solid #e5e7eb; border-radius:12px; overflow:hidden;">
           <div style="background:linear-gradient(135deg,#A855F7 0%,#EC4899 100%); padding:28px; text-align:center;">
-            <h1 style="margin:0; font-size:26px; line-height:1.2; color:#ffffff; font-family:'Roboto Condensed', Arial, sans-serif;">🎉 Compte réactivé</h1>
+            <h1 style="margin:0; font-size:26px; line-height:1.2; color:#ffffff; font-family:'Roboto Condensed', Arial, sans-serif;">🎉 Account Reactivated</h1>
           </div>
           <div style="padding:28px;">
-            <h2 style="margin:0 0 12px; font-size:20px; font-family:'Roboto Condensed', Arial, sans-serif;">Bonjour ${firstName}</h2>
-            <p style="margin:0 0 16px; color:#475569; line-height:1.65;">Votre compte Notus est de nouveau actif.</p>
+            <h2 style="margin:0 0 12px; font-size:20px; font-family:'Roboto Condensed', Arial, sans-serif;">Hello ${firstName}</h2>
+            <p style="margin:0 0 16px; color:#475569; line-height:1.65;">Your Notus account is active again.</p>
             <div style="text-align:center; margin:24px 0;">
-              <a href="${process.env.NEXTAUTH_URL}/login" style="background:#A855F7; color:#ffffff; padding:12px 20px; text-decoration:none; border-radius:12px; font-weight:700; display:inline-block; font-size:15px;">Se connecter</a>
+              <a href="${process.env.NEXTAUTH_URL}/login" style="background:#A855F7; color:#ffffff; padding:12px 20px; text-decoration:none; border-radius:12px; font-weight:700; display:inline-block; font-size:15px;">Login</a>
             </div>
             <div style="background:#f8fafc; border-radius:12px; padding:16px; margin:20px 0;">
-              <h3 style="margin:0 0 10px; font-size:16px; color:#0f172a; font-family:'Roboto Condensed', Arial, sans-serif;">Conseils</h3>
+              <h3 style="margin:0 0 10px; font-size:16px; color:#0f172a; font-family:'Roboto Condensed', Arial, sans-serif;">Tips</h3>
               <ul style="margin:0; padding-left:20px; color:#475569; line-height:1.65;">
-                <li>Respectez les conditions d'utilisation</li>
-                <li>Contactez le support en cas de questions</li>
+                <li>Respect the terms of service</li>
+                <li>Contact support if you have questions</li>
               </ul>
             </div>
           </div>
@@ -351,15 +351,15 @@ export class EmailService {
       <div style="background:#F7F8FA; padding:24px; font-family: Nunito, Arial, sans-serif; color:#0f172a;">
         <div style="max-width:640px; margin:0 auto; background:#ffffff; border:1px solid #e5e7eb; border-radius:12px; overflow:hidden;">
           <div style="background:linear-gradient(135deg,#A855F7 0%,#EC4899 100%); padding:28px; text-align:center;">
-            <h1 style="margin:0; font-size:26px; line-height:1.2; color:#ffffff; font-family:'Roboto Condensed', Arial, sans-serif;">Invitation à collaborer</h1>
+            <h1 style="margin:0; font-size:26px; line-height:1.2; color:#ffffff; font-family:'Roboto Condensed', Arial, sans-serif;">Collaboration Invite</h1>
           </div>
           <div style="padding:28px;">
-            <h2 style="margin:0 0 12px; font-size:20px; font-family:'Roboto Condensed', Arial, sans-serif;">Bonjour !</h2>
-            <p style="margin:0 0 16px; color:#475569; line-height:1.65;">${inviterName} vous invite à collaborer sur « ${docTitle} ».</p>
+            <h2 style="margin:0 0 12px; font-size:20px; font-family:'Roboto Condensed', Arial, sans-serif;">Hello!</h2>
+            <p style="margin:0 0 16px; color:#475569; line-height:1.65;">${inviterName} invited you to collaborate on "${docTitle}".</p>
             <div style="text-align:center; margin:24px 0;">
-              <a href="${link}" style="background:#A855F7; color:#ffffff; padding:12px 20px; text-decoration:none; border-radius:12px; font-weight:700; display:inline-block; font-size:15px;">Accepter l'invitation</a>
+              <a href="${link}" style="background:#A855F7; color:#ffffff; padding:12px 20px; text-decoration:none; border-radius:12px; font-weight:700; display:inline-block; font-size:15px;">Accept invitation</a>
             </div>
-            <p style="margin:0; color:#94a3b8; font-size:13px;">Ou copiez-collez ce lien :</p>
+            <p style="margin:0; color:#94a3b8; font-size:13px;">Or copy-paste this link:</p>
             <p style="margin:6px 0 0; color:#94a3b8; font-size:13px; word-break:break-all;"><a href="${link}" style="color:#A855F7;">${link}</a></p>
           </div>
           <div style="background:#0f172a; color:#ffffff; text-align:center; padding:16px; font-size:12px;">© 2025 Notus</div>
@@ -373,12 +373,12 @@ export class EmailService {
       <div style="background:#F7F8FA; padding:24px; font-family: Nunito, Arial, sans-serif; color:#0f172a;">
         <div style="max-width:640px; margin:0 auto; background:#ffffff; border:1px solid #e5e7eb; border-radius:12px; overflow:hidden;">
           <div style="background:linear-gradient(135deg,#A855F7 0%,#EC4899 100%); padding:28px; text-align:center;">
-            <h1 style="margin:0; font-size:24px; line-height:1.2; color:#ffffff; font-family:'Roboto Condensed', Arial, sans-serif;">Compte supprimé</h1>
+            <h1 style="margin:0; font-size:24px; line-height:1.2; color:#ffffff; font-family:'Roboto Condensed', Arial, sans-serif;">Account Deleted</h1>
           </div>
           <div style="padding:28px;">
-            <h2 style="margin:0 0 12px; font-size:20px; font-family:'Roboto Condensed', Arial, sans-serif;">Bonjour ${firstName}</h2>
-            <p style="margin:0 0 16px; color:#475569; line-height:1.65;">Votre compte a bien été supprimé. Vous pouvez encore le réactiver dans les 30 jours en vous reconnectant avec la même adresse email.</p>
-            <p style="margin:0; color:#94a3b8; font-size:13px;">Si vous n'êtes pas à l'origine de cette action, contactez immédiatement le support.</p>
+            <h2 style="margin:0 0 12px; font-size:20px; font-family:'Roboto Condensed', Arial, sans-serif;">Hello ${firstName}</h2>
+            <p style="margin:0 0 16px; color:#475569; line-height:1.65;">Your account has been deleted. You can still reactivate it within 30 days by logging in with the same email address.</p>
+            <p style="margin:0; color:#94a3b8; font-size:13px;">If you didn't request this, contact support immediately.</p>
           </div>
           <div style="background:#0f172a; color:#ffffff; text-align:center; padding:16px; font-size:12px;">© 2025 Notus</div>
         </div>

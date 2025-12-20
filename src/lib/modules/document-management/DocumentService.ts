@@ -5,66 +5,57 @@ import { DocumentValidator } from "../../validators/DocumentValidator";
 import { ActionResult } from "../../types";
 
 export class DocumentManagementService {
-  private documentService: BaseDocumentService;
+  private readonly documentService: BaseDocumentService;
 
   constructor() {
     this.documentService = new BaseDocumentService();
   }
 
-  async createDocument(prevState: unknown, formData: FormData): Promise<ActionResult | string> {
+  private getStringFromFormData(fd: FormData, key: string, defaultValue: string = ""): string {
+    const val = fd.get(key);
+    return typeof val === "string" ? val : defaultValue;
+  }
+
+  private getUserId(userIdRaw: string | null | undefined): { userId: number; error?: string } {
+    if (!userIdRaw || userIdRaw === "undefined" || userIdRaw === "null" || userIdRaw === "unknown") {
+      console.error("❌ User ID not defined in session");
+      return { userId: 0, error: "Invalid user session. Please log in again." };
+    }
+
+    if (userIdRaw === "oauth-simulated-user") {
+      return { userId: 1 };
+    }
+
+    const userId = Number(userIdRaw);
+    if (Number.isNaN(userId) || userId <= 0) {
+      console.error("❌ Invalid user ID:", userIdRaw, "Parsed as:", userId);
+      return { userId: 0, error: "Invalid user ID. Please log in again." };
+    }
+
+    return { userId };
+  }
+
+  async createDocument(_prevState: unknown, formData: FormData): Promise<ActionResult | string> {
     try {
-      const title = formData.get("title") as string;
-      const content = formData.get("content") as string;
-      const userId = formData.get("userId") as string;
-      const rawTags = formData.get("tags") as string;
+      const title = this.getStringFromFormData(formData, "title");
+      const content = this.getStringFromFormData(formData, "content");
+      const userIdRaw = formData.get("userId") as string;
+      const rawTags = formData.get("tags");
 
-      if (!userId) {
-        return "Utilisateur requis.";
-      }
+      const { userId, error } = this.getUserId(userIdRaw);
+      if (error) return error;
 
-      // Gérer les différents types d'IDs utilisateur
-      let userIdNumber: number;
-
-      // Si l'ID utilisateur est undefined ou null
-      if (
-        !userId ||
-        userId === "undefined" ||
-        userId === "null" ||
-        userId === "unknown"
-      ) {
-        console.error("❌ ID utilisateur non défini dans la session");
-        return "Session utilisateur invalide. Veuillez vous reconnecter.";
-      }
-
-      // Si c'est un ID de simulation OAuth
-      if (userId === "oauth-simulated-user") {
-        userIdNumber = 1; // ID de simulation
-      } else {
-        // Vérifier que l'ID utilisateur est un nombre valide
-        userIdNumber = parseInt(userId);
-        if (isNaN(userIdNumber) || userIdNumber <= 0) {
-          console.error(
-            "❌ ID utilisateur invalide:",
-            userId,
-            "Parsed as:",
-            userIdNumber
-          );
-          return "ID utilisateur invalide. Veuillez vous reconnecter.";
-        }
-      }
-
-      // Parser les tags
       let tags: string[] = [];
       try {
-        if (rawTags) {
-          tags = typeof rawTags === "string" ? JSON.parse(rawTags) : rawTags;
+        if (rawTags && typeof rawTags === "string") {
+          tags = JSON.parse(rawTags);
+        } else if (Array.isArray(rawTags)) {
+          tags = rawTags;
         }
       } catch (e) {
         console.warn("Failed to parse tags payload", e);
-        tags = [];
       }
 
-      // Validation des données
       const validation = DocumentValidator.validateDocumentData({
         title: title || "",
         content: content || "",
@@ -72,60 +63,53 @@ export class DocumentManagementService {
       });
 
       if (!validation.isValid) {
-        return Object.values(validation.errors)[0] || "Données invalides";
+        return Object.values(validation.errors)[0] || "Invalid data";
       }
 
-      // Vérifier si la base de données est configurée
       if (!process.env.DATABASE_URL) {
-        return "Document créé avec succès (mode simulation). Configurez DATABASE_URL pour la persistance.";
+        return "Document created successfully (simulation mode). Configure DATABASE_URL for persistence.";
       }
 
-      // Initialiser les tables si elles n'existent pas
       await this.documentService.initializeTables();
 
-      // Créer un nouveau document
       const result = await this.documentService.createDocument({
-        userId: userIdNumber,
+        userId,
         title: title.trim(),
         content: content || "",
         tags,
       });
 
       if (!result.success) {
-        console.error("❌ Erreur création document:", result.error);
-        return "Erreur lors de la création du document. Veuillez réessayer.";
+        console.error("❌ Document creation error:", result.error);
+        return "Error while creating document. Please try again.";
       }
 
       return {
         success: true,
-        message: "Document créé avec succès !",
+        message: "Document created successfully!",
         documentId: result.document!.id,
       };
     } catch (error: unknown) {
-      console.error("❌ Erreur lors de la création du document:", error);
-
+      console.error("❌ Error while creating document:", error);
       if (error && typeof error === 'object' && 'code' in error && 
           (error.code === "ECONNRESET" || error.code === "ECONNREFUSED")) {
-        return "Base de données non accessible. Vérifiez la configuration PostgreSQL.";
+        return "Database not accessible. Check PostgreSQL configuration.";
       }
-
-      return "Erreur lors de la création du document. Veuillez réessayer.";
+      return "Error while creating document. Please try again.";
     }
   }
 
   async getUserDocuments(userId: number, limit: number = 20, offset: number = 0): Promise<ActionResult> {
     try {
-      // Validation des paramètres de pagination
       const paginationValidation = DocumentValidator.validatePaginationParams(limit, offset);
       if (!paginationValidation.isValid) {
         return {
           success: false,
-          error: Object.values(paginationValidation.errors)[0] || "Paramètres de pagination invalides",
+          error: Object.values(paginationValidation.errors)[0] || "Invalid pagination parameters",
           documents: [],
         };
       }
 
-      // Vérifier si la base de données est configurée
       if (!process.env.DATABASE_URL) {
         return {
           success: true,
@@ -133,8 +117,8 @@ export class DocumentManagementService {
             {
               id: 1,
               user_id: 1,
-              title: "Document de simulation",
-              content: "Configurez DATABASE_URL pour la persistance.",
+              title: "Simulation Document",
+              content: "Configure DATABASE_URL for persistence.",
               tags: [],
               created_at: new Date(),
               updated_at: new Date(),
@@ -146,17 +130,15 @@ export class DocumentManagementService {
         };
       }
 
-      // Initialiser les tables si elles n'existent pas
       await this.documentService.initializeTables();
 
-      // Récupérer les documents
       const result = await this.documentService.getUserDocuments(userId, limit, offset);
 
       if (!result.success) {
-        console.error("❌ Erreur récupération documents:", result.error);
+        console.error("❌ Error retrieving documents:", result.error);
         return {
           success: false,
-          error: "Erreur lors de la récupération des documents.",
+          error: "Error while retrieving documents.",
           documents: [],
         };
       }
@@ -166,10 +148,10 @@ export class DocumentManagementService {
         documents: result.documents || [],
       };
     } catch (error: unknown) {
-      console.error("❌ Erreur lors de la récupération des documents:", error);
+      console.error("❌ Error while retrieving documents:", error);
       return {
         success: false,
-        error: "Erreur lors de la récupération des documents.",
+        error: "Error while retrieving documents.",
         documents: [],
       };
     }
@@ -177,25 +159,23 @@ export class DocumentManagementService {
 
   async getDocumentById(documentId: number): Promise<ActionResult> {
     try {
-      // Validation de l'ID du document
       const idValidation = DocumentValidator.validateDocumentId(documentId);
       if (!idValidation.isValid) {
         return {
           success: false,
-          error: Object.values(idValidation.errors)[0] || "ID de document invalide",
+          error: Object.values(idValidation.errors)[0] || "Invalid document ID",
           document: undefined,
         };
       }
 
-      // Vérifier si la base de données est configurée
       if (!process.env.DATABASE_URL) {
         return {
           success: true,
           document: {
-            id: parseInt(documentId.toString()),
+            id: Number(documentId.toString()),
             user_id: 1,
-            title: "Document de simulation",
-            content: "Configurez DATABASE_URL pour la persistance.",
+            title: "Simulation Document",
+            content: "Configure DATABASE_URL for persistence.",
             tags: [],
             created_at: new Date(),
             updated_at: new Date(),
@@ -206,17 +186,15 @@ export class DocumentManagementService {
         };
       }
 
-      // Initialiser les tables si elles n'existent pas
       await this.documentService.initializeTables();
 
-      // Récupérer le document
-      const result = await this.documentService.getDocumentById(parseInt(documentId.toString()));
+      const result = await this.documentService.getDocumentById(Number(documentId.toString()));
 
       if (!result.success) {
-        console.error("❌ Erreur récupération document:", result.error);
+        console.error("❌ Error retrieving document:", result.error);
         return {
           success: false,
-          error: "Erreur lors de la récupération du document.",
+          error: "Error while retrieving document.",
           document: undefined,
         };
       }
@@ -226,254 +204,197 @@ export class DocumentManagementService {
         document: result.document,
       };
     } catch (error: unknown) {
-      console.error("❌ Erreur lors de la récupération du document:", error);
+      console.error("❌ Error while retrieving document:", error);
       return {
         success: false,
-        error: "Erreur lors de la récupération du document.",
+        error: "Error while retrieving document.",
         document: undefined,
       };
     }
   }
 
-  async updateDocument(prevState: unknown, formDataOrObj: FormData | {
-    documentId?: string | number;
-    userId?: string | number;
-    title?: string;
-    content?: string;
-    tags?: string | string[];
-    email?: string;
-  }): Promise<ActionResult> {
-    type UpdateDocumentPayload = {
-      documentId?: string | number;
-      userId?: string | number;
-      title?: string;
-      content?: string;
-      tags?: string | string[];
-      email?: string;
-    };
-
+  private async getTagsFromRaw(rawTags: any): Promise<string[]> {
+    let tags: string[] = [];
     try {
-      // Vérifier que formDataOrObj existe et est valide
-      if (!formDataOrObj) {
-        return { ok: false, error: "No data provided" };
-      }
+      if (rawTags && typeof rawTags === "string") tags = JSON.parse(rawTags);
+      else if (Array.isArray(rawTags)) tags = rawTags;
+    } catch {}
+    return tags;
+  }
 
-      const fd = formDataOrObj instanceof FormData ? formDataOrObj : null;
-      const documentId = fd
-        ? String(fd.get("documentId") || "")
-        : String((formDataOrObj as UpdateDocumentPayload).documentId || "");
-      
-      if (!documentId) return { ok: false, error: "Missing documentId" };
+  private async getUserEmail(fd: FormData | null, formDataOrObj: any): Promise<string | undefined> {
+    let userEmail: string | undefined;
+    if (fd) {
+      const email = fd.get("email");
+      if (typeof email === "string") userEmail = email;
+    } else {
+      userEmail = formDataOrObj.email;
+    }
 
-      // Validation de l'ID du document
-      const idValidation = DocumentValidator.validateDocumentId(documentId);
-      if (!idValidation.isValid) {
-        return { ok: false, error: Object.values(idValidation.errors)[0] || "ID de document invalide" };
-      }
-
-      // Try server session (if available)
-      let serverUserId: number | undefined;
+    if (!userEmail) {
       try {
         const session = await getServerSession(authOptions);
-        serverUserId = session?.user?.id ? Number(session.user.id) : undefined;
-      } catch (e: unknown) {
-        console.warn("getServerSession failed at runtime, falling back to client userId", e instanceof Error ? e.message : e);
-      }
+        userEmail = session?.user?.email || undefined;
+      } catch {}
+    }
+    return userEmail;
+  }
 
-      // If no server session, try client-sent userId
-      let clientUserId: number | undefined;
-      if (fd) {
-        const u = fd.get("userId");
-        if (u) clientUserId = Number(String(u));
-      } else if ((formDataOrObj as UpdateDocumentPayload).userId) {
-        clientUserId = Number((formDataOrObj as UpdateDocumentPayload).userId);
-      }
+  private getFormDataValue(fd: FormData | null, obj: any, key: string): any {
+    return fd ? fd.get(key) : obj[key];
+  }
 
-      const userIdToUse = serverUserId ?? clientUserId;
+  private async getUpdateUserId(fd: FormData | null, formDataOrObj: any): Promise<number | undefined> {
+    try {
+      const session = await getServerSession(authOptions);
+      if (session?.user?.id) return Number(session.user.id);
+    } catch {}
 
-      if (!userIdToUse) {
-        return { ok: false, error: "Not authenticated" };
-      }
+    const u = this.getFormDataValue(fd, formDataOrObj, "userId");
+    return typeof u === "string" || typeof u === "number" ? Number(u) : undefined;
+  }
 
-      const idNum = Number(documentId);
+  private emptyUpdateContext() {
+    return { documentId: 0, userId: 0, title: "", content: "", tags: [] };
+  }
 
-      // Parse title/content/tags
-      let title = "";
-      let contentStr = "";
-      let rawTags: unknown = null;
-      
-      if (fd) {
-        title = String(fd.get("title") || "");
-        contentStr = String(fd.get("content") || "");
-        rawTags = fd.get("tags") || null;
-      } else {
-        const obj = formDataOrObj as UpdateDocumentPayload;
-        title = obj.title || "";
-        contentStr = obj.content || "";
-        rawTags = obj.tags || null;
-      }
+  private validateDocumentIdInContext(fd: FormData | null, formDataOrObj: any): { documentId?: number; error?: string } {
+    const raw = this.getFormDataValue(fd, formDataOrObj, "documentId");
+    const str = typeof raw === "string" ? raw : String(raw ?? "");
+    if (!str) return { error: "Missing documentId" };
 
-      let tags: string[] = [];
-      
-      try {
-        if (rawTags) {
-          tags = typeof rawTags === "string" ? JSON.parse(rawTags) : rawTags;
-        }
-      } catch (e) {
-        console.warn("Failed to parse tags payload", e);
-        tags = [];
-      }
+    const val = DocumentValidator.validateDocumentId(str);
+    if (!val.isValid) return { error: Object.values(val.errors)[0] || "Invalid document ID" };
+    return { documentId: Number(str) };
+  }
 
-      // Validation des données
-      const validation = DocumentValidator.validateDocumentData({
-        title,
-        content: contentStr,
-        tags,
-      });
+  private async getUpdateContext(formDataOrObj: any): Promise<{
+    documentId: number;
+    userId: number;
+    userEmail?: string;
+    title: string;
+    content: string;
+    tags: string[];
+    error?: string;
+  }> {
+    const fd = formDataOrObj instanceof FormData ? formDataOrObj : null;
+    
+    const resId = this.validateDocumentIdInContext(fd, formDataOrObj);
+    if (resId.error) return { ...this.emptyUpdateContext(), error: resId.error };
 
-      if (!validation.isValid) {
-        return { ok: false, error: Object.values(validation.errors)[0] || "Données invalides" };
-      }
+    const userId = await this.getUpdateUserId(fd, formDataOrObj);
+    if (!userId) return { ...this.emptyUpdateContext(), error: "Not authenticated" };
 
-      // Get user email from session or formData
-      let userEmail: string | undefined = undefined;
-      if (fd && fd.get("email")) {
-        userEmail = String(fd.get("email"));
-      } else if (typeof (formDataOrObj as UpdateDocumentPayload).email === "string") {
-        userEmail = (formDataOrObj as UpdateDocumentPayload).email;
-      } else {
-        // Try to get from server session
-        try {
-          const session = await getServerSession(authOptions);
-          userEmail = session?.user?.email || undefined;
-        } catch {}
-      }
+    const title = fd ? this.getStringFromFormData(fd, "title") : (formDataOrObj.title ?? "");
+    const content = fd ? this.getStringFromFormData(fd, "content") : (formDataOrObj.content ?? "");
+    const tags = await this.getTagsFromRaw(this.getFormDataValue(fd, formDataOrObj, "tags"));
+    const userEmail = await this.getUserEmail(fd, formDataOrObj);
 
-      // Actually update the document in the database
+    const validation = DocumentValidator.validateDocumentData({ title, content, tags });
+    if (!validation.isValid) return { ...this.emptyUpdateContext(), error: Object.values(validation.errors)[0] || "Invalid data" };
+
+    return { documentId: resId.documentId!, userId, userEmail, title, content, tags };
+  }
+
+  async updateDocument(_prevState: unknown, formDataOrObj: any): Promise<ActionResult> {
+    try {
+      if (!formDataOrObj) return { ok: false, error: "No data provided" };
+
+      const context = await this.getUpdateContext(formDataOrObj);
+      if (context.error) return { ok: false, error: context.error };
+
       const updateResult = await this.documentService.createOrUpdateDocumentById(
-        idNum,
-        userIdToUse,
-        userEmail || "",
-        title,
-        contentStr,
-        tags
+        context.documentId,
+        context.userId,
+        context.userEmail || "",
+        context.title,
+        context.content,
+        context.tags
       );
 
       if (!updateResult.success) {
-        console.error("❌ Erreur mise à jour document:", updateResult.error);
-        return {
-          ok: false,
-          error: updateResult.error || "Erreur lors de la mise à jour du document.",
-        };
+        console.error("❌ Document update error:", updateResult.error);
+        return { ok: false, error: updateResult.error || "Error while updating the document." };
       }
 
-      return {
-        ok: true,
-        id: idNum,
-        dbResult: updateResult,
-      };
+      return { ok: true, id: context.documentId, dbResult: updateResult };
     } catch (err: unknown) {
       console.error(err);
       return { ok: false, error: String(err instanceof Error ? err.message : err) };
     }
   }
 
-  async deleteDocument(prevState: unknown, formData: FormData): Promise<string> {
+  async deleteDocument(_prevState: unknown, formData: FormData): Promise<string> {
     try {
-      const documentId = formData.get("documentId") as string;
-      const userId = formData.get("userId") as string;
+      const documentId = this.getStringFromFormData(formData, "documentId");
+      const userIdRaw = this.getStringFromFormData(formData, "userId");
 
-      if (!documentId || !userId) {
-        return "ID de document et utilisateur requis.";
-      }
+      if (!documentId || !userIdRaw) return "Document ID and user required.";
 
-      // Validation des IDs
       const documentIdValidation = DocumentValidator.validateDocumentId(documentId);
-      if (!documentIdValidation.isValid) {
-        return Object.values(documentIdValidation.errors)[0] || "ID document invalide";
-      }
+      if (!documentIdValidation.isValid) return Object.values(documentIdValidation.errors)[0] || "Invalid document ID";
 
-      const userIdValidation = DocumentValidator.validateUserId(userId);
-      if (!userIdValidation.isValid) {
-        return Object.values(userIdValidation.errors)[0] || "ID utilisateur invalide";
-      }
+      const userIdValidation = DocumentValidator.validateUserId(userIdRaw);
+      if (!userIdValidation.isValid) return Object.values(userIdValidation.errors)[0] || "Invalid user ID";
 
-      const documentIdNumber = parseInt(documentId);
-      const userIdNumber = parseInt(userId);
+      const documentIdNumber = Number(documentId);
+      const userIdNumber = Number(userIdRaw);
 
-      // Vérifier si la base de données est configurée
-      if (!process.env.DATABASE_URL) {
-        return "Document supprimé avec succès (mode simulation). Configurez DATABASE_URL pour la persistance.";
-      }
+      if (!process.env.DATABASE_URL) return "Document deleted successfully (simulation mode). Configure DATABASE_URL for persistence.";
 
-      // Initialiser les tables si elles n'existent pas
       await this.documentService.initializeTables();
 
-      // Supprimer le document
       const result = await this.documentService.deleteDocument(documentIdNumber, userIdNumber);
 
       if (!result.success) {
-        console.error("❌ Erreur suppression document:", result.error);
+        console.error("❌ Document deletion error:", result.error);
         return result.error!;
       }
 
-      return "Document supprimé avec succès";
+      return "Document deleted successfully";
     } catch (error: unknown) {
-      console.error("❌ Erreur lors de la suppression du document:", error);
-
+      console.error("❌ Error during document deletion:", error);
       if (error && typeof error === 'object' && 'code' in error && 
           (error.code === "ECONNRESET" || error.code === "ECONNREFUSED")) {
-        return "Base de données non accessible. Vérifiez la configuration PostgreSQL.";
+        return "Database not accessible. Check PostgreSQL configuration.";
       }
-
-      return "Erreur lors de la suppression du document. Veuillez réessayer.";
+      return "Error while deleting document. Please try again.";
     }
   }
 
-  async deleteMultipleDocuments(prevState: unknown, formData: FormData): Promise<string> {
+  async deleteMultipleDocuments(_prevState: unknown, formData: FormData): Promise<string> {
     try {
-      const userId = formData.get("userId") as string;
+      const userIdRaw = this.getStringFromFormData(formData, "userId");
       const idsRaw = formData.getAll("documentIds") as string[];
 
-      if (!userId) {
-        return "ID utilisateur requis.";
-      }
+      if (!userIdRaw) return "User ID required.";
 
-      // Validation de l'ID utilisateur
-      const userIdValidation = DocumentValidator.validateUserId(userId);
-      if (!userIdValidation.isValid) {
-        return Object.values(userIdValidation.errors)[0] || "ID utilisateur invalide";
-      }
+      const userIdValidation = DocumentValidator.validateUserId(userIdRaw);
+      if (!userIdValidation.isValid) return Object.values(userIdValidation.errors)[0] || "Invalid user ID";
 
-      // Validation des IDs de documents
       const documentIdsValidation = DocumentValidator.validateDocumentIds(idsRaw);
-      if (!documentIdsValidation.isValid) {
-        return Object.values(documentIdsValidation.errors)[0] || "IDs de documents invalides";
-      }
+      if (!documentIdsValidation.isValid) return Object.values(documentIdsValidation.errors)[0] || "Invalid document IDs";
 
-      const userIdNumber = parseInt(userId);
+      const userIdNumber = Number(userIdRaw);
 
-      // Vérifier si la base de données est configurée
-      if (!process.env.DATABASE_URL) {
-        return `${idsRaw.length} document(s) supprimé(s) (mode simulation). Configurez DATABASE_URL pour la persistance.`;
-      }
+      if (!process.env.DATABASE_URL) return `${idsRaw.length} document(s) deleted (simulation mode). Configure DATABASE_URL for persistence.`;
 
       await this.documentService.initializeTables();
 
       const result = await this.documentService.deleteDocumentsBulk(userIdNumber, idsRaw);
 
-      if (!result.success) {
-        return result.error || "Erreur lors de la suppression multiple.";
-      }
+      if (!result.success) return result.error || "Error during multiple deletion.";
 
-      return `${result.data?.deletedCount || 0} document(s) supprimé(s) avec succès`;
+      return `${result.data?.deletedCount || 0} document(s) successfully deleted`;
     } catch (error: unknown) {
-      console.error("❌ Erreur lors de la suppression multiple:", error);
+      console.error("❌ Error during multiple deletion:", error);
       if (error && typeof error === 'object' && 'code' in error && 
           (error.code === "ECONNRESET" || error.code === "ECONNREFUSED")) {
-        return "Base de données non accessible. Vérifiez la configuration PostgreSQL.";
+        return "Database not accessible. Check PostgreSQL configuration.";
       }
-      return "Erreur lors de la suppression multiple. Veuillez réessayer.";
+      return "Error during multiple deletion. Please try again.";
     }
   }
 }
+
+

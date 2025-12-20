@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth, requireDossierOwnership } from "@/lib/security/routeGuards";
+import { requireAuth, requireFolderOwnership } from "@/lib/security/routeGuards";
 
 export async function GET(
   request: NextRequest,
@@ -14,22 +14,23 @@ export async function GET(
       return authResult;
     }
 
-    const dossierId = parseInt(id);
+    const folderId = Number.parseInt(id);
 
-    if (isNaN(dossierId)) {
+    if (Number.isNaN(folderId)) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
 
-    const ownershipCheck = await requireDossierOwnership(dossierId, authResult.userId);
+    const ownershipCheck = await requireFolderOwnership(folderId, authResult.userId);
     if (ownershipCheck) {
       return ownershipCheck;
     }
 
-    const dossier = await prisma.dossier.findFirst({
-      where: { id: dossierId, user_id: authResult.userId },
+    // Using prisma.folder
+    const folder = await prisma.folder.findFirst({
+      where: { id: folderId, user_id: authResult.userId },
       include: {
         documents: {
           include: {
@@ -42,35 +43,35 @@ export async function GET(
       },
     });
 
-    if (!dossier) {
+    if (!folder) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      dossier: {
-        id: dossier.id,
-        nom: dossier.nom,
-        created_at: dossier.created_at,
-        updated_at: dossier.updated_at,
-        documents: dossier.documents.map((dd) => ({
+      folder: {
+        id: folder.id,
+        name: folder.name,
+        created_at: folder.created_at,
+        updated_at: folder.updated_at,
+        documents: folder.documents.map((dd) => ({
           id: dd.document.id,
           title: dd.document.title,
           content: dd.document.content,
           tags: dd.document.tags,
-          favori: dd.document.favori,
+          is_favorite: dd.document.is_favorite ?? null, 
           created_at: dd.document.created_at,
           updated_at: dd.document.updated_at,
         })),
       },
     });
   } catch (error) {
-    console.error("❌ Erreur récupération dossier:", error);
+    console.error("❌ Error retrieving folder:", error);
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 500 }
     );
   }
@@ -87,30 +88,30 @@ export async function DELETE(
       return authResult;
     }
 
-    const dossierId = parseInt(id);
+    const folderId = Number.parseInt(id);
 
-    if (isNaN(dossierId)) {
+    if (Number.isNaN(folderId)) {
       return NextResponse.json(
-        { success: false, error: "Accès refusé" },
+        { success: false, error: "Access denied" },
         { status: 400 }
       );
     }
 
-    const ownershipCheck = await requireDossierOwnership(dossierId, authResult.userId);
+    const ownershipCheck = await requireFolderOwnership(folderId, authResult.userId);
     if (ownershipCheck) {
       return ownershipCheck;
     }
 
-    // Supprimer le dossier (les relations DossierDocument seront supprimées en cascade)
-    await prisma.dossier.delete({
-      where: { id: dossierId },
+    // Delete folder
+    await prisma.folder.delete({
+      where: { id: folderId },
     });
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("❌ Erreur suppression dossier:", error);
+    console.error("❌ Error deleting folder:", error);
     return NextResponse.json(
-      { success: false, error: "Accès refusé" },
+      { success: false, error: "Access denied" },
       { status: 500 }
     );
   }

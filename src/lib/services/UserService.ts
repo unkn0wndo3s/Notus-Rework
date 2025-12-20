@@ -20,7 +20,7 @@ export class UserService {
 
   async createUser(userData: Omit<CreateUserData, 'verificationToken'>): Promise<UserRepositoryResult<User>> {
     try {
-      // Générer un token de vérification
+      // Generate a verification token
       const verificationToken = this.emailService.generateVerificationToken();
 
       const createUserData: CreateUserData = {
@@ -28,14 +28,14 @@ export class UserService {
         verificationToken,
       };
 
-      // Créer l'utilisateur
+      // Create the user
       const result = await this.userRepository.createUser(createUserData);
 
       if (!result.success) {
         return result;
       }
 
-      // Envoyer l'email de vérification
+      // Send verification email
       const emailResult = await this.emailService.sendVerificationEmail(
         userData.email,
         verificationToken,
@@ -43,14 +43,14 @@ export class UserService {
       );
 
       if (!emailResult.success) {
-        console.error("❌ Erreur envoi email:", emailResult.error);
-        // Ne pas faire échouer la création d'utilisateur si l'email échoue
+        console.error("❌ Error sending email:", emailResult.error);
+        // Do not fail user creation if email fails
       }
 
       return result;
     } catch (error) {
-      console.error("❌ Erreur création utilisateur:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error creating user:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -63,23 +63,23 @@ export class UserService {
     providerId: string;
   }): Promise<UserRepositoryResult<User>> {
     try {
-      // Créer l'utilisateur OAuth sans mot de passe, avec email déjà vérifié
+      // Create OAuth user without password, with email already verified
       const result = await this.userRepository.createUser({
         email: userData.email,
         username: userData.username,
-        password: "", // Pas de mot de passe pour OAuth
+        password: "", // No password for OAuth
         firstName: userData.firstName,
         lastName: userData.lastName,
-        verificationToken: "", // Pas de token nécessaire
-        emailVerified: true, // Email déjà vérifié par Google
+        verificationToken: "", // No token needed
+        emailVerified: true, // Email already verified by Google
         provider: userData.provider,
         providerId: userData.providerId,
       });
 
       return result;
     } catch (error) {
-      console.error("❌ Erreur création utilisateur OAuth:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error creating OAuth user:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -88,22 +88,22 @@ export class UserService {
       const result = await this.userRepository.verifyUserEmail(token);
 
       if (result.success && result.data) {
-        // Envoyer un email de bienvenue
+        // Send welcome email
         const emailResult = await this.emailService.sendWelcomeEmail(
           result.data.email,
           result.data.first_name
         );
 
         if (!emailResult.success) {
-          console.error("❌ Erreur envoi email de bienvenue:", emailResult.error);
-          // Ne pas faire échouer la vérification si l'email échoue
+          console.error("❌ Error sending welcome email:", emailResult.error);
+          // Do not fail verification if email fails
         }
       }
 
       return result;
     } catch (error) {
-      console.error("❌ Erreur vérification email:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error verifying email:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -111,8 +111,8 @@ export class UserService {
     try {
       return await this.userRepository.updateUserProfile(userId, fields);
     } catch (error) {
-      console.error("❌ Erreur mise à jour profil:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error updating profile:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -120,8 +120,8 @@ export class UserService {
     try {
       return await this.userRepository.getUserById(userId);
     } catch (error) {
-      console.error("❌ Erreur récupération utilisateur:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error retrieving user:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -129,8 +129,8 @@ export class UserService {
     try {
       return await this.userRepository.getUserByEmail(email);
     } catch (error) {
-      console.error("❌ Erreur récupération utilisateur par email:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error retrieving user by email:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -138,8 +138,8 @@ export class UserService {
     try {
       return await this.userRepository.getAllUsers(limit, offset);
     } catch (error) {
-      console.error("❌ Erreur récupération utilisateurs:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error retrieving users:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -148,19 +148,19 @@ export class UserService {
       const result = await this.userRepository.toggleUserBan(userId, isBanned);
 
       if (result.success && result.data) {
-        // Envoyer un email de notification
+        // Send notification email
         const user = await this.userRepository.getUserById(userId);
         if (user.success && user.user) {
           if (isBanned) {
             await this.emailService.sendBanNotificationEmail(
               user.user.email,
-              user.user.first_name || "Utilisateur",
+              user.user.first_name || "User",
               reason || null
             );
           } else {
             await this.emailService.sendUnbanNotificationEmail(
               user.user.email,
-              user.user.first_name || "Utilisateur"
+              user.user.first_name || "User"
             );
           }
         }
@@ -168,8 +168,8 @@ export class UserService {
 
       return result;
     } catch (error) {
-      console.error("❌ Erreur bannissement utilisateur:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error banning user:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -177,8 +177,8 @@ export class UserService {
     try {
       return await this.userRepository.toggleUserAdmin(userId, isAdmin);
     } catch (error) {
-      console.error("❌ Erreur changement statut admin:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error changing admin status:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -186,7 +186,7 @@ export class UserService {
     try {
       return await this.userRepository.isUserAdmin(userId);
     } catch (error) {
-      console.error("❌ Erreur vérification statut admin:", error);
+      console.error("❌ Error verifying admin status:", error);
       return false;
     }
   }
@@ -196,14 +196,14 @@ export class UserService {
       const userResult = await this.userRepository.getUserByEmail(email);
       
       if (!userResult.success) {
-        // Pour des raisons de sécurité, on ne révèle pas si l'email existe ou non
+        // For security reasons, do not reveal if email exists or not
         return { success: true };
       }
 
       const user = userResult.user!;
 
-      // Vérifier si une demande de réinitialisation a déjà été faite récemment (dans les 5 dernières minutes)
-      // Cette logique devrait être dans le repository, mais pour simplifier on la met ici
+      // Check if a reset request has been made recently (within the last 5 minutes)
+      // This logic should be in the repository, but for simplicity we put it here
       const recentReset = await this.userRepository.query(
         "SELECT reset_token_expiry FROM users WHERE email = $1 AND reset_token_expiry > NOW() - INTERVAL '5 minutes'",
         [email]
@@ -213,60 +213,60 @@ export class UserService {
         return { success: true };
       }
 
-      // Générer un token de réinitialisation
+      // Generate a reset token
       const resetToken = this.emailService.generateVerificationToken();
-      const resetTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 heures
+      const resetTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-      // Sauvegarder le token en base
+      // Save token in database
       await this.userRepository.updatePasswordResetToken(user.id, resetToken, resetTokenExpiry);
 
-      // Envoyer l'email de réinitialisation
+      // Send reset email
       const emailResult = await this.emailService.sendPasswordResetEmail(
         email,
         resetToken,
-        user.first_name || "Utilisateur"
+        user.first_name || "User"
       );
 
       if (!emailResult.success) {
-        console.error("❌ Erreur envoi email:", emailResult.error);
-        return { success: false, error: "Erreur lors de l'envoi de l'email" };
+        console.error("❌ Error sending email:", emailResult.error);
+        return { success: false, error: "Error sending email" };
       }
 
       return { success: true };
     } catch (error) {
-      console.error("❌ Erreur envoi email de réinitialisation:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error sending reset email:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
   async resetPassword(token: string, newPassword: string): Promise<{ success: boolean; error?: string }> {
     try {
-      // Vérifier le token et sa validité
+      // Verify token and its validity
       const userResult = await this.userRepository.getUserByResetToken(token);
 
       if (!userResult.success) {
-        return { success: false, error: "Token invalide ou expiré" };
+        return { success: false, error: "Invalid or expired user" };
       }
 
       const user = userResult.user!;
       const notifSvc = new NotificationService();
 
-      // Hasher le nouveau mot de passe
+      // Hash new password
       const hashedPassword = await bcrypt.hash(newPassword, 12);
 
-      // Mettre à jour le mot de passe et supprimer le token
+      // Update password and delete token
       const updateResult = await this.userRepository.updatePassword(user.id, hashedPassword);
 
       if (!updateResult.success) {
-        return { success: false, error: updateResult.error || "Erreur lors de la mise à jour du mot de passe" };
+        return { success: false, error: updateResult.error || "Error updating password" };
       }
 
       await notifSvc.sendPasswordChangeNotification(user.id);
 
       return { success: true };
     } catch (error) {
-      console.error("❌ Erreur réinitialisation mot de passe:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error resetting password:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -275,32 +275,32 @@ export class UserService {
       const userResult = await this.userRepository.getUserByEmail(identifier);
 
       if (!userResult.success) {
-        return { success: false, error: "Identifiants invalides" };
+        return { success: false, error: "Invalid credentials" };
       }
 
       const user = userResult.user!;
 
       if (user.is_banned) {
-        return { success: false, error: "Ce compte a été banni" };
+        return { success: false, error: "This account has been banned" };
       }
 
       if (!user.password_hash) {
-        return { success: false, error: "Compte OAuth sans mot de passe" };
+        return { success: false, error: "OAuth account without password" };
       }
 
       const isValid = await bcrypt.compare(password, user.password_hash);
       if (!isValid) {
-        return { success: false, error: "Identifiants invalides" };
+        return { success: false, error: "Invalid credentials" };
       }
 
       if (!user.email_verified) {
-        return { success: false, error: "Email non vérifié" };
+        return { success: false, error: "Email not verified" };
       }
 
       return { success: true, user };
     } catch (error) {
-      console.error("❌ Erreur authentification:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error authenticating:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 }

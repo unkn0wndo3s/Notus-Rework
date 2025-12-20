@@ -11,29 +11,29 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const token = searchParams.get("token");
     if (!token) {
-      return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Access denied" }, { status: 400 });
     }
 
     let payload: any;
     try {
       payload = jwt.verify(token, secret);
     } catch (err) {
-      return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Access denied" }, { status: 400 });
     }
 
     const { id_doc, email, permission } = payload;
     if (!id_doc || !email) {
-      return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Access denied" }, { status: 400 });
     }
 
     const addRes = await documentService.addShare(id_doc, email, permission);
     if (!addRes.success) {
-      return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 500 });
+      return NextResponse.json({ success: false, error: "Access denied" }, { status: 500 });
     }
 
-    // Rediriger vers le document partagé
+    // Redirect to shared document
     return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/documents/${id_doc}`);
   } catch (error) {
-    return NextResponse.json({ success: false, error: "Accès refusé" }, { status: 500 });
+    return NextResponse.json({ success: false, error: "Access denied" }, { status: 500 });
   }
 }

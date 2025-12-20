@@ -24,10 +24,10 @@ export default async function RequestDetailPage({ params }: RouteParams) {
     <main className="space-y-6">
       <header className="text-center pt-10">
         <h1 className="text-3xl font-bold text-foreground">
-          Détails de la requête #{requestResult.request.id}
+          Request Details #{requestResult.request.id}
         </h1>
         <p className="mt-2 text-muted-foreground">
-          Consultez les informations de la requête et répondez à l'utilisateur
+          View request information and respond to the user
         </p>
       </header>
 

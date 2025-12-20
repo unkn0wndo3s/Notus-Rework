@@ -41,7 +41,7 @@ export default function ColorPickers({ currentColor, currentHighlight, onFormatC
           type="button"
           onClick={() => setShowColorPicker(!showColorPicker)}
           className="p-2 rounded transition-colors bg-muted hover:bg-muted/80 text-foreground"
-          title="Couleur du texte"
+          title="Text color"
         >
           <Icon name="textColor" className="h-5 w-5" />
           <div 
@@ -54,7 +54,7 @@ export default function ColorPickers({ currentColor, currentHighlight, onFormatC
           <div className="absolute top-full left-0 mt-1 p-3 bg-card rounded shadow-lg border border-border z-50">
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-foreground">
-                Couleur du texte
+                Text color
               </label>
               <input
                 type="color"
@@ -64,7 +64,7 @@ export default function ColorPickers({ currentColor, currentHighlight, onFormatC
                   onFormatChange('foreColor', color);
                 }}
                 className="w-full h-10 rounded border border-border cursor-pointer"
-                title="Sélectionner une couleur"
+                title="Select a color"
               />
               <button
                 type="button"
@@ -74,7 +74,7 @@ export default function ColorPickers({ currentColor, currentHighlight, onFormatC
                 }}
                 className="px-3 py-1 text-sm bg-muted hover:bg-muted/80 rounded transition-colors"
               >
-                Réinitialiser (Noir)
+                Reset (Black)
               </button>
             </div>
           </div>
@@ -87,7 +87,7 @@ export default function ColorPickers({ currentColor, currentHighlight, onFormatC
           type="button"
           onClick={() => setShowHighlightPicker(!showHighlightPicker)}
           className="p-2 rounded transition-colors bg-muted hover:bg-muted/80 text-foreground"
-          title="Couleur de surlignage"
+          title="Highlight color"
         >
           <Icon name="highlighter" className="h-5 w-5" />
           <div 
@@ -100,7 +100,7 @@ export default function ColorPickers({ currentColor, currentHighlight, onFormatC
           <div className="absolute top-full left-0 mt-1 p-3 bg-card rounded shadow-lg border border-border z-50">
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-foreground">
-                Couleur de surlignage
+                Highlight color
               </label>
               <input
                 type="color"
@@ -110,7 +110,7 @@ export default function ColorPickers({ currentColor, currentHighlight, onFormatC
                   onFormatChange('backColor', color);
                 }}
                 className="w-full h-10 rounded border border-border cursor-pointer"
-                title="Sélectionner une couleur de surlignage"
+                title="Select a highlight color"
               />
               <button
                 type="button"
@@ -120,7 +120,7 @@ export default function ColorPickers({ currentColor, currentHighlight, onFormatC
                 }}
                 className="px-3 py-1 text-sm bg-muted hover:bg-muted/80 rounded transition-colors"
               >
-                Supprimer le surlignage
+                Remove highlight
               </button>
             </div>
           </div>

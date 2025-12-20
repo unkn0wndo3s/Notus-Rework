@@ -16,86 +16,86 @@ import Icon from "@/components/Icon";
 import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 
-interface Dossier {
+interface Folder {
   id: number;
-  nom: string;
+  name: string;
   created_at: string;
   updated_at: string;
   documentCount: number;
 }
 
-export default function DossiersPage() {
+export default function FoldersPage() {
   const router = useRouter();
   const { data: session } = useSession();
-  const [dossiers, setDossiers] = useState<Dossier[]>([]);
+  const [folders, setFolders] = useState<Folder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newDossierName, setNewDossierName] = useState("");
+  const [newFolderName, setNewFolderName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
   useEffect(() => {
     if (session?.user?.id) {
-      loadDossiers();
+      loadFolders();
     }
   }, [session]);
 
-  const loadDossiers = async () => {
+  const loadFolders = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/dossiers");
+      const response = await fetch("/api/folders");
       if (response.ok) {
         const data = await response.json();
-        setDossiers(data.dossiers || []);
+        setFolders(data.folders || []);
       }
     } catch (error) {
-      console.error("Erreur lors du chargement des dossiers:", error);
+      console.error("Error loading folders:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleCreateDossier = async () => {
-    if (!newDossierName.trim()) return;
+  const handleCreateFolder = async () => {
+    if (!newFolderName.trim()) return;
     setIsCreating(true);
     try {
-      const response = await fetch("/api/dossiers", {
+      const response = await fetch("/api/folders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nom: newDossierName.trim() }),
+        body: JSON.stringify({ name: newFolderName.trim() }),
       });
       if (response.ok) {
         setShowCreateModal(false);
-        setNewDossierName("");
-        loadDossiers();
+        setNewFolderName("");
+        loadFolders();
       } else {
         const data = await response.json();
-        alert(data.error || "Erreur lors de la création du dossier");
+        alert(data.error || "Error creating folder");
       }
     } catch (error) {
-      console.error("Erreur lors de la création du dossier:", error);
-      alert("Erreur lors de la création du dossier");
+      console.error("Error creating folder:", error);
+      alert("Error creating folder");
     } finally {
       setIsCreating(false);
     }
   };
 
-  const handleDeleteDossier = async (id: number) => {
-    if (!confirm("Êtes-vous sûr de vouloir supprimer ce dossier ?")) return;
+  const handleDeleteFolder = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this folder?")) return;
     setDeletingId(id);
     try {
-      const response = await fetch(`/api/dossiers/${id}`, {
+      const response = await fetch(`/api/folders/${id}`, {
         method: "DELETE",
       });
       if (response.ok) {
-        loadDossiers();
+        loadFolders();
       } else {
         const data = await response.json();
-        alert(data.error || "Erreur lors de la suppression du dossier");
+        alert(data.error || "Error deleting folder");
       }
     } catch (error) {
-      console.error("Erreur lors de la suppression du dossier:", error);
-      alert("Erreur lors de la suppression du dossier");
+      console.error("Error deleting folder:", error);
+      alert("Error deleting folder");
     } finally {
       setDeletingId(null);
     }
@@ -106,7 +106,7 @@ export default function DossiersPage() {
       <main className="min-h-screen bg-background">
         <NavBar />
         <ContentWrapper maxWidth="lg">
-          <p>Vous devez être connecté pour accéder aux dossiers.</p>
+          <p>You must be logged in to access folders.</p>
         </ContentWrapper>
       </main>
     );
@@ -120,10 +120,10 @@ export default function DossiersPage() {
           <header className="flex items-center md:justify-between justify-start mb-4 gap-2 flex-wrap">
             <div>
               <h1 className="font-title text-4xl font-regular text-[var(--foreground)] hidden md:block mb-2">
-                Dossiers
+                Folders
               </h1>
               <p className="text-sm text-[var(--muted-foreground)] hidden md:block">
-                Organisez vos documents en dossiers
+                Organize your documents in folders
               </p>
             </div>
             <Button
@@ -132,37 +132,37 @@ export default function DossiersPage() {
               className="flex items-center gap-2"
             >
               <Icon name="plus" className="w-5 h-5" />
-              <span className="">Créer un dossier</span>
+              <span className="">Create a folder</span>
             </Button>
           </header>
 
           {isLoading ? (
             <div className="text-center py-16">
               <Icon name="spinner" className="w-10 h-10 mx-auto animate-spin text-[var(--primary)]" />
-              <p className="mt-4 text-[var(--muted-foreground)]">Chargement des dossiers...</p>
+              <p className="mt-4 text-[var(--muted-foreground)]">Loading folders...</p>
             </div>
-          ) : dossiers.length === 0 ? (
+          ) : folders.length === 0 ? (
             <Card className="text-center py-16">
               <Card.Content>
                 <div className="text-[var(--muted-foreground)] mb-6">
                   <Icon name="folder" className="w-20 h-20 mx-auto opacity-50" />
                 </div>
-                <Card.Title className="text-xl mb-3 font-semibold">Aucun dossier</Card.Title>
+                <Card.Title className="text-xl mb-3 font-semibold">No folders</Card.Title>
                 <Card.Description className="mb-6">
-                  Créez votre premier dossier pour organiser vos documents
+                  Create your first folder to organize your documents
                 </Card.Description>
                 <Button
                   onClick={() => setShowCreateModal(true)}
                   className="flex items-center gap-2 mx-auto"
                 >
                   <Icon name="plus" className="w-5 h-5" />
-                  <span>Créer un dossier</span>
+                  <span>Create a folder</span>
                 </Button>
               </Card.Content>
             </Card>
           ) : (
             <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-              {dossiers.map((dossier) => {
+              {folders.map((folder) => {
                 const formatDate = (dateString: string) => {
                   const date = new Date(dateString);
                   const day = String(date.getDate()).padStart(2, "0");
@@ -173,19 +173,19 @@ export default function DossiersPage() {
 
                 return (
                   <Card
-                    key={dossier.id}
+                    key={folder.id}
                     className={cn(
                       "group cursor-pointer overflow-hidden",
                       "bg-[var(--card)] border border-[var(--border)]",
                       "hover:shadow-lg",
                       "transition-all duration-200 ease-in-out"
                     )}
-                    onClick={() => router.push(`/dossiers/${dossier.id}`)}
+                    onClick={() => router.push(`/folders/${folder.id}`)}
                   >
                     <Card.Content className="">
-                      {/* Header avec icône et menu */}
+                      {/* Header with icon and menu */}
                       <div className="flex items-start justify-between mb-6">
-                        {/* Icône de dossier en haut à gauche */}
+                        {/* Folder icon top left */}
                         <div className={cn(
                           "flex items-center justify-center",
                           "w-14 h-14 rounded-xl",
@@ -194,7 +194,7 @@ export default function DossiersPage() {
                         )}>
                           <Icon name="folder" className="w-8 h-8 block" />
                         </div>
-                        {/* Menu trois points en haut à droite */}
+                        {/* Three dots menu top right */}
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <button
@@ -205,7 +205,7 @@ export default function DossiersPage() {
                                 "hover:bg-[var(--muted)]",
                                 "transition-colors duration-200",
                               )}
-                              aria-label="Options du dossier"
+                              aria-label="Folder options"
                             >
                               <Icon name="dotsVertical" className="w-5 h-5" />
                             </button>
@@ -215,19 +215,19 @@ export default function DossiersPage() {
                               variant="destructive"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleDeleteDossier(dossier.id);
+                                handleDeleteFolder(folder.id);
                               }}
-                              disabled={deletingId === dossier.id}
+                              disabled={deletingId === folder.id}
                             >
-                              {deletingId === dossier.id ? (
+                              {deletingId === folder.id ? (
                                 <>
                                   <Icon name="spinner" className="w-4 h-4 animate-spin" />
-                                  Suppression...
+                                  Deleting...
                                 </>
                               ) : (
                                 <>
                                   <Icon name="trash" className="w-4 h-4" />
-                                  Supprimer
+                                  Delete
                                 </>
                               )}
                             </DropdownMenuItem>
@@ -235,18 +235,18 @@ export default function DossiersPage() {
                         </DropdownMenu>
                       </div>
 
-                      {/* Nom du dossier au centre */}
+                      {/* Folder name center */}
                       <h3 className="font-bold text-[var(--foreground)] text-xl mb-6 line-clamp-2">
-                        {dossier.nom}
+                        {folder.name}
                       </h3>
 
-                      {/* Footer avec nombre de notes et date */}
+                      {/* Footer with note count and date */}
                       <div className="flex items-center justify-between text-sm text-[var(--muted-foreground)]">
                         <span>
-                          {dossier.documentCount} note{dossier.documentCount > 1 ? "s" : ""}
+                          {folder.documentCount} note{folder.documentCount > 1 ? "s" : ""}
                         </span>
                         <span>
-                          {formatDate(dossier.updated_at)}
+                          {formatDate(folder.updated_at)}
                         </span>
                       </div>
                     </Card.Content>
@@ -262,22 +262,22 @@ export default function DossiersPage() {
         isOpen={showCreateModal}
         onClose={() => {
           setShowCreateModal(false);
-          setNewDossierName("");
+          setNewFolderName("");
         }}
-        title="Créer un dossier"
+        title="Create a folder"
         size="md"
       >
         <Modal.Content>
           <div className="space-y-4">
             <Input
-              label="Nom du dossier"
+              label="Folder name"
               type="text"
-              value={newDossierName}
-              onChange={(e) => setNewDossierName(e.target.value)}
-              placeholder="Ex: Projets, Notes personnelles..."
+              value={newFolderName}
+              onChange={(e) => setNewFolderName(e.target.value)}
+              placeholder="Ex: Projects, Personal Notes..."
               onKeyDown={(e) => {
-                if (e.key === "Enter" && newDossierName.trim() && !isCreating) {
-                  handleCreateDossier();
+                if (e.key === "Enter" && newFolderName.trim() && !isCreating) {
+                  handleCreateFolder();
                 }
               }}
               autoFocus
@@ -290,18 +290,18 @@ export default function DossiersPage() {
               variant="ghost"
               onClick={() => {
                 setShowCreateModal(false);
-                setNewDossierName("");
+                setNewFolderName("");
               }}
             >
-              Annuler
+              Cancel
             </Button>
             <Button
-              onClick={handleCreateDossier}
-              disabled={!newDossierName.trim() || isCreating}
+              onClick={handleCreateFolder}
+              disabled={!newFolderName.trim() || isCreating}
               variant="primary"
             >
               <Icon name="plus" className="w-4 h-4" />
-              Créer
+              Create
             </Button>
           </div>
         </Modal.Footer>
@@ -309,4 +309,3 @@ export default function DossiersPage() {
     </main>
   );
 }
-

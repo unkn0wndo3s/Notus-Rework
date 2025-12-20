@@ -2,8 +2,8 @@ import Link from "next/link";
 import Icon from "@/components/Icon";
 
 export const metadata = {
-  title: "Compte banni - Notus",
-  description: "Votre compte a été banni",
+  title: "Account Banned - Notus",
+  description: "Your account has been banned",
 };
 
 export default function BannedPage() {
@@ -15,10 +15,10 @@ export default function BannedPage() {
             <Icon name="alert" className="w-full h-full" />
           </div>
           <h2 className="mt-6 text-3xl font-extrabold text-foreground">
-            Compte banni
+            Account Banned
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Votre compte a été suspendu par un administrateur.
+            Your account has been suspended by an administrator.
           </p>
         </header>
 
@@ -29,12 +29,12 @@ export default function BannedPage() {
             </div>
             <div className="ml-3">
               <h3 className="text-sm font-medium text-destructive">
-                Accès refusé
+                Access Denied
               </h3>
               <div className="mt-2 text-sm text-destructive">
                 <p>
-                  Vous ne pouvez plus accéder à cette application. Si vous
-                  pensez qu'il s'agit d'une erreur, contactez un administrateur.
+                  You can no longer access this application. If you
+                  think this is an error, please contact an administrator.
                 </p>
               </div>
             </div>
@@ -46,11 +46,10 @@ export default function BannedPage() {
             href="/app"
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring"
           >
-            Retour à l'accueil
+            Back to Home
           </Link>
         </div>
       </section>
     </main>
   );
 }
-

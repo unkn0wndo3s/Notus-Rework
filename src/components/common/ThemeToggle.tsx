@@ -6,7 +6,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 export default function ThemeToggle() {
   const { isDark, toggleTheme } = useTheme();
 
-  // Bouton temporairement masqué
+  // Button temporarily hidden
   return null;
 
   /* return (
@@ -15,10 +15,10 @@ export default function ThemeToggle() {
       variant="ghost"
       size="icon"
       className="fixed top-4 right-4 z-50 bg-background/80 backdrop-blur-sm border border-border shadow-lg hover:shadow-xl transition-all duration-200"
-      aria-label={isDark ? "Passer au mode clair" : "Passer au mode sombre"}
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
     >
       {isDark ? (
-        // Icône soleil pour le mode clair
+        // Sun icon for light mode
         <svg
           className="h-5 w-5"
           fill="none"
@@ -30,7 +30,7 @@ export default function ThemeToggle() {
           <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
         </svg>
       ) : (
-        // Icône lune pour le mode sombre
+        // Moon icon for dark mode
         <svg
           className="h-5 w-5"
           fill="none"

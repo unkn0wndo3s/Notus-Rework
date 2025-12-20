@@ -5,19 +5,19 @@ import { UserValidator } from "../../validators/UserValidator";
 import { ActionResult } from "../../types";
 
 export class UserProfileService {
-  private userService: UserService;
+  private readonly userService: UserService;
 
   constructor() {
     this.userService = new UserService();
   }
 
-  async updateUserProfile(prevState: unknown, formData: FormData): Promise<string> {
+  async updateUserProfile(_prevState: unknown, formData: FormData): Promise<string> {
     try {
       const session = await getServerSession(authOptions);
       const userIdRaw = session?.user?.id;
 
       if (!userIdRaw) {
-        return "Vous devez être connecté pour modifier votre profil.";
+        return "You must be logged in to modify your profile.";
       }
 
       const email = formData.get("email") as string || undefined;
@@ -27,7 +27,7 @@ export class UserProfileService {
       const profileImage = formData.get("profileImage") as string || undefined;
       const bannerImage = formData.get("bannerImage") as string || undefined;
 
-      // Validation des données de profil
+      // Profile data validation
       const profileData = {
         email: email?.trim(),
         username: username?.trim(),
@@ -39,7 +39,7 @@ export class UserProfileService {
 
       const validation = UserValidator.validateProfileData(profileData);
       if (!validation.isValid) {
-        return Object.values(validation.errors)[0] || "Données invalides";
+        return Object.values(validation.errors)[0] || "Invalid data";
       }
 
       const fields: Record<string, string> = {};
@@ -51,36 +51,36 @@ export class UserProfileService {
       if (bannerImage !== undefined) fields.bannerImage = bannerImage;
 
       if (Object.keys(fields).length === 0) {
-        return "Aucun changement détecté.";
+        return "No changes detected.";
       }
 
       if (!process.env.DATABASE_URL) {
-        return "Profil mis à jour (mode simulation). Configurez DATABASE_URL pour la persistance.";
+        return "Profile updated (simulation mode). Configure DATABASE_URL for persistence.";
       }
 
       await this.userService.initializeTables();
 
-      const userId = parseInt(String(userIdRaw));
+      const userId = Number(String(userIdRaw));
       const result = await this.userService.updateUserProfile(userId, fields);
 
       if (!result.success) {
-        return result.error || "Erreur lors de la mise à jour du profil.";
+        return result.error || "Error during profile update.";
       }
 
-      return "Profil mis à jour avec succès !";
+      return "Profile updated successfully!";
     } catch (error: unknown) {
-      console.error("❌ Erreur mise à jour profil:", error);
+      console.error("❌ Profile update error:", error);
       if (error && typeof error === 'object' && 'code' in error && 
           (error.code === "ECONNRESET" || error.code === "ECONNREFUSED")) {
-        return "Base de données non accessible. Vérifiez la configuration PostgreSQL.";
+        return "Database not accessible. Check PostgreSQL configuration.";
       }
-      return "Erreur lors de la mise à jour du profil. Veuillez réessayer.";
+      return "Error during profile update. Please try again.";
     }
   }
 
   async getUserProfile(userId: number): Promise<ActionResult> {
     try {
-      // Vérifier si la base de données est configurée
+      // Check if database is configured
       if (!process.env.DATABASE_URL) {
         return {
           success: true,
@@ -108,16 +108,16 @@ export class UserProfileService {
         };
       }
 
-      // Initialiser les tables si elles n'existent pas
+      // Initialize tables if they don't exist
       await this.userService.initializeTables();
 
-      // Récupérer les données complètes de l'utilisateur
+      // Retrieve full user data
       const result = await this.userService.getUserById(userId);
 
       if (!result.success) {
         return {
           success: false,
-          error: result.error || "Utilisateur non trouvé",
+          error: result.error || "User not found",
         };
       }
 
@@ -126,34 +126,34 @@ export class UserProfileService {
         user: result.user,
       };
     } catch (error: unknown) {
-      console.error("❌ Erreur lors de la récupération du profil utilisateur:", error);
+      console.error("❌ Error while fetching user profile:", error);
       return {
         success: false,
-        error: "Erreur lors de la récupération du profil",
+        error: "Error while fetching profile",
       };
     }
   }
 
   async getUserIdByEmail(email: string): Promise<ActionResult> {
     try {
-      // Vérifier si la base de données est configurée
+      // Check if database is configured
       if (!process.env.DATABASE_URL) {
         return {
           success: true,
-          userId: "1", // ID de simulation
+          userId: "1", // Simulation ID
         };
       }
 
-      // Initialiser les tables si elles n'existent pas
+      // Initialize tables if they don't exist
       await this.userService.initializeTables();
 
-      // Récupérer l'ID utilisateur par email
+      // Retrieve user ID by email
       const result = await this.userService.getUserByEmail(email);
 
       if (!result.success) {
         return {
           success: false,
-          error: "Utilisateur non trouvé",
+          error: "User not found",
         };
       }
 
@@ -162,11 +162,12 @@ export class UserProfileService {
         userId: result.user!.id.toString(),
       };
     } catch (error: unknown) {
-      console.error("❌ Erreur lors de la récupération de l'ID utilisateur:", error);
+      console.error("❌ Error while fetching user ID:", error);
       return {
         success: false,
-        error: "Erreur lors de la récupération de l'ID utilisateur",
+        error: "Error while fetching user ID",
       };
     }
   }
 }
+

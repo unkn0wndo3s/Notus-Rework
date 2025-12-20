@@ -5,7 +5,7 @@ import { User, UserRepositoryResult, CreateUserData, UpdateUserProfileData } fro
 export class PrismaUserRepository {
   async createUser(userData: CreateUserData): Promise<UserRepositoryResult<User>> {
     try {
-      // Hacher le mot de passe avec salt
+      // Hash password with salt
       const passwordHash = await bcrypt.hash(userData.password, 12);
       
       const user = await prisma.user.create({
@@ -28,40 +28,43 @@ export class PrismaUserRepository {
         user,
       };
     } catch (error: unknown) {
-      console.error('❌ Erreur création utilisateur:', error);
-      
-      // Gérer les erreurs de contrainte unique Prisma
-      if (error && typeof error === 'object' && 'code' in error) {
-        const prismaError = error as any;
-        if (prismaError.code === 'P2002') {
-          // Erreur de contrainte unique
-          const target = prismaError.meta?.target;
-          if (Array.isArray(target)) {
-            if (target.includes('email')) {
-              return {
-                success: false,
-                error: 'Un compte existe déjà avec cette adresse email',
-              };
-            }
-            if (target.includes('username')) {
-              return {
-                success: false,
-                error: 'Ce nom d\'utilisateur est déjà utilisé',
-              };
-            }
-          }
-          return {
-            success: false,
-            error: 'Cette information est déjà utilisée par un autre compte',
-          };
-        }
-      }
-      
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Erreur inconnue',
-      };
+      console.error('❌ Error creating user:', error);
+      return this.handleCreateUserError(error);
     }
+  }
+
+  private handleCreateUserError(error: unknown): UserRepositoryResult<User> {
+    // Handle Prisma unique constraint errors
+    if (error && typeof error === 'object' && 'code' in error) {
+      const prismaError = error as any;
+      if (prismaError.code === 'P2002') {
+        // Unique constraint error
+        const target = prismaError.meta?.target;
+        if (Array.isArray(target)) {
+          if (target.includes('email')) {
+            return {
+              success: false,
+              error: 'An account already exists with this email address',
+            };
+          }
+          if (target.includes('username')) {
+            return {
+              success: false,
+              error: 'This username is already taken',
+            };
+          }
+        }
+        return {
+          success: false,
+          error: 'This information is already used by another account',
+        };
+      }
+    }
+    
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
   }
 
   async getUserByEmail(email: string): Promise<UserRepositoryResult<User>> {
@@ -73,7 +76,7 @@ export class PrismaUserRepository {
       if (!user) {
         return {
           success: false,
-          error: 'Utilisateur non trouvé',
+          error: 'User not found',
         };
       }
 
@@ -82,10 +85,10 @@ export class PrismaUserRepository {
         user,
       };
     } catch (error: unknown) {
-      console.error('❌ Erreur récupération utilisateur par email:', error);
+      console.error('❌ Error retrieving user by email:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Erreur inconnue',
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -99,7 +102,7 @@ export class PrismaUserRepository {
       if (!user) {
         return {
           success: false,
-          error: 'Utilisateur non trouvé',
+          error: 'User not found',
         };
       }
 
@@ -108,10 +111,10 @@ export class PrismaUserRepository {
         user,
       };
     } catch (error: unknown) {
-      console.error('❌ Erreur récupération utilisateur par ID:', error);
+      console.error('❌ Error retrieving user by ID:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Erreur inconnue',
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -135,10 +138,10 @@ export class PrismaUserRepository {
         user,
       };
     } catch (error: unknown) {
-      console.error('❌ Erreur mise à jour utilisateur:', error);
+      console.error('❌ Error updating user:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Erreur inconnue',
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -155,10 +158,10 @@ export class PrismaUserRepository {
         user,
       };
     } catch (error: unknown) {
-      console.error('❌ Erreur basculement bannissement:', error);
+      console.error('❌ Error toggling ban:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Erreur inconnue',
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -175,10 +178,10 @@ export class PrismaUserRepository {
         user,
       };
     } catch (error: unknown) {
-      console.error('❌ Erreur basculement admin:', error);
+      console.error('❌ Error toggling admin:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Erreur inconnue',
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -192,7 +195,7 @@ export class PrismaUserRepository {
 
       return user?.is_admin || false;
     } catch (error: unknown) {
-      console.error('❌ Erreur vérification admin:', error);
+      console.error('❌ Error verifying admin:', error);
       return false;
     }
   }
@@ -206,7 +209,7 @@ export class PrismaUserRepository {
       if (!user) {
         return {
           success: false,
-          error: 'Token de vérification invalide',
+          error: 'Invalid verification token',
         };
       }
 
@@ -223,10 +226,10 @@ export class PrismaUserRepository {
         user: updatedUser,
       };
     } catch (error: unknown) {
-      console.error('❌ Erreur vérification email:', error);
+      console.error('❌ Error verifying email:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Erreur inconnue',
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -246,10 +249,10 @@ export class PrismaUserRepository {
         user,
       };
     } catch (error: unknown) {
-      console.error('❌ Erreur mise à jour token reset:', error);
+      console.error('❌ Error updating reset token:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Erreur inconnue',
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -268,7 +271,7 @@ export class PrismaUserRepository {
       if (!user) {
         return {
           success: false,
-          error: 'Token de réinitialisation invalide ou expiré',
+          error: 'Invalid or expired reset token',
         };
       }
 
@@ -287,10 +290,10 @@ export class PrismaUserRepository {
         user: updatedUser,
       };
     } catch (error: unknown) {
-      console.error('❌ Erreur mise à jour mot de passe:', error);
+      console.error('❌ Error updating password:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Erreur inconnue',
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -306,18 +309,18 @@ export class PrismaUserRepository {
         users,
       };
     } catch (error: unknown) {
-      console.error('❌ Erreur récupération utilisateurs:', error);
+      console.error('❌ Error retrieving users:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Erreur inconnue',
+        error: error instanceof Error ? error.message : 'Unknown error',
         users: [],
       };
     }
   }
 
   async initializeTables(): Promise<void> {
-    // Prisma gère automatiquement la création des tables via les migrations
-    // Cette méthode est conservée pour la compatibilité
-    return Promise.resolve();
+    // Prisma handles table creation automatically via migrations
+    // This method is kept for compatibility
+    return;
   }
 }

@@ -18,7 +18,7 @@ export class PrismaUserService {
 
   async createUser(userData: Omit<CreateUserData, 'verificationToken'>): Promise<UserRepositoryResult<User>> {
     try {
-      // Générer un token de vérification
+      // Generate a verification token
       const verificationToken = this.emailService.generateVerificationToken();
 
       const createUserData: CreateUserData = {
@@ -26,14 +26,14 @@ export class PrismaUserService {
         verificationToken,
       };
 
-      // Créer l'utilisateur
+      // Create the user
       const result = await this.userRepository.createUser(createUserData);
 
       if (!result.success) {
         return result;
       }
 
-      // Envoyer l'email de vérification
+      // Send verification email
       const emailResult = await this.emailService.sendVerificationEmail(
         userData.email,
         verificationToken,
@@ -41,14 +41,14 @@ export class PrismaUserService {
       );
 
       if (!emailResult.success) {
-        console.error("❌ Erreur envoi email:", emailResult.error);
-        // Ne pas faire échouer la création d'utilisateur si l'email échoue
+        console.error("❌ Error sending email:", emailResult.error);
+        // Do not fail user creation if email fails
       }
 
       return result;
     } catch (error) {
-      console.error("❌ Erreur création utilisateur:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error creating user:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -57,15 +57,15 @@ export class PrismaUserService {
       const result = await this.userRepository.verifyEmail(token);
 
       if (result.success && result.user) {
-        // Envoyer un email de bienvenue
+        // Send welcome email
         const emailResult = await this.emailService.sendWelcomeEmail(
           result.user.email,
-          result.user.first_name || "Utilisateur"
+          result.user.first_name || "User"
         );
 
         if (!emailResult.success) {
-          console.error("❌ Erreur envoi email de bienvenue:", emailResult.error);
-          // Ne pas faire échouer la vérification si l'email échoue
+          console.error("❌ Error sending welcome email:", emailResult.error);
+          // Do not fail verification if email fails
         }
 
         return result;
@@ -73,8 +73,8 @@ export class PrismaUserService {
 
       return result;
     } catch (error) {
-      console.error("❌ Erreur vérification email:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error verifying email:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -82,8 +82,8 @@ export class PrismaUserService {
     try {
       return await this.userRepository.updateUser(userId, fields);
     } catch (error) {
-      console.error("❌ Erreur mise à jour profil:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error updating profile:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -91,8 +91,8 @@ export class PrismaUserService {
     try {
       return await this.userRepository.getUserById(userId);
     } catch (error) {
-      console.error("❌ Erreur récupération utilisateur:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error retrieving user:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -100,8 +100,8 @@ export class PrismaUserService {
     try {
       return await this.userRepository.getUserByEmail(email);
     } catch (error) {
-      console.error("❌ Erreur récupération utilisateur par email:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error retrieving user by email:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -109,8 +109,8 @@ export class PrismaUserService {
     try {
       return await this.userRepository.getAllUsers();
     } catch (error) {
-      console.error("❌ Erreur récupération utilisateurs:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error retrieving users:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -119,17 +119,17 @@ export class PrismaUserService {
       const result = await this.userRepository.toggleBan(userId, isBanned);
 
       if (result.success && result.user) {
-        // Envoyer un email de notification
+        // Send notification email
         if (isBanned) {
           await this.emailService.sendBanNotificationEmail(
             result.user.email,
-            result.user.first_name || "Utilisateur",
-            reason || "Aucune raison spécifiée"
+            result.user.first_name || "User",
+            reason || "No reason specified"
           );
         } else {
           await this.emailService.sendUnbanNotificationEmail(
             result.user.email,
-            result.user.first_name || "Utilisateur"
+            result.user.first_name || "User"
           );
         }
 
@@ -138,8 +138,8 @@ export class PrismaUserService {
 
       return result;
     } catch (error) {
-      console.error("❌ Erreur bannissement utilisateur:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error banning user:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -153,8 +153,8 @@ export class PrismaUserService {
 
       return result;
     } catch (error) {
-      console.error("❌ Erreur changement statut admin:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error changing admin status:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -162,7 +162,7 @@ export class PrismaUserService {
     try {
       return await this.userRepository.isUserAdmin(userId);
     } catch (error) {
-      console.error("❌ Erreur vérification statut admin:", error);
+      console.error("❌ Error verifying admin status:", error);
       return false;
     }
   }
@@ -172,48 +172,48 @@ export class PrismaUserService {
       const userResult = await this.userRepository.getUserByEmail(email);
       
       if (!userResult.success) {
-        // Pour des raisons de sécurité, on ne révèle pas si l'email existe ou non
+        // For security reasons, do not reveal if email exists or not
         return { success: true };
       }
 
       const user = userResult.user!;
 
-      // Générer un token de réinitialisation
+      // Generate a reset token
       const resetToken = this.emailService.generateVerificationToken();
-      const resetTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 heures
+      const resetTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-      // Sauvegarder le token en base
+      // Save token in database
       await this.userRepository.updatePasswordResetToken(email, resetToken, resetTokenExpiry);
 
-      // Envoyer l'email de réinitialisation
+      // Send reset email
       const emailResult = await this.emailService.sendPasswordResetEmail(
         email,
         resetToken,
-        user.first_name || "Utilisateur"
+        user.first_name || "User"
       );
 
       if (!emailResult.success) {
-        console.error("❌ Erreur envoi email:", emailResult.error);
-        return { success: false, error: "Erreur lors de l'envoi de l'email" };
+        console.error("❌ Error sending email:", emailResult.error);
+        return { success: false, error: "Error sending email" };
       }
 
       return { success: true };
     } catch (error) {
-      console.error("❌ Erreur envoi email de réinitialisation:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error sending reset email:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
   async resetPassword(token: string, newPassword: string): Promise<{ success: boolean; error?: string }> {
     try {
-      // Hasher le nouveau mot de passe
+      // Hash new password
       const hashedPassword = await bcrypt.hash(newPassword, 12);
 
-      // Mettre à jour le mot de passe et supprimer le token
+      // Update password and delete token
       const updateResult = await this.userRepository.updatePassword(token, hashedPassword);
 
       if (!updateResult.success) {
-        return { success: false, error: updateResult.error || "Erreur lors de la mise à jour du mot de passe" };
+        return { success: false, error: updateResult.error || "Error updating password" };
       }
 
       // Create an in-app notification informing the user their password was changed
@@ -222,7 +222,7 @@ export class PrismaUserService {
         if (updateResult.user) {
           await notifSvc.sendNotification(null, updateResult.user.id, {
             type: "password-changed",
-            message: "Votre mot de passe a été modifié.",
+            message: "Your password has been changed.",
             timestamp: new Date().toISOString(),
           });
         }
@@ -232,8 +232,8 @@ export class PrismaUserService {
 
       return { success: true };
     } catch (error) {
-      console.error("❌ Erreur réinitialisation mot de passe:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error resetting password:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 
@@ -242,32 +242,32 @@ export class PrismaUserService {
       const userResult = await this.userRepository.getUserByEmail(identifier);
 
       if (!userResult.success) {
-        return { success: false, error: "Identifiants invalides" };
+        return { success: false, error: "Invalid credentials" };
       }
 
       const user = userResult.user!;
 
       if (user.is_banned) {
-        return { success: false, error: "Ce compte a été banni" };
+        return { success: false, error: "This account has been banned" };
       }
 
       if (!user.password_hash) {
-        return { success: false, error: "Compte OAuth sans mot de passe" };
+        return { success: false, error: "OAuth account without password" };
       }
 
       const isValid = await bcrypt.compare(password, user.password_hash);
       if (!isValid) {
-        return { success: false, error: "Identifiants invalides" };
+        return { success: false, error: "Invalid credentials" };
       }
 
       if (!user.email_verified) {
-        return { success: false, error: "Email non vérifié" };
+        return { success: false, error: "Email not verified" };
       }
 
       return { success: true, user };
     } catch (error) {
-      console.error("❌ Erreur authentification:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Erreur inconnue" };
+      console.error("❌ Error authenticating:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   }
 }

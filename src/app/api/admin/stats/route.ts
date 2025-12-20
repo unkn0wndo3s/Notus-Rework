@@ -5,14 +5,14 @@ import { requireAdmin } from "@/lib/security/routeGuards";
 
 class StatsRepository extends BaseRepository {
   async initializeTables(): Promise<void> {
-    // Pas besoin d'initialiser pour les stats
+    // No initialization needed for stats
   }
 
   private async addColumnIfNotExists(tableName: string, columnName: string, columnDefinition: string): Promise<void> {
     try {
       await this.query(`ALTER TABLE ${tableName} ADD COLUMN IF NOT EXISTS ${columnName} ${columnDefinition}`);
     } catch (error) {
-      // Ignorer l'erreur si la colonne existe déjà
+      // Ignore error if column already exists
     }
   }
 
@@ -58,10 +58,10 @@ class StatsRepository extends BaseRepository {
   }
 
   async getSharesCreatedSince(days: number): Promise<number> {
-    // S'assurer que la colonne share_at existe
+    // Ensure the share_at column exists
     await this.ensureSharesShareAt();
     
-    // Vérifier si la colonne existe avant de faire la requête
+    // Check if the column exists before making the query
     try {
       const result = await this.query<{ count: string }>(
         `SELECT COUNT(*) as count 
@@ -72,8 +72,8 @@ class StatsRepository extends BaseRepository {
       );
       return parseInt(result.rows[0]?.count || "0", 10);
     } catch (error) {
-      // Si la colonne n'existe toujours pas, retourner le total
-      console.warn("⚠️ Colonne share_at non disponible pour shares, utilisation du total");
+      // If the column still doesn't exist, return the total
+      console.warn("⚠️ share_at column not available for shares, using total");
       return await this.getTotalShares();
     }
   }
@@ -141,7 +141,7 @@ class StatsRepository extends BaseRepository {
         count: parseInt(row.count || "0", 10),
       }));
     } catch (error) {
-      console.warn("⚠️ Erreur récupération utilisateurs groupés:", error);
+      console.warn("⚠️ Error retrieving grouped users:", error);
       return [];
     }
   }
@@ -188,7 +188,7 @@ class StatsRepository extends BaseRepository {
         count: parseInt(row.count || "0", 10),
       }));
     } catch (error) {
-      console.warn("⚠️ Erreur récupération documents groupés:", error);
+      console.warn("⚠️ Error retrieving grouped documents:", error);
       return [];
     }
   }
@@ -238,7 +238,7 @@ class StatsRepository extends BaseRepository {
         count: parseInt(row.count || "0", 10),
       }));
     } catch (error) {
-      console.warn("⚠️ Erreur récupération partages groupés:", error);
+      console.warn("⚠️ Error retrieving grouped shares:", error);
       return [];
     }
   }
@@ -258,7 +258,7 @@ export async function GET(request: Request) {
     const type = searchParams.get('type') as 'users' | 'documents' | 'shares' | null;
     const period = (searchParams.get('period') as 'day' | 'week' | 'month' | 'year') || 'week';
 
-    // Si un type spécifique est demandé, retourner uniquement les données groupées pour ce type
+    // If a specific type is requested, return only grouped data for that type
     if (type && ['users', 'documents', 'shares'].includes(type)) {
       let groupedData: Array<{ date: string; count: number }> = [];
       
@@ -278,7 +278,7 @@ export async function GET(request: Request) {
       });
     }
 
-    // Sinon, retourner toutes les statistiques de base (sans données groupées)
+    // Otherwise, return all base statistics (without grouped data)
     const [
       totalUsers,
       totalDocuments,
@@ -331,11 +331,11 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    console.error("❌ Erreur récupération statistiques:", error);
+    console.error("❌ Error retrieving statistics:", error);
     return NextResponse.json(
       {
         success: false,
-        error: "Accès refusé",
+        error: "Access denied",
       },
       { status: 500 }
     );
