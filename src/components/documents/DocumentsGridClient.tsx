@@ -1,14 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useActionState, startTransition } from "react";
-import { deleteMultipleDocumentsAction } from "@/lib/actions";
+import { useState, useEffect, useActionState, startTransition } from "react";
+import { deleteMultipleDocumentsAction } from "@/actions/documentActions";
 import { addDocumentsToFolder as addDocumentsToFolderAction } from "@/actions/folderActions";
 import DocumentCard from "@/components/documents/DocumentCard";
 import SelectionBar from "@/components/documents/SelectionBar";
 import ConnectionWarning from "@/components/common/ConnectionWarning";
 import { useSelection } from "@/contexts/SelectionContext";
-import Icon from "@/components/Icon";
 import { Document, LocalDocument, AnyDocument } from "@/lib/types";
 
 const LOCAL_DOCS_KEY = "notus.local.documents";
@@ -18,10 +16,10 @@ interface DocumentsGridClientProps {
   currentUserId?: string | number | null;
 }
 
-export default function DocumentsGridClient({ documents: serverDocuments = [], currentUserId }: DocumentsGridClientProps) {
+export default function DocumentsGridClient({ documents: serverDocuments = [], currentUserId }: Readonly<DocumentsGridClientProps>) {
   const [localDocuments, setLocalDocuments] = useState<LocalDocument[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [message, formAction, isPending] = useActionState(
+  const [, formAction, isPending] = useActionState(
     deleteMultipleDocumentsAction,
     undefined
   );
@@ -36,12 +34,21 @@ export default function DocumentsGridClient({ documents: serverDocuments = [], c
         const raw = localStorage.getItem(LOCAL_DOCS_KEY);
         const parsed = raw ? JSON.parse(raw) : [];
         if (Array.isArray(parsed)) { setLocalDocuments(parsed); } else { setLocalDocuments([]); }
-      } catch (_) { setLocalDocuments([]); }
+      } catch (error) {
+        console.error("Error loading local docs:", error);
+        setLocalDocuments([]);
+      }
     };
     loadLocalDocs();
     const onStorage = (e: StorageEvent) => { if (e.key === LOCAL_DOCS_KEY) { loadLocalDocs(); } };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    if (typeof globalThis !== "undefined") {
+      globalThis.window?.addEventListener("storage", onStorage);
+    }
+    return () => {
+      if (typeof globalThis !== "undefined") {
+        globalThis.window?.removeEventListener("storage", onStorage);
+      }
+    };
   }, []);
 
   const documents = currentUserId 
@@ -79,7 +86,9 @@ export default function DocumentsGridClient({ documents: serverDocuments = [], c
         const updated = parsed.filter((doc: LocalDocument) => !localIdsToDelete.includes(doc.id));
         localStorage.setItem(LOCAL_DOCS_KEY, JSON.stringify(updated));
         setLocalDocuments(updated);
-      } catch (_) {}
+      } catch (error) {
+        console.error("Error deleting local docs:", error);
+      }
     }
     if (currentUserId && serverIdsToDelete.length > 0) {
       formData.append("userId", String(currentUserId));
@@ -122,7 +131,7 @@ export default function DocumentsGridClient({ documents: serverDocuments = [], c
           onBulkDelete={handleBulkDelete}
           onAddToFolder={currentUserId ? async (folderId: number, documentIds: string[]) => {
             try {
-              const docIds = documentIds.map(id => Number(id)).filter(id => !isNaN(id));
+              const docIds = documentIds.map(id => Number(id)).filter(id => !Number.isNaN(id));
               const result = await addDocumentsToFolderAction(folderId, docIds);
               if (result.success) {
                 setSelectMode(false);
@@ -142,5 +151,6 @@ export default function DocumentsGridClient({ documents: serverDocuments = [], c
     </div>
   );
 }
+
 
 

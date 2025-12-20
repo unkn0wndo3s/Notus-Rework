@@ -1,9 +1,9 @@
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/../lib/auth";
+import { authOptions } from "@/lib/auth";
 import NavBar from "@/components/navigation/NavBar";
 import ContentWrapper from "@/components/common/ContentWrapper";
 import { Card, CardContent, CardHeader, CardTitle, Button, Alert } from "@/components/ui";
-import { getUserTrashDocumentsAction, restoreTrashedDocumentFormAction } from "@/lib/actions";
+import { getUserTrashDocumentsAction, restoreTrashedDocumentFormAction } from "@/actions/documentActions";
 import { redirect } from "next/navigation";
 
 export default async function TrashPage() {

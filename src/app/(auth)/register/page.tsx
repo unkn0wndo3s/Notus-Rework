@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState, useMemo, useEffect } from "react";
-import { registerUser } from "@/lib/actions";
+import { registerUser } from "@/actions/userActions";
 import Link from "next/link";
 import GoogleSignInButton from "@/components/auth/GoogleSignInButton";
 import { useLocalSession } from "@/hooks/useLocalSession";

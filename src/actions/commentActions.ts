@@ -16,7 +16,7 @@ async function getAuthenticatedUser() {
     throw new Error("Unauthorized");
   }
   return {
-    userId: parseInt(session.user.id),
+    userId: Number.parseInt(session.user.id),
     email: session.user.email as string | undefined,
   };
 }

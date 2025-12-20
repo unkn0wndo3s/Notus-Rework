@@ -1,5 +1,5 @@
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/../lib/auth";
+import { authOptions } from "@/lib/auth";
 import LandingHeader from "@/components/landing/LandingHeader";
 import HeroSection from "@/components/landing/HeroSection";
 import FeatureGrid from "@/components/landing/FeatureGrid";

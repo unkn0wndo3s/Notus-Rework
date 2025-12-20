@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useLocalSession } from "@/hooks/useLocalSession";
 import { usePathname, useRouter } from "next/navigation";
 import { useSelection } from "@/contexts/SelectionContext";
@@ -13,7 +12,7 @@ interface FloatingCreateButtonProps {
   serverSession?: Session | null;
 }
 
-export default function FloatingCreateButton({ serverSession }: FloatingCreateButtonProps) {
+export default function FloatingCreateButton({ serverSession }: Readonly<FloatingCreateButtonProps>) {
   const { loading, isLoggedIn, userId } = useLocalSession(serverSession);
   const { isSelectModeActive } = useSelection();
   const pathname = usePathname();
@@ -24,13 +23,13 @@ export default function FloatingCreateButton({ serverSession }: FloatingCreateBu
     error?: string;
   }
 
-  const [createState, createAction, creating] = useActionState(
+  const [createState, createAction] = useActionState(
     createDocumentAction as unknown as (prev: CreateDocumentActionResult | null, fd: FormData) => Promise<CreateDocumentActionResult>,
     null
   );
 
   useEffect(() => {
-    const id = createState && (createState as CreateDocumentActionResult).documentId;
+    const id = createState?.documentId;
     if (id) {
       router.push(`/documents/${encodeURIComponent(String(id))}?isNew=1`);
     }
@@ -67,7 +66,9 @@ export default function FloatingCreateButton({ serverSession }: FloatingCreateBu
         };
         const next = Array.isArray(docs) ? [...docs, newDoc] : [newDoc];
         localStorage.setItem(LOCAL_DOCS_KEY, JSON.stringify(next));
-      } catch (_) {}
+      } catch {
+        // Ignore local storage errors
+      }
       router.push(`/documents/local/${encodeURIComponent(localId)}?isNew=1`);
       return;
     }

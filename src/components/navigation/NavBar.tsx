@@ -144,7 +144,7 @@ export default function NavBar() {
                 </button>
                 <button type="button" onClick={() => guardedNavigate("/profile")} aria-label="Profile" className="ml-1 inline-flex items-center justify-center w-8 h-8 rounded-full overflow-hidden bg-muted ring-1 ring-border/20 shadow-sm" title={userName || "Profile"}>
                   {localProfileImage ? (
-                    <img src={localProfileImage} alt="Profile photo" className="w-full h-full object-cover" />
+                    <Image src={localProfileImage} alt="Profile photo" width={32} height={32} unoptimized className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full bg-secondary text-secondary-foreground font-semibold flex items-center justify-center">{getInitials(userName)}</div>
                   )}
@@ -221,7 +221,7 @@ export default function NavBar() {
                 <button type="button" onClick={() => guardedNavigate("/profile")} className="flex items-center gap-3 flex-1 bg-transparent cursor-pointer text-left">
                   <div className="flex items-center justify-center w-10 h-10 rounded-full overflow-hidden bg-muted ring-1 ring-border/20 shadow-sm">
                     {localProfileImage ? (
-                      <img src={localProfileImage} alt="Profile photo" className="w-full h-full object-cover" />
+                      <Image src={localProfileImage} alt="Profile photo" width={40} height={40} unoptimized className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full bg-secondary text-secondary-foreground font-semibold flex items-center justify-center">{getInitials(userName || username || "Anonymous")}</div>
                     )}
@@ -340,7 +340,7 @@ export default function NavBar() {
                 <button type="button" onClick={() => guardedNavigate("/profile")} className="flex items-center gap-3 flex-1 bg-transparent cursor-pointer text-left">
                   <div className="flex items-center justify-center w-10 h-10 rounded-full overflow-hidden bg-muted ring-1 ring-border/20 shadow-sm">
                     {localProfileImage ? (
-                      <img src={localProfileImage} alt="Profile photo" className="w-full h-full object-cover" />
+                      <Image src={localProfileImage} alt="Profile photo" width={40} height={40} unoptimized className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full bg-secondary text-secondary-foreground font-semibold flex items-center justify-center">{getInitials(userName || username || "Anonymous")}</div>
                     )}

@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { adjustCursorPositionForTextChange } from "../../../lib/paper.js/cursorUtils";
 
 interface RemoteCursor {
@@ -20,7 +20,8 @@ interface CursorOverlayProps {
 function getColorForClientId(clientId: string): string {
   let hash = 0;
   for (let i = 0; i < clientId.length; i++) {
-    hash = clientId.charCodeAt(i) + ((hash << 5) - hash);
+    const code = clientId.codePointAt(i);
+    hash = (code ?? 0) + ((hash << 5) - hash);
   }
   
   // Generate a pastel color
@@ -28,68 +29,67 @@ function getColorForClientId(clientId: string): string {
   return `hsl(${hue}, 70%, 50%)`;
 }
 
+// Helper to find the text node and offset within it for a given global offset
+function findTextNodeAtOffset(editor: HTMLDivElement, offset: number): { node: Node; nodeOffset: number } | null {
+    const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT, null);
+    let currentOffset = 0;
+
+    while (walker.nextNode()) {
+        const node = walker.currentNode;
+        if (node.nodeType === Node.TEXT_NODE && node.textContent) {
+            const nodeLength = node.textContent.length;
+            if (currentOffset + nodeLength >= offset) {
+                return { node, nodeOffset: offset - currentOffset };
+            }
+            currentOffset += nodeLength;
+        }
+    }
+    return null;
+}
+
 // Calculate the (x, y) position from a text offset in the editor
-function getPositionFromOffset(editor: HTMLDivElement, offset: number): { x: number; y: number } | null {
+// _version is used to trigger re-calc when DOM changes, even if unused in logic
+function getPositionFromOffset(editor: HTMLDivElement, offset: number, _version?: number): { x: number; y: number } | null {
   try {
+    // Ensure version usage to satisfy linter if strictly checked, though passing it is enough.
+    // We can just ignore it, but accepting it makes the call site usage valid.
+    
     if (!editor.hasChildNodes() || editor.textContent === '') {
-      const editorRect = editor.getBoundingClientRect();
-      const computedStyle = window.getComputedStyle(editor);
-      const paddingLeft = parseFloat(computedStyle.paddingLeft) || 0;
-      const paddingTop = parseFloat(computedStyle.paddingTop) || 0;
+      const computedStyle = globalThis.window.getComputedStyle(editor);
+      const paddingLeft = Number.parseFloat(computedStyle.paddingLeft) || 0;
+      const paddingTop = Number.parseFloat(computedStyle.paddingTop) || 0;
       return { x: paddingLeft, y: paddingTop };
     }
 
-    const range = document.createRange();
-    const walker = document.createTreeWalker(
-      editor,
-      NodeFilter.SHOW_TEXT,
-      null
-    );
+    // Try to find exact text node
+    const found = findTextNodeAtOffset(editor, offset);
+    let textNode = found?.node || null;
+    let nodeOffset = found?.nodeOffset || 0;
 
-    let currentOffset = 0;
-    let textNode: Node | null = null;
-    let nodeOffset = 0;
-
-    while (walker.nextNode()) {
-      const node = walker.currentNode;
-      if (node.nodeType === Node.TEXT_NODE && node.textContent) {
-        const nodeLength = node.textContent.length;
-        if (currentOffset + nodeLength >= offset) {
-          textNode = node;
-          nodeOffset = offset - currentOffset;
-          break;
-        }
-        currentOffset += nodeLength;
-      }
-    }
-
+    // Fallback if not found (end of text)
     if (!textNode) {
       const allTextNodes: Node[] = [];
-      const textWalker = document.createTreeWalker(
-        editor,
-        NodeFilter.SHOW_TEXT,
-        null
-      );
+      const textWalker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT, null);
       let node: Node | null;
       while ((node = textWalker.nextNode())) {
         allTextNodes.push(node);
       }
       
       if (allTextNodes.length > 0) {
-        textNode = allTextNodes[allTextNodes.length - 1];
-        nodeOffset = textNode.textContent?.length || 0;
+        textNode = allTextNodes.at(-1) ?? null;
+        nodeOffset = textNode?.textContent?.length || 0;
       } else {
         const editorRect = editor.getBoundingClientRect();
-        const computedStyle = window.getComputedStyle(editor);
-        const paddingLeft = parseFloat(computedStyle.paddingLeft) || 0;
-        const paddingTop = parseFloat(computedStyle.paddingTop) || 0;
+        const computedStyle = globalThis.window.getComputedStyle(editor);
+        const paddingLeft = Number.parseFloat(computedStyle.paddingLeft) || 0;
+        const paddingTop = Number.parseFloat(computedStyle.paddingTop) || 0;
         return { x: paddingLeft, y: paddingTop + editorRect.height - paddingTop * 2 };
       }
     }
 
     if (textNode && textNode.textContent !== null) {
       const safeOffset = Math.min(Math.max(0, nodeOffset), textNode.textContent.length);
-      
+      const range = document.createRange();
       range.setStart(textNode, safeOffset);
       range.setEnd(textNode, safeOffset);
 
@@ -110,8 +110,8 @@ function getPositionFromOffset(editor: HTMLDivElement, offset: number): { x: num
           x = tempRect.left - editorRect.left;
           y = tempRect.top - editorRect.top;
           tempSpan.remove();
-        } catch (e) {
-          // Fallback: use a range to get the position of the text node
+        } catch {
+          // Fallback
           const fallbackRange = document.createRange();
           fallbackRange.selectNodeContents(textNode);
           const nodeRect = fallbackRange.getBoundingClientRect();
@@ -129,32 +129,47 @@ function getPositionFromOffset(editor: HTMLDivElement, offset: number): { x: num
   return null;
 }
 
-export default function CursorOverlay({ editorRef, remoteCursors }: CursorOverlayProps) {
+// Helper to calculate updated offsets
+function calculateUpdatedOffsets(
+  remoteCursors: Map<string, RemoteCursor>,
+  prevOffsets: Map<string, number>,
+  oldText: string,
+  newText: string
+): Map<string, number> {
+  const updated = new Map<string, number>();
+  remoteCursors.forEach((cursor) => {
+    const previousOffset = prevOffsets.has(cursor.clientId)
+      ? (prevOffsets.get(cursor.clientId) as number) : cursor.offset;
+
+    const newOffset = adjustCursorPositionForTextChange(oldText, newText, previousOffset);
+    updated.set(cursor.clientId, newOffset);
+  });
+  return updated;
+}
+
+export default function CursorOverlay({ editorRef, remoteCursors }: Readonly<CursorOverlayProps>) {
   const [contentVersion, setContentVersion] = useState(0);
-  const [hoveredCursor, setHoveredCursor] = useState<string | null>(null);
   const previousTextRef = useRef<string | null>(null);
+  const mutationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Client-side adjusted offsets to account for local changes
-  // (the original Map is not modified to remain pure)
-  const [adjustedOffsets, setAdjustedOffsets] = useState<Map<string, number>>(
-    () => new Map()
-  );
+  // Client-side adjusted offsets
+  const [adjustedOffsets, setAdjustedOffsets] = useState<Map<string, number>>(() => new Map());
 
+  // Extracted handler to reduce nesting
+  const handleMutation = useCallback(() => {
+    if (mutationTimeoutRef.current) clearTimeout(mutationTimeoutRef.current);
+    mutationTimeoutRef.current = setTimeout(() => {
+      setContentVersion((prev) => prev + 1);
+    }, 50);
+  }, []);
+
+  // Use a callback ref or effect for mutation observer
   useEffect(() => {
     if (!editorRef.current) return;
 
     const editor = editorRef.current;
-    let timeoutId: NodeJS.Timeout | null = null;
     
-    const observer = new MutationObserver(() => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-      timeoutId = setTimeout(() => {
-        setContentVersion(prev => prev + 1);
-      }, 50);
-    });
-
+    const observer = new MutationObserver(handleMutation);
     observer.observe(editor, {
       childList: true,
       subtree: true,
@@ -163,26 +178,20 @@ export default function CursorOverlay({ editorRef, remoteCursors }: CursorOverla
 
     return () => {
       observer.disconnect();
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
+      if (mutationTimeoutRef.current) clearTimeout(mutationTimeoutRef.current);
     };
-  }, [editorRef]);
+  }, [editorRef, handleMutation]);
 
-    // Adjust remote cursor offsets when the editor's text content changes.
-    // This allows the position to follow correctly in our view if WE insert/delete text before a remote cursor.
-    useEffect(() => {
+  // Adjust remote cursor offsets 
+  useEffect(() => {
       if (!editorRef.current) return;
   
       const editor = editorRef.current;
       const newText = editor.textContent || "";
-      const oldText =
-        previousTextRef.current !== null ? previousTextRef.current : newText;
+      const oldText = previousTextRef.current ?? newText;
   
-      // First initialization: just record the current text
       if (previousTextRef.current === null) {
         previousTextRef.current = newText;
-        // Initialize offsets with those received from the server
         setAdjustedOffsets(() => {
           const initial = new Map<string, number>();
           remoteCursors.forEach((cursor) => {
@@ -193,10 +202,6 @@ export default function CursorOverlay({ editorRef, remoteCursors }: CursorOverla
         return;
       }
   
-      // If the text has not changed but the remoteCursors have changed,
-      // we simply synchronize the offsets with those received from the server.
-      // This avoids keeping an obsolete adjusted offset when the other
-      // user moves their cursor without modifying the text.
       if (oldText === newText) {
         setAdjustedOffsets(() => {
           const synced = new Map<string, number>();
@@ -208,34 +213,15 @@ export default function CursorOverlay({ editorRef, remoteCursors }: CursorOverla
         return;
       }
   
-      // Adjust all cursors based on the oldText → newText difference
-    setAdjustedOffsets((prev) => {
-      const updated = new Map<string, number>();
-
-      remoteCursors.forEach((cursor) => {
-        const previousOffset = prev.has(cursor.clientId)
-          ? (prev.get(cursor.clientId) as number)
-          : cursor.offset;
-
-        const newOffset = adjustCursorPositionForTextChange(
-          oldText,
-          newText,
-          previousOffset
-        );
-
-        updated.set(cursor.clientId, newOffset);
-      });
-
-      return updated;
-    });
+    setAdjustedOffsets((prev) => 
+      calculateUpdatedOffsets(remoteCursors, prev, oldText, newText)
+    );
 
     previousTextRef.current = newText;
   }, [contentVersion, editorRef, remoteCursors]);
 
   const cursorsWithPositions = useMemo(() => {
-    if (!editorRef.current || remoteCursors.size === 0) {
-      return [];
-    }
+    if (!editorRef.current || remoteCursors.size === 0) return [];
 
     const editor = editorRef.current;
     const result: Array<{
@@ -245,11 +231,8 @@ export default function CursorOverlay({ editorRef, remoteCursors }: CursorOverla
     }> = [];
 
     remoteCursors.forEach((cursor) => {
-      const effectiveOffset =
-        adjustedOffsets.get(cursor.clientId) ?? cursor.offset;
-      const position = editor
-        ? getPositionFromOffset(editor, effectiveOffset)
-        : null;
+      const effectiveOffset = adjustedOffsets.get(cursor.clientId) ?? cursor.offset;
+      const position = editor ? getPositionFromOffset(editor, effectiveOffset, contentVersion) : null;
       const color = getColorForClientId(cursor.clientId);
       result.push({ cursor, position, color });
     });
@@ -257,46 +240,36 @@ export default function CursorOverlay({ editorRef, remoteCursors }: CursorOverla
     return result;
   }, [editorRef, remoteCursors, contentVersion, adjustedOffsets]);
 
-  if (!editorRef.current || cursorsWithPositions.length === 0) {
-    return null;
-  }
+  if (!editorRef.current || cursorsWithPositions.length === 0) return null;
 
   return (
     <div className="absolute inset-0 pointer-events-none z-40">
       {cursorsWithPositions.map(({ cursor, position, color }) => {
-        if (!position) {
-          return null;
-        }
-
-        const isHovered = hoveredCursor === cursor.clientId;
+        if (!position) return null;
 
         return (
           <div
             key={cursor.clientId}
-            className="absolute z-50"
+            className="absolute z-50 text-white group"
             style={{
               left: `${position.x}px`,
               top: `${position.y}px`,
               pointerEvents: 'auto',
             }}
-            onMouseEnter={() => setHoveredCursor(cursor.clientId)}
-            onMouseLeave={() => setHoveredCursor(null)}
           >
-            {/* Username above - only shown on hover */}
-            {isHovered && (
-              <div
-                className="absolute bottom-full mb-1 px-2 py-1 rounded text-xs font-medium text-white whitespace-nowrap shadow-lg pointer-events-none"
-                style={{
-                  backgroundColor: color,
-                  transform: 'translateX(-50%)',
-                  left: '50%',
-                }}
-              >
-                {cursor.username || 'User'}
-              </div>
-            )}
+            {/* Username - shown on CSS hover */}
+            <div
+              className="hidden group-hover:block absolute bottom-full mb-1 px-2 py-1 rounded text-xs font-medium text-white whitespace-nowrap shadow-lg pointer-events-none"
+              style={{
+                backgroundColor: color,
+                transform: 'translateX(-50%)',
+                left: '50%',
+              }}
+            >
+              {cursor.username || 'User'}
+            </div>
             
-            {/* Barre verticale du curseur */}
+            {/* Cursor Bar */}
             <div
               className="w-0.5 h-5 pointer-events-none"
               style={{

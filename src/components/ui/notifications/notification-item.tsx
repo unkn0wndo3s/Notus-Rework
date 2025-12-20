@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image"; // Added import
 import Icon from "@/components/Icon";
 import { cn } from "@/lib/utils";
 import { deleteNotification } from "@/actions/notificationActions";
@@ -102,9 +103,12 @@ export default function NotificationItem({
         >
             {isSystem ? null : (
                 hasAvatar && !imgError ? (
-                    <img
+                    <Image
                         src={normalizedAvatar}
                         alt={username || "avatar"}
+                        width={32}
+                        height={32}
+                        unoptimized
                         className="w-8 h-8 rounded-full mr-3 object-cover"
                         onError={() => setImgError(true)}
                     />

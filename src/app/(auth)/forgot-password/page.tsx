@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { sendPasswordResetEmailAction } from "@/lib/actions";
+import { sendPasswordResetEmailAction } from "@/actions/userActions";
 import Link from "next/link";
 import { Button, Input, Card, Alert } from "@/components/ui";
 

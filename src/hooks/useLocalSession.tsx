@@ -4,7 +4,7 @@ import type { Session } from "next-auth";
 import {
   clearUserSession as clearSessionUtils,
 } from "@/lib/session-utils";
-import { createDocumentAction } from "@/lib/actions";
+import { createDocumentAction } from "@/actions/documentActions";
 
 interface UserSession {
   id: string;

@@ -1,8 +1,7 @@
 "use client";
-import { useActionState, startTransition } from "react";
+import { useActionState, startTransition, useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui";
-import { createDocumentAction } from "@/lib/actions";
-import { useState, useCallback, useEffect } from "react";
+import { createDocumentAction } from "@/actions/documentActions";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Icon from "@/components/Icon";

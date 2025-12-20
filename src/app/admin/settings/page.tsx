@@ -42,8 +42,8 @@ export default function AdminSettingsPage() {
         } else {
              setError(result.error ?? "Failed to load settings");
         }
-      } catch (e) {
-        console.error("Error loading settings:", e);
+      } catch (error) {
+        console.error("Failed to load settings:", error);
         setError("Unable to load settings");
       } finally {
         setLoading(false);
@@ -68,7 +68,8 @@ export default function AdminSettingsPage() {
       } else {
         setError(result.error || "Error during update");
       }
-    } catch (e) {
+    } catch (error) {
+      console.error("Error toggling AI synthesis:", error);
       setError("Error during update");
     } finally {
       setSaving(false);
@@ -93,7 +94,7 @@ export default function AdminSettingsPage() {
       if (!result.success) {
         setError(result.error || "Error during update");
       }
-    } catch (e) {
+    } catch {
       setError("Error during update");
     } finally {
       setSavingTokenLimit(false);
@@ -142,14 +143,14 @@ export default function AdminSettingsPage() {
 
       const allSuccess = results.every((res: { success: boolean }) => res.success);
 
-      if (!allSuccess) {
-        setError("Error during update of Ollama configuration");
-      } else {
+      if (allSuccess) {
         // Reset token field after save for security
         setOllamaToken("");
         setShowToken(false);
+      } else {
+        setError("Error during update of Ollama configuration");
       }
-    } catch (e) {
+    } catch {
       setError("Error during update");
     } finally {
       setSavingOllama(false);
@@ -283,13 +284,15 @@ export default function AdminSettingsPage() {
                   "absolute left-1 h-8 w-8 rounded-full bg-background shadow-sm ring-1 ring-border transition-transform duration-300 ease-out flex items-center justify-center",
                   aiSynthesisEnabled ? "translate-x-10" : "translate-x-0"
                 )}
+
               >
                 {saving ? (
                   <Icon name="spinner" className="h-5 w-5 text-foreground/80 animate-spin" />
-                ) : aiSynthesisEnabled ? (
-                  <Icon name="sparkles" className="h-5 w-5 text-foreground/80" />
                 ) : (
-                  <Icon name="x" className="h-5 w-5 text-foreground/80" />
+                  <Icon 
+                    name={aiSynthesisEnabled ? "sparkles" : "x"} 
+                    className="h-5 w-5 text-foreground/80" 
+                  />
                 )}
               </span>
             </button>
@@ -356,10 +359,11 @@ export default function AdminSettingsPage() {
           </Card.Header>
           <Card.Content className="p-6 space-y-4">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
+              <label htmlFor="ollama-url" className="block text-sm font-medium text-foreground mb-2">
                 Ollama API URL
               </label>
               <input
+                id="ollama-url"
                 type="url"
                 value={ollamaUrl}
                 onChange={(e) => setOllamaUrl(e.target.value)}
@@ -373,10 +377,11 @@ export default function AdminSettingsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
+              <label htmlFor="ollama-model" className="block text-sm font-medium text-foreground mb-2">
                 Ollama Model
               </label>
               <input
+                id="ollama-model"
                 type="text"
                 value={ollamaModel}
                 onChange={(e) => setOllamaModel(e.target.value)}
@@ -391,7 +396,7 @@ export default function AdminSettingsPage() {
 
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-foreground">
+                <label htmlFor="ollama-token" className="block text-sm font-medium text-foreground">
                   Authentication token (optional)
                 </label>
                 <button
@@ -403,6 +408,7 @@ export default function AdminSettingsPage() {
                 </button>
               </div>
               <input
+                id="ollama-token"
                 type={showToken ? "text" : "password"}
                 value={ollamaToken}
                 onChange={(e) => setOllamaToken(e.target.value)}

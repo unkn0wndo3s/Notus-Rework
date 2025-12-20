@@ -104,10 +104,11 @@ function LoginPageClient({ serverSession }: Readonly<LoginPageClientProps>) {
               setIsPending(true);
               try {
                 const formData = new FormData(e.currentTarget);
-                const email = (formData.get("email") || "").toString();
-                const passwordValue = (
-                  formData.get("password") || ""
-                ).toString();
+                const emailEntry = formData.get("email");
+                const email = typeof emailEntry === "string" ? emailEntry : "";
+
+                const passwordEntry = formData.get("password");
+                const passwordValue = typeof passwordEntry === "string" ? passwordEntry : "";
 
                 if (!email || !passwordValue) {
                   setErrorMessage(
@@ -136,7 +137,9 @@ function LoginPageClient({ serverSession }: Readonly<LoginPageClientProps>) {
                     setIsPending(false);
                     return;
                   }
-                } catch (_) {}
+                } catch (_) {
+                  // Ignore error and proceed to normal login
+                }
 
                 // 2) Proceed with normal sign-in
                 const result = await signIn("credentials", {
@@ -154,6 +157,7 @@ function LoginPageClient({ serverSession }: Readonly<LoginPageClientProps>) {
                   );
                 }
               } catch (err) {
+                console.error("Login Error:", err);
                 setErrorMessage("An error occurred.");
               } finally {
                 setIsPending(false);
@@ -278,6 +282,7 @@ function LoginPageClient({ serverSession }: Readonly<LoginPageClientProps>) {
                     setReactivateError("Reactivation succeeded, but login failed.");
                   }
                 } catch (e) {
+                  console.error("Reactivate Error:", e);
                   setReactivateError("Internal error. Please try again.");
                 }
               }}

@@ -136,7 +136,7 @@ export default function CommentsSidebar({ documentId, isOpen, onClose }: Readonl
   // Prevent body scroll on mobile when sidebar is open
   useEffect(() => {
     if (isOpen) {
-      const originalStyle = window.getComputedStyle(document.body).overflow;
+      const originalStyle = globalThis.window.getComputedStyle(document.body).overflow;
       document.body.style.overflow = "hidden";
       document.documentElement.style.overflowX = "hidden";
       return () => {

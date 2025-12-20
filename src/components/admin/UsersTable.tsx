@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Icon from "@/components/Icon";
 import { User } from "@/lib/types";
 import { updateAdminUserAction } from "@/actions/adminActions";
@@ -9,7 +10,8 @@ interface UsersTableProps {
   users: User[];
 }
 
-export default function UsersTable({ users }: UsersTableProps) {
+export default function UsersTable({ users }: Readonly<UsersTableProps>) {
+  const router = useRouter();
   const [banningUsers, setBanningUsers] = useState(new Set<string | number>());
   const [adminUsers, setAdminUsers] = useState(new Set<string | number>());
   const [showBanModal, setShowBanModal] = useState(false);
@@ -42,7 +44,7 @@ export default function UsersTable({ users }: UsersTableProps) {
              // For now, the action toggles the ban.
         }
         alert(`User ${isBanned ? "banned" : "unbanned"} successfully.`);
-        window.location.reload();
+        router.refresh();
       } else {
         alert(`Error: ${result.error}`);
       }
@@ -73,7 +75,7 @@ export default function UsersTable({ users }: UsersTableProps) {
       const result = await updateAdminUserAction(Number(userId), 'toggle_admin');
 
       if (result.success) {
-        window.location.reload();
+        router.refresh();
       } else {
         alert(`Error: ${result.error}`);
       }

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Textarea, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui";
+import { Button, Textarea, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Badge } from "@/components/ui";
 import Icon from "@/components/Icon";
 import type { Request } from "@/lib/repositories/RequestRepository";
 import { cn } from "@/lib/utils";

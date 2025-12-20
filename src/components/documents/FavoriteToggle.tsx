@@ -17,12 +17,12 @@ export default function FavoriteToggle({
   onToggleAuthenticated,
   className,
   onRequireLogin,
-}: FavoriteToggleProps) {
+}: Readonly<FavoriteToggleProps>) {
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (!isAuthenticated) {
-      try { onRequireLogin && onRequireLogin(); } catch {}
+      try { onRequireLogin?.(); } catch {}
       return;
     }
     const next = !isFavorite;
@@ -40,7 +40,7 @@ export default function FavoriteToggle({
           className
         )}
       >
-        <Icon name="favoriteSolid" className={isFavorite ? "text-primary hover:text-primary/70" : "text-primary/30 hover:text-primary/70"} />
+        <Icon name={isFavorite ? "favoriteSolid" : "favorite"} className={isFavorite ? "text-primary hover:text-primary/70" : "text-muted-foreground hover:text-primary"} />
     </button>
   );
 }

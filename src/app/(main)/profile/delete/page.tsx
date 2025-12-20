@@ -70,7 +70,10 @@ export default function DeleteAccountPage() {
 
               {/* Password Input */}
               <div className="mb-6">
-                <label className="text-foreground text-2xl font-title font-bold block mb-2.5">
+                <label 
+                  htmlFor="password"
+                  className="text-foreground text-2xl font-title font-bold block mb-2.5"
+                >
                   Password
                 </label>
                 <div className="relative">
@@ -152,7 +155,7 @@ export default function DeleteAccountPage() {
                   }
                   setConfirmOpen(false);
                   setSuccessOpen(true);
-                } catch (e) {
+                } catch {
                   setMessage("An error occurred. Please try again later.");
                 } finally {
                   setIsLoading(false);

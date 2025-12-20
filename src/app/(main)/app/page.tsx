@@ -1,8 +1,7 @@
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/../lib/auth";
+import { authOptions } from "@/lib/auth";
 import Link from "next/link";
-import { getUserDocumentsAction } from "@/lib/actions";
-import { fetchSharedDocumentsAction } from "@/lib/actions";
+import { getUserDocumentsAction, fetchSharedDocumentsAction } from "@/actions/documentActions";
 import Navigation from "@/components/navigation/Navigation";
 import NavBar from "@/components/navigation/NavBar";
 import ContentWrapper from "@/components/common/ContentWrapper";

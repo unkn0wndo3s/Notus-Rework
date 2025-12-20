@@ -149,6 +149,7 @@ function groupHistoryEntries(entries: HistoryItem[]): GroupedHistoryItem[] {
 }
 
 // Component to display content in HTML + MD preview
+// Component to display content in HTML + MD preview
 function HistoryContentPreview({ content, isRemoved }: Readonly<{ content: string; isRemoved?: boolean }>) {
   const [htmlContent, setHtmlContent] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
@@ -160,7 +161,7 @@ function HistoryContentPreview({ content, isRemoved }: Readonly<{ content: strin
     }
 
     const convertContent = async () => {
-      if (!content || !content.trim()) {
+      if (!content?.trim()) {
         setHtmlContent("");
         setIsLoading(false);
         return;
@@ -175,13 +176,10 @@ function HistoryContentPreview({ content, isRemoved }: Readonly<{ content: strin
         if (isHtml) {
           // If already HTML, sanitize directly
           html = sanitizeHtml(trimmed, EDITOR_SANITIZE_CONFIG);
+        } else if (markdownConverterRef.current) {
+          html = await markdownConverterRef.current.markdownToHtml(content);
         } else {
-          // Otherwise convert markdown to HTML
-          if (markdownConverterRef.current) {
-            html = await markdownConverterRef.current.markdownToHtml(content);
-          } else {
-            html = sanitizeHtml(content, EDITOR_SANITIZE_CONFIG);
-          }
+          html = sanitizeHtml(content, EDITOR_SANITIZE_CONFIG);
         }
         
         setHtmlContent(html);
@@ -248,6 +246,7 @@ export default function HistorySidebar({ documentId, isOpen, onClose }: Readonly
       }));
       setEntries(normalized);
     } catch (e) {
+      console.error("fetchHistory Error:", e);
       setError("Error loading history");
       setEntries([]);
     } finally {
@@ -270,7 +269,7 @@ export default function HistorySidebar({ documentId, isOpen, onClose }: Readonly
   // Prevent body scroll on mobile when sidebar is open
   useEffect(() => {
     if (isOpen) {
-      const originalStyle = window.getComputedStyle(document.body).overflow;
+      const originalStyle = globalThis.window.getComputedStyle(document.body).overflow;
       document.body.style.overflow = "hidden";
       document.documentElement.style.overflowX = "hidden";
       return () => {
@@ -315,8 +314,9 @@ export default function HistorySidebar({ documentId, isOpen, onClose }: Readonly
               const groupedEntries = groupHistoryEntries(entries);
               return groupedEntries.map((entry, index) => {
                 const user = entry.user ?? null;
-                const isCurrentUser =
-                  userId && user?.id && String(userId) === String(user.id);
+                const isCurrentUser = Boolean(
+                  userId && user?.id && String(userId) === String(user.id)
+                );
                 const entryDate = new Date(entry.created_at);
                 const previousDate =
                   index > 0 ? new Date(groupedEntries[index - 1].created_at) : null;

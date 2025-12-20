@@ -30,7 +30,7 @@ export default function SelectionBar({
   onRemoveFromFolder,
   selectedDocumentIds,
   currentUserId,
-}: SelectionBarProps) {
+}: Readonly<SelectionBarProps>) {
   const isAllSelected = selectedCount === totalCount;
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [selectedFolderId, setSelectedFolderId] = useState<string>("");
@@ -71,7 +71,7 @@ export default function SelectionBar({
 
   return (
     <>
-      <aside className="fixed left-0 right-0 z-20 px-0 md:ml-68 md:px-4 bottom-0 mb-0" role="region" aria-label="Selection bar">
+      <section className="fixed left-0 right-0 z-20 px-0 md:ml-68 md:px-4 bottom-0 mb-0" aria-label="Selection bar">
         <div className="max-w-4xl mx-auto px-4 md:px-6 lg:px-8 py-3 bg-background text-foreground border-t border-border">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
@@ -87,33 +87,41 @@ export default function SelectionBar({
               <Button onClick={onToggleAll} variant="ghost" size="sm" className="flex items-center gap-2 p-3 py-1.5 rounded-full font-title text-lg" aria-label={isAllSelected ? "Deselect all" : "Select all"}>
                 {isAllSelected ? "Deselect all" : "Select all"}
               </Button>
-              {onRemoveFromFolder ? (
-                <Button 
-                  onClick={async () => {
-                    if (selectedDocumentIds.length > 0) {
-                      await onRemoveFromFolder(selectedDocumentIds);
-                    }
-                  }}
-                  disabled={isPending || selectedCount === 0} 
-                  variant="default" 
-                  className="flex items-center gap-2 p-3 lg:py-1.5 rounded-full font-medium" 
-                  aria-label="Remove from folder"
-                >
-                  <Icon name="folder" className="w-5 h-5" />
-                  <span className="hidden lg:inline">{isPending ? "Removing..." : "Remove from folder"}</span>
-                </Button>
-              ) : onAddToFolder && currentUserId ? (
-                <Button 
-                  onClick={handleAddToFolderClick} 
-                  disabled={isLoadingFolders || selectedCount === 0} 
-                  variant="default" 
-                  className="flex items-center gap-2 p-3 lg:py-1.5 rounded-full font-medium" 
-                  aria-label="Add to folder"
-                >
-                  <Icon name="folder" className="w-5 h-5" />
-                  <span className="hidden lg:inline">{isLoadingFolders ? "Loading..." : "Add to folder"}</span>
-                </Button>
-              ) : null}
+              {(() => {
+                if (onRemoveFromFolder) {
+                  return (
+                    <Button 
+                      onClick={async () => {
+                        if (selectedDocumentIds.length > 0) {
+                          await onRemoveFromFolder(selectedDocumentIds);
+                        }
+                      }}
+                      disabled={isPending || selectedCount === 0} 
+                      variant="default" 
+                      className="flex items-center gap-2 p-3 lg:py-1.5 rounded-full font-medium" 
+                      aria-label="Remove from folder"
+                    >
+                      <Icon name="folder" className="w-5 h-5" />
+                      <span className="hidden lg:inline">{isPending ? "Removing..." : "Remove from folder"}</span>
+                    </Button>
+                  );
+                }
+                if (onAddToFolder && currentUserId) {
+                  return (
+                    <Button 
+                      onClick={handleAddToFolderClick} 
+                      disabled={isLoadingFolders || selectedCount === 0} 
+                      variant="default" 
+                      className="flex items-center gap-2 p-3 lg:py-1.5 rounded-full font-medium" 
+                      aria-label="Add to folder"
+                    >
+                      <Icon name="folder" className="w-5 h-5" />
+                      <span className="hidden lg:inline">{isLoadingFolders ? "Loading..." : "Add to folder"}</span>
+                    </Button>
+                  );
+                }
+                return null;
+              })()}
               <form action={onBulkDelete} className="flex items-center">
                 <Button type="submit" disabled={isPending || selectedCount === 0} variant="destructive" className="flex items-center gap-2 p-3 lg:py-1.5 rounded-full font-medium" aria-label="Delete selected notes">
                   <Icon name="trash" className="w-5 h-5" />
@@ -123,10 +131,21 @@ export default function SelectionBar({
             </div>
           </div>
         </div>
-      </aside>
+      </section>
       {showFolderModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowFolderModal(false)}>
-          <div className="bg-background border border-border rounded-lg p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+        <dialog
+          open
+          className="fixed inset-0 z-50 flex items-center justify-center bg-transparent w-full h-full p-0 m-0 border-none pointer-events-auto"
+        >
+          <div 
+            className="fixed inset-0 bg-black/50" 
+            onClick={() => setShowFolderModal(false)}
+            aria-hidden="true" 
+          />
+          <div 
+            className="relative bg-background border border-border rounded-lg p-6 max-w-md w-full mx-4 shadow-lg"
+          >
+            <div className="sr-only">Add to folder dialog</div>
             <h3 className="text-lg font-semibold mb-4">Select a folder</h3>
             {folders.length === 0 ? (
               <p className="text-muted-foreground mb-4">No folder available. Create one first.</p>
@@ -157,7 +176,7 @@ export default function SelectionBar({
               </Button>
             </div>
           </div>
-        </div>
+        </dialog>
       )}
     </>
   );

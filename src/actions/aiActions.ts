@@ -1,7 +1,7 @@
 "use server";
 
 import { getServerSession } from "next-auth";
-import { authOptions } from "../../lib/auth";
+import { authOptions } from "@/lib/auth";
 import { DocumentService } from "@/lib/services/DocumentService";
 import { prisma } from "@/lib/prisma";
 import { Ollama } from "ollama";

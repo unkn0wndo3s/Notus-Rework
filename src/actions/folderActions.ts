@@ -12,9 +12,9 @@ async function getAuthenticatedUserId() {
   if (!session?.user?.id) {
     throw new Error("Unauthorized");
   }
-  const userId = parseInt(session.user.id);
-  if (isNaN(userId)) {
-    throw new Error("Invalid user ID");
+  const userId = Number.parseInt(session.user.id);
+  if (Number.isNaN(userId)) {
+    throw new TypeError("Invalid user ID");
   }
   return userId;
 }

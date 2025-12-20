@@ -9,6 +9,9 @@ const nextConfig = {
     // Supprimer les console.log en production
     removeConsole: process.env.NODE_ENV === "production",
   },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback = {

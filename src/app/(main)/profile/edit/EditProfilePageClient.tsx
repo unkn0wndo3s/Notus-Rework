@@ -3,12 +3,13 @@
 import { useActionState, useEffect, useMemo, useRef, useState, startTransition } from "react";
 import { Button, Card, Input, ImageUpload } from "@/components/ui";
 import Icon from "@/components/Icon";
-import { updateUserProfileAction } from "@/lib/actions";
+import { updateUserProfileAction } from "@/actions/userActions";
 import { useGuardedNavigate } from "@/hooks/useGuardedNavigate";
 import { useSession } from "next-auth/react";
 import { saveUserSession } from "@/lib/session-utils";
 import { useImageValidation } from "@/hooks/useImageValidation";
 import Link from "next/link";
+import Image from "next/image"; // Added import
 
 interface User {
   id?: string;
@@ -176,9 +177,12 @@ export default function EditProfilePageClient({ user }: Readonly<EditProfilePage
       <div className="flex flex-col items-center md:flex-row md:items-end gap-4 relative z-10">
         <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-background overflow-hidden bg-muted ring-2 ring-border/30 shadow-lg">
           {profileImage ? (
-            <img
+            <Image
               src={profileImage}
               alt="Profile"
+              width={128}
+              height={128}
+              unoptimized
               className="w-full h-full object-cover"
             />
           ) : (

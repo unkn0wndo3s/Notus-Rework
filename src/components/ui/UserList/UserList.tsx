@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
 import Icon from "@/components/Icon";
-import Link from "next/link";
 import Image from "next/image";
 import { updateShareAction, removeShareAction } from "@/actions/documentActions";
 import { Button } from "@/components/ui/button";
@@ -34,7 +33,7 @@ export default function UserList({
   onChanged,
   isOwner,
 }: Readonly<UserListProps>) {
-  const [menuOpen, setMenuOpen] = useState<number | null>(null);
+  const [menuOpenId, setMenuOpenId] = useState<number | null>(null);
   const [localUsers, setLocalUsers] = useState<User[]>(users);
   const [loadingEmail, setLoadingEmail] = useState<string | null>(null);
   const [removeModalOpen, setRemoveModalOpen] = useState<boolean>(false);
@@ -47,11 +46,13 @@ export default function UserList({
       setTimeout(() => confirmBtnRef.current?.focus(), 0);
     }
   }, [removeModalOpen]);
-  const ownerId = localUsers && localUsers.length > 0 ? (localUsers[0].id !== null ? Number(localUsers[0].id) : null) : null;
-  const connectedId = typeof currentUserId !== 'undefined' && currentUserId !== null ? Number(currentUserId) : null;
+  
+  const firstUser = localUsers?.[0];
+  const ownerId = firstUser?.id !== null && firstUser?.id !== undefined ? Number(firstUser.id) : null;
+  const connectedId = currentUserId !== undefined && currentUserId !== null ? Number(currentUserId) : null;
   const isConnectedOwner = isOwner ?? (ownerId !== null && connectedId !== null && ownerId === connectedId);
-
-  React.useEffect(() => setLocalUsers(users), [users]);
+  
+  useEffect(() => setLocalUsers(users), [users]);
 
   async function handleSetPermission(targetEmail: string | undefined | null, newPermission: boolean) {
     if (!targetEmail) {
@@ -69,10 +70,12 @@ export default function UserList({
       if (!result.success) {
         throw new Error(result.error || 'Server error');
       }
-      setMenuOpen(null);
+      setMenuOpenId(null);
       setLoadingEmail(null);
       if (onChanged) {
-        try { await onChanged(); } catch (_) { }
+        try { await onChanged(); } catch (e) {
+          console.error(e);
+        }
       }
     } catch (err) {
       setLocalUsers(prev);
@@ -93,10 +96,12 @@ export default function UserList({
       if (!result.success) {
         throw new Error(result.error || 'Server error');
       }
-      setMenuOpen(null);
+      setMenuOpenId(null);
       setLoadingEmail(null);
       if (onChanged) {
-        try { await onChanged(); } catch (_) { }
+        try { await onChanged(); } catch (e) {
+          console.error(e);
+        }
       }
     } catch (err) {
       alert('Could not remove user: ' + (err instanceof Error ? err.message : String(err)));
@@ -135,22 +140,24 @@ export default function UserList({
                 )}
               </span>
               <span className="text-xs text-muted-foreground">
-                {idx === 0
-                  ? "Owner"
-                  : user.permission === true
-                    ? "Editor"
-                    : "Viewer"}
+                {(() => {
+                  if (idx === 0) return "Owner";
+                  return user.permission ? "Editor" : "Viewer";
+                })()}
               </span>
             </div>
           </div>
           {isConnectedOwner && user.id !== ownerId ? (
-            <DropdownMenu>
+            <DropdownMenu 
+              open={menuOpenId === user.id} 
+              onOpenChange={(open) => setMenuOpenId(open ? (user.id ?? null) : null)}
+            >
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
                   aria-label="More options"
                   className="p-2 rounded hover:bg-accent/50"
-                  onClick={() => setMenuOpen(prev => prev === (user.id ?? null) ? null : (user.id ?? null))}
+                  onClick={() => setMenuOpenId(prev => prev === (user.id ?? null) ? null : (user.id ?? null))}
                 >
                   <Icon name="dotsHorizontal" className="w-5 h-5" />
                 </button>
@@ -171,7 +178,7 @@ export default function UserList({
                 <DropdownMenuItem
                   onClick={() => {
                     // close dropdown first to avoid portal / document mousedown races
-                    setMenuOpen(null);
+                    setMenuOpenId(null); 
                     setTimeout(() => {
                       setSelectedEmailToRemove(user.email ?? null);
                       setRemoveModalOpen(true);
@@ -187,35 +194,26 @@ export default function UserList({
         </div>
       ))}
       {removeModalOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+        <dialog
+          open
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-transparent border-none p-0 m-0 w-full h-full"
+        >
           <div
             className="absolute inset-0 bg-foreground/50"
             aria-hidden="true"
             onClick={() => { setRemoveModalOpen(false); setSelectedEmailToRemove(null); }}
           />
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="userlist-confirm-title"
-            aria-describedby="userlist-confirm-desc"
+          <div 
             className="relative w-full max-w-md bg-background rounded-lg p-6 shadow-lg z-10"
-            onClick={(e) => e.stopPropagation()}
-            onMouseDown={(e) => e.stopPropagation()}
-            onPointerDown={(e) => e.stopPropagation()}
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') {
-                setRemoveModalOpen(false);
-                setSelectedEmailToRemove(null);
-              }
-            }}
           >
+            <div className="sr-only">Confirm removal dialog</div>
             <header className="mb-4 text-center">
               <h2 id="userlist-confirm-title" className="text-2xl font-title font-bold text-foreground">Confirm Removal</h2>
             </header>
             <main id="userlist-confirm-desc" className="text-center">
               <p>Are you sure you want to remove this user from the document?</p>
             </main>
-            <footer className="mt-6 flex justify-center space-x-3" role="group" aria-label="Actions">
+            <div className="mt-6 flex justify-center space-x-3">
               <Button asChild variant="primary">
                 <button
                   ref={confirmBtnRef}
@@ -240,9 +238,9 @@ export default function UserList({
                   No
                 </button>
               </Button>
-            </footer>
+            </div>
           </div>
-        </div>
+        </dialog>
       )}
     </div>
   );

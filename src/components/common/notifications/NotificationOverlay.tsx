@@ -22,13 +22,223 @@ function truncateText(s: string, max = 50) {
     return s.length > max ? s.slice(0, max - 3) + "..." : s;
 }
 
+const getNotificationDetails = (n: Notification) => {
+    const parsed = (n as any).parsed ?? null;
+    let messageText: string;
+    let hasCustomMessage = false;
+    let isRequestNotificationWithMessage = false;
+
+    const getRequestStatusLabel = (status: string) => {
+        switch (status) {
+            case 'pending': return 'Pending';
+            case 'in_progress': return 'In progress';
+            case 'resolved': return 'Resolved';
+            case 'rejected': return 'Rejected';
+            default: return 'updated';
+        }
+    };
+
+    const parsedTyped = parsed as { 
+        type?: string; 
+        requestTitle?: string; 
+        message?: string; 
+        status?: string;
+        documentTitle?: string;
+        title?: string;
+        url?: string;
+        confirmUrl?: string;
+    } | null;
+
+    if (parsedTyped?.type === "request-response" || parsedTyped?.type === "request-resolved") {
+        const requestTitle = parsedTyped.requestTitle || "your request";
+        const fullMessage = parsedTyped.message ?? String(n.message || "");
+        hasCustomMessage = fullMessage.includes("\n\n");
+        const baseMessage = parsedTyped.type === "request-resolved"
+            ? `Your request "${requestTitle}" has been resolved.`
+            : `Your request "${requestTitle}" has been ${getRequestStatusLabel(parsedTyped.status || '').toLowerCase()}.`;
+            
+        messageText = hasCustomMessage 
+            ? `${baseMessage} Check the support page for more details.`
+            : baseMessage;
+            
+        isRequestNotificationWithMessage = hasCustomMessage;
+    } else {
+        messageText = parsedTyped?.message ?? String(n.message || "");
+    }
+    
+    return { messageText, isRequestNotificationWithMessage, parsed: parsedTyped };
+};
+
+// Extracted component for Share Invite Notification
+const ShareInviteNotification = ({ 
+    n, 
+    isRead, 
+    username, 
+    avatarUrl, 
+    initial, 
+    displayTitle, 
+    parsed, 
+    onDelete, 
+    onMarkRead, 
+    setNotifications 
+}: { 
+    n: Notification; 
+    isRead: boolean; 
+    username: string; 
+    avatarUrl: string; 
+    initial: string; 
+    displayTitle: string; 
+    parsed: any; 
+    onDelete: (id: number) => Promise<boolean>; 
+    onMarkRead: (id: number) => Promise<boolean>; 
+    setNotifications: React.Dispatch<React.SetStateAction<Notification[] | null>>; 
+}) => {
+    const confirmUrl = parsed.url || parsed.confirmUrl;
+
+    return (
+        <div className={`px-2 py-2 ${isRead ? "bg-muted" : ""}`}>
+            <div className="flex items-center gap-3 min-w-0">
+                <Avatar className="w-10 h-10 flex-shrink-0" title={username}>
+                    <AvatarImage src={avatarUrl || undefined} alt={username} />
+                    <AvatarFallback className="text-sm font-medium">{initial}</AvatarFallback>
+                </Avatar>
+
+                <div className="flex-1 min-w-0 pr-2">
+                    <div className="font-medium text-sm line-clamp-2" title='Note sharing'>
+                        {username} shared a note with you
+                    </div>
+                    <div className="text-xs text-muted-foreground truncate" title={String(parsed.documentTitle || parsed.title || "a document")}>
+                        {displayTitle}
+                    </div>
+                </div>
+
+                <div className="flex-shrink-0">
+                    {isRead ? (
+                        <div className="flex items-center">
+                            <button
+                                type="button"
+                                onClick={async (e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    await onDelete(n.id);
+                                }}
+                                className="ml-2 p-1 rounded hover:bg-accent/50 text-muted-foreground"
+                                title="Delete notification"
+                                aria-label="Delete notification"
+                            >
+                                <Icon name="trash" className="w-5 h-5" />
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="flex flex-row items-stretch gap-2">
+                            <Button
+                                onClick={async (e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    await onMarkRead(n.id);
+                                    setNotifications(prev => prev ? prev.filter(x => x.id !== n.id) : prev);
+                                    if (confirmUrl) globalThis.window.location.href = confirmUrl;
+                                }}
+                                className="bg-primary text-primary-foreground p-1 rounded"
+                            >
+                                <Icon name="check" className="w-6 h-6" />
+                            </Button>
+
+                            <Button
+                                onClick={async (e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    await onMarkRead(n.id);
+                                    setNotifications(prev => prev ? prev.filter(x => x.id !== n.id) : prev);
+                                }}
+                                className="text-primary p-1 rounded hover:bg-primary/10"
+                                variant="ghost"
+                            >
+                                <Icon name="x" className="w-6 h-6" />
+                            </Button>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Extracted component for Generic Notification
+const GenericNotification = ({
+    n,
+    isRead,
+    username,
+    avatarUrl,
+    messageText,
+    isRequestNotificationWithMessage,
+    onClose,
+    router,
+    onMarkRead,
+    onDelete,
+    adjustUnreadCount,
+    setNotifications
+}: {
+    n: Notification;
+    isRead: boolean;
+    username: string;
+    avatarUrl: string;
+    messageText: string;
+    isRequestNotificationWithMessage: boolean;
+    onClose?: () => void;
+    router: any;
+    onMarkRead: (id: number) => Promise<boolean>;
+    onDelete: (id: number) => Promise<boolean>;
+    adjustUnreadCount: (amount: number) => void;
+    setNotifications: React.Dispatch<React.SetStateAction<Notification[] | null>>;
+}) => {
+    const idSender = Object.hasOwn(n, "id_sender")
+        ? (n as any).id_sender
+        : undefined;
+
+    const handleNotificationClick = () => {
+        if (!isRead) {
+            void onMarkRead(n.id);
+        }
+        
+        // If it's a request notification with a message, redirect to the assistance page in history mode
+        if (isRequestNotificationWithMessage) {
+            onClose?.();
+            router.push("/assistance?view=history");
+        }
+    };
+
+    return (
+        <div 
+            className={cn(
+                isRead ? "bg-muted" : "",
+                isRequestNotificationWithMessage && "cursor-pointer"
+            )}
+        >
+            <NotificationItem
+                id_sender={idSender}
+                notificationId={n.id}
+                avatar={avatarUrl}
+                username={username}
+                message={messageText}
+                isRead={isRead}
+                onClick={handleNotificationClick}
+                onMarkRead={(id) => { void onMarkRead(id); }}
+                onDelete={(id) => {
+                    void onDelete(id);
+                }}
+            />
+        </div>
+    );
+};
+
 export default function NotificationOverlay({ isOpen = true, onClose }: Readonly<NotificationOverlayProps>) {
     const { data: session } = useSession();
     const router = useRouter();
     const [notifications, setNotifications] = useState<Notification[] | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const { adjustUnreadCount, refresh } = useNotification();
+    const { adjustUnreadCount } = useNotification();
 
     useEffect(() => {
         if (!isOpen) return;
@@ -43,7 +253,7 @@ export default function NotificationOverlay({ isOpen = true, onClose }: Readonly
             try {
                 const result = await getNotifications(Number(session.user.id));
                 if (result.success) {
-                    setNotifications((result.data as unknown as Notification[]) || []);
+                    setNotifications((result.notifications as unknown as Notification[]) || []);
                 } else {
                     setError(result.error || "Error retrieving notifications");
                     setNotifications([]);
@@ -97,7 +307,7 @@ export default function NotificationOverlay({ isOpen = true, onClose }: Readonly
     }
 
     return (
-        <aside className="h-screen w-80 bg-card rounded-none shadow-lg p-2 flex flex-col" role="complementary" aria-label="Notifications">
+        <aside className="h-screen w-80 bg-card rounded-none shadow-lg p-2 flex flex-col" aria-label="Notifications">
             <div className="flex items-center justify-between p-2 pt-2.5 flex-shrink-0 ">
                 <div className="flex items-center gap-2">
                     <h2 className="font-title text-2xl sm:text-3xl font-regular">Notifications</h2>
@@ -134,38 +344,7 @@ export default function NotificationOverlay({ isOpen = true, onClose }: Readonly
                 )}
 
                 {!loading && (notifications ?? []).map((n: Notification) => {
-                    const parsed = (n as any).parsed ?? null;
-                    // For request-response and request-resolved notification types,
-                    // display a short message instead of the full message to avoid clutter
-                    let messageText: string;
-                    let hasCustomMessage = false;
-                    
-                    if (parsed?.type === "request-response" || parsed?.type === "request-resolved") {
-                        const requestTitle = parsed?.requestTitle || "your request";
-                        const fullMessage = parsed?.message ?? String(n.message || "");
-                        
-                        // Check if there is a custom message beyond the status change
-                        // The API message contains "\n\n" if there is a custom message after the status
-                        hasCustomMessage = fullMessage.includes("\n\n");
-                        
-                        if (parsed?.type === "request-resolved") {
-                            const baseMessage = `Your request "${requestTitle}" has been resolved.`;
-                            messageText = hasCustomMessage 
-                                ? `${baseMessage} Check the support page for more details.`
-                                : baseMessage;
-                        } else {
-                            const statusLabel = parsed?.status === "pending" ? "Pending" :
-                                               parsed?.status === "in_progress" ? "In progress" :
-                                               parsed?.status === "resolved" ? "Resolved" :
-                                               parsed?.status === "rejected" ? "Rejected" : "updated";
-                            const baseMessage = `Your request "${requestTitle}" has been ${statusLabel.toLowerCase()}.`;
-                            messageText = hasCustomMessage
-                                ? `${baseMessage} Check the support page for more details.`
-                                : baseMessage;
-                        }
-                    } else {
-                        messageText = parsed?.message ?? String(n.message || "");
-                    }
+                    const { messageText, isRequestNotificationWithMessage, parsed } = getNotificationDetails(n);
                     const isRead = Boolean(n.read_date);
 
                     const firstNameFromSender = n.sender_first_name
@@ -178,128 +357,42 @@ export default function NotificationOverlay({ isOpen = true, onClose }: Readonly
 
                     if (parsed?.type === "share-invite") {
                         const docTitle = parsed.documentTitle || parsed.title || "a document";
-                        const confirmUrl = parsed.url || parsed.confirmUrl;
                         const initial = (username?.charAt(0) || "U").toUpperCase();
                         const displayTitle = truncateText(String(docTitle), 50);
 
                         return (
-                            <div key={n.id} className={`px-2 py-2 ${isRead ? "bg-muted" : ""}`}>
-                                <div className="flex items-center gap-3 min-w-0">
-                                    <Avatar className="w-10 h-10 flex-shrink-0" title={username}>
-                                        <AvatarImage src={avatarUrl || undefined} alt={username} />
-                                        <AvatarFallback className="text-sm font-medium">{initial}</AvatarFallback>
-                                    </Avatar>
-
-                                    <div className="flex-1 min-w-0 pr-2">
-                                        <div className="font-medium text-sm line-clamp-2" title='Note sharing'>
-                                            {username} shared a note with you
-                                        </div>
-                                        <div className="text-xs text-muted-foreground truncate" title={String(docTitle)}>
-                                            {displayTitle}
-                                        </div>
-                                    </div>
-
-                                    <div className="flex-shrink-0">
-                                        {isRead ? (
-                                            <div className="flex items-center">
-                                                <button
-                                                    type="button"
-                                                    onClick={async (e) => {
-                                                        e.preventDefault();
-                                                        e.stopPropagation();
-                                                        await handleDeleteNotification(n.id);
-                                                    }}
-                                                    className="ml-2 p-1 rounded hover:bg-accent/50 text-muted-foreground"
-                                                    title="Delete notification"
-                                                    aria-label="Delete notification"
-                                                >
-                                                    <Icon name="trash" className="w-5 h-5" />
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <div className="flex flex-row items-stretch gap-2">
-                                                <Button
-                                                    onClick={async (e) => {
-                                                        e.preventDefault();
-                                                        e.stopPropagation();
-                                                        const ok = await markAsRead(n.id);
-                                                        // remove the share notification from the list after accept
-                                                        setNotifications(prev => prev ? prev.filter(x => x.id !== n.id) : prev);
-                                                        if (confirmUrl) window.location.href = confirmUrl;
-                                                    }}
-                                                    className="bg-primary text-primary-foreground p-1 rounded"
-                                                >
-                                                    <Icon name="check" className="w-6 h-6" />
-                                                </Button>
-
-                                                <Button
-                                                    onClick={async (e) => {
-                                                        e.preventDefault();
-                                                        e.stopPropagation();
-                                                        const ok = await markAsRead(n.id);
-                                                        // remove share invite after decline
-                                                        setNotifications(prev => prev ? prev.filter(x => x.id !== n.id) : prev);
-                                                    }}
-                                                    className="text-primary p-1 rounded hover:bg-primary/10"
-                                                    variant="ghost"
-                                                >
-                                                    <Icon name="x" className="w-6 h-6" />
-                                                </Button>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
+                            <div key={n.id}>
+                                <ShareInviteNotification 
+                                    n={n}
+                                    isRead={isRead}
+                                    username={username}
+                                    avatarUrl={avatarUrl}
+                                    initial={initial}
+                                    displayTitle={displayTitle}
+                                    parsed={parsed}
+                                    onDelete={handleDeleteNotification}
+                                    onMarkRead={handleMarkAsRead}
+                                    setNotifications={setNotifications}
+                                />
                             </div>
                         );
                     }
 
-                    const idSender = Object.prototype.hasOwnProperty.call(n, "id_sender")
-                        ? (n as any).id_sender
-                        : undefined;
-
-                    // Check if it's a support request notification with a custom message
-                    const isRequestNotificationWithMessage = 
-                        (parsed?.type === "request-response" || parsed?.type === "request-resolved") &&
-                        hasCustomMessage;
-
-                    const handleNotificationClick = () => {
-                        if (!isRead) {
-                            void markAsRead(n.id);
-                        }
-                        
-                        // If it's a request notification with a message, redirect to the assistance page in history mode
-                        if (isRequestNotificationWithMessage) {
-                            onClose?.();
-                            router.push("/assistance?view=history");
-                        }
-                    };
-
                     return (
-                        <div 
-                            key={`item-${n.id}`} 
-                            className={cn(
-                                isRead ? "bg-muted" : "",
-                                isRequestNotificationWithMessage && "cursor-pointer"
-                            )}
-                        >
-                            <NotificationItem
-                                key={n.id}
-                                id_sender={idSender}
-                                notificationId={n.id}
-                                avatar={avatarUrl}
-                                username={String(username)}
-                                message={messageText}
+                        <div key={`item-${n.id}`}>
+                            <GenericNotification
+                                n={n}
                                 isRead={isRead}
-                                onClick={handleNotificationClick}
-                                onMarkRead={(id) => { void handleMarkAsRead(id); }}
-                                onDelete={(id) => {
-                                    const found = (notifications ?? []).find(x => x.id === id);
-                                    const wasUnread = found && !found.read_date;
-                                    if (wasUnread) {
-                                        try { adjustUnreadCount(-1); } catch {}
-                                    }
-                                    setNotifications(prev => prev ? prev.filter(x => x.id !== id) : prev);
-                                }}
+                                username={String(username)}
+                                avatarUrl={avatarUrl}
+                                messageText={messageText}
+                                isRequestNotificationWithMessage={isRequestNotificationWithMessage}
+                                onClose={onClose}
+                                router={router}
+                                onMarkRead={handleMarkAsRead}
+                                onDelete={handleDeleteNotification}
+                                adjustUnreadCount={adjustUnreadCount}
+                                setNotifications={setNotifications}
                             />
                         </div>
                     );

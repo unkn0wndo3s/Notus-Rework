@@ -131,12 +131,14 @@ export default function FoldersPage() {
             </Button>
           </header>
 
-          {isLoading ? (
+          {isLoading && (
             <div className="text-center py-16">
               <Icon name="spinner" className="w-10 h-10 mx-auto animate-spin text-[var(--primary)]" />
               <p className="mt-4 text-[var(--muted-foreground)]">Loading folders...</p>
             </div>
-          ) : folders.length === 0 ? (
+          )}
+
+          {!isLoading && folders.length === 0 && (
             <Card className="text-center py-16">
               <Card.Content>
                 <div className="text-[var(--muted-foreground)] mb-6">
@@ -155,7 +157,9 @@ export default function FoldersPage() {
                 </Button>
               </Card.Content>
             </Card>
-          ) : (
+          )}
+
+          {!isLoading && folders.length > 0 && (
             <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {folders.map((folder) => {
                 const formatDate = (dateInput: string | Date | undefined) => {
@@ -200,7 +204,7 @@ export default function FoldersPage() {
                                 "text-[var(--muted-foreground)]",
                                 "hover:bg-[var(--muted)]",
                                 "transition-colors duration-200",
-                              )}
+                                )}
                               aria-label="Folder options"
                             >
                               <Icon name="dotsVertical" className="w-5 h-5" />

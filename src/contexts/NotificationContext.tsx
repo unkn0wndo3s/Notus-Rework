@@ -13,7 +13,7 @@ type NotificationContextValue = {
 
 const NotificationContext = createContext<NotificationContextValue | null>(null);
 
-export function NotificationProvider({ children }: { children: React.ReactNode }) {
+export function NotificationProvider({ children }: Readonly<{ children: React.ReactNode }>) {
   const { data: session } = useSession();
   const [unreadCount, setUnreadCount] = useState<number>(0);
 
@@ -26,8 +26,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       }
       try {
         const result = await getUnreadCount();
-        if (mounted && result.success && typeof result.data === "number") {
-          setUnreadCount(result.data);
+        if (mounted && result.success && typeof result.count === "number") {
+          setUnreadCount(result.count);
         }
       } catch (error) {
         console.error("fetchCount error", error);
@@ -49,8 +49,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     if (!session?.user?.id) return;
     try {
       const result = await getUnreadCount();
-      if (result.success && typeof result.data === "number") {
-        setUnreadCount(result.data);
+      if (result.success && typeof result.count === "number") {
+        setUnreadCount(result.count);
       }
     } catch (error) {
       console.error("refresh error", error);

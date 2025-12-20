@@ -3,7 +3,7 @@ import NavBar from "@/components/navigation/NavBar";
 import EditProfilePageClient from "./EditProfilePageClient";
 import Link from "next/link";
 import Icon from "@/components/Icon";
-import { getUserProfileAction } from "@/lib/actions";
+import { getUserProfileAction } from "@/actions/userActions";
 
 export default async function EditProfilePage() {
   const session = await auth();

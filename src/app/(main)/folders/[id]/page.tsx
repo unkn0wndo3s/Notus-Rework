@@ -45,7 +45,6 @@ export default function FolderDetailPage() {
   const [folder, setFolder] = useState<FolderData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [removingIds, setRemovingIds] = useState<Set<number>>(new Set());
   const [showCreateNoteModal, setShowCreateNoteModal] = useState(false);
   const [noteTitle, setNoteTitle] = useState("");
   const [isAddingToFolder, setIsAddingToFolder] = useState(false);
@@ -106,7 +105,7 @@ export default function FolderDetailPage() {
   }, [session, folderId, loadFolder]);
 
   useEffect(() => {
-    if (createNoteState && createNoteState.documentId) {
+    if (createNoteState?.documentId) {
       const documentId = createNoteState.documentId;
       if (documentId && folderId) {
         addNoteToFolder(documentId, folderId);
@@ -134,7 +133,6 @@ export default function FolderDetailPage() {
   const handleRemoveDocuments = async (documentIds: string[]) => {
     if (!folderId) return;
     const ids = documentIds.map((id) => Number.parseInt(id)).filter((id) => !Number.isNaN(id));
-    setRemovingIds(new Set(ids));
     try {
       const result = await removeDocumentsFromFolder(folderId, ids);
       if (result.success) {
@@ -145,8 +143,6 @@ export default function FolderDetailPage() {
     } catch (err: any) {
       console.error("Error removing documents:", err);
       alert("Error removing documents");
-    } finally {
-      setRemovingIds(new Set());
     }
   };
 
@@ -294,7 +290,7 @@ export default function FolderDetailPage() {
               }}
               autoFocus
             />
-            {createNoteState && createNoteState.error && (
+            {createNoteState?.error && (
               <Alert variant="error">
                 <Alert.Description>
                   {createNoteState.error}

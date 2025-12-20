@@ -1,10 +1,10 @@
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/../lib/auth";
+import { authOptions } from "@/lib/auth";
 import NavBar from "@/components/navigation/NavBar";
 import ContentWrapper from "@/components/common/ContentWrapper";
 import { Alert } from "@/components/ui";
 import { SearchableDocumentsList } from "@/components/documents/SearchableDocumentsList";
-import { getFavoritesAction } from "@/lib/actions";
+import { getFavoritesAction } from "@/actions/documentActions";
 import { redirect } from "next/navigation";
 
 export default async function FavoritesPage() {

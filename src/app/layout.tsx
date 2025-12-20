@@ -10,7 +10,7 @@ import { SearchProvider } from "@/contexts/SearchContext";
 import UserStatusGuard from "@/components/auth/UserStatusGuard";
 import DynamicFavicon from "@/components/common/DynamicFavicon";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "../../lib/auth";
+import { authOptions } from "@/lib/auth";
 import Link from "next/link";
 import { Metadata } from "next";
 import { DrawingsProvider } from "@/contexts/DrawingContext";

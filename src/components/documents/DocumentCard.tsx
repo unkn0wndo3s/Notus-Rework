@@ -115,25 +115,34 @@ export default function DocumentCard({
   const { checkConnectivity } = useGuardedNavigate();
   const [showLoginModal, setShowLoginModal] = useState(false);
 
+  // Extract document properties for stable dependencies
+  const docId = (document as any).id;
+  const docContent = (document as any).content;
+  const docTags = (document as any).tags;
+  const docIsFavorite = (document as any).is_favorite;
+  const docUpdatedAt = (document as any).updated_at;
+  const docTitle = (document as any).title;
+
   const isOwner = ('user_id' in document) ? (document as any).user_id === currentUserId : false;
-  const updatedDate = new Date((document as any).updated_at || new Date());
+  const updatedDate = new Date(docUpdatedAt || new Date());
   const [accessList, setAccessList] = useState<any[]>([]);
-  // Normalize is_favorite which can come from different sources (document.is_favorite or Share.is_favorite)
-  // and may be truthy but not strictly `true` in some codepaths. Keep local state
-  // synchronized when the prop changes.
-  const [isFavorite, setIsFavorite] = useState<boolean>(Boolean((document as any).is_favorite));
+  
+  // Normalize is_favorite which can come from different sources
+  const [isFavorite, setIsFavorite] = useState<boolean>(Boolean(docIsFavorite));
+  
   useEffect(() => {
     try {
-      setIsFavorite(Boolean((document as any).is_favorite));
+      setIsFavorite(Boolean(docIsFavorite));
     } catch (e) {
       // ignore
     }
-  }, [(document as any).is_favorite]);
+  }, [docIsFavorite]);
+  
   const formattedDate = updatedDate.toLocaleDateString("en-US", { day: "2-digit", month: "2-digit", year: "numeric" });
   const updatedAtIso = (
-    typeof (document as any).updated_at === 'string'
-      ? (document as any).updated_at
-      : new Date((document as any).updated_at || Date.now()).toISOString()
+    typeof docUpdatedAt === 'string'
+      ? docUpdatedAt
+      : new Date(docUpdatedAt || Date.now()).toISOString()
   );
 
   const getContentText = (content: any): string => {
@@ -147,7 +156,7 @@ export default function DocumentCard({
       return content || "";
     } catch (e) { return content || ""; }
   };
-  const contentText = getContentText((document as any).content);
+  const contentText = getContentText(docContent);
   const contentTextSanitized = sanitizeLinks(contentText);
   const cleanText = (text: string): string => text
       .replace(/\*\*(.*?)\*\*/g, '$1')
@@ -160,7 +169,7 @@ export default function DocumentCard({
       .trim();
   const firstLine = cleanText((contentTextSanitized || "").substring(0, 500).split(/\n\n/)[0]);
   const isEmpty = !contentText || contentText.trim() === "" || !firstLine || firstLine.trim() === "";
-  const rawPreviewSource = sanitizeLinks(getContentText((document as any)?.content));
+  const rawPreviewSource = sanitizeLinks(getContentText(docContent));
   const normalizedString = unwrapToString(rawPreviewSource);
   const contentIsHtml = detectHtmlInString(normalizedString);
   const previewText = contentIsHtml ? stripHtml(normalizedString) : normalizedString;
@@ -176,49 +185,50 @@ export default function DocumentCard({
       setPreviewHtml(safe);
     } catch (e) {
       console.warn("DOMPurify sanitize failed", e);
-      setPreviewHtml(stripHtml((document as any)?.content || ""));
+      setPreviewHtml(stripHtml(docContent || ""));
     }
-  }, [(document as any)?.content, contentIsHtml, normalizedString]);
+  }, [docContent, contentIsHtml, normalizedString]);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const result = await fetchDocumentAccessListAction((document as any).id);
+        const result = await fetchDocumentAccessListAction(docId);
         if (result.success && result.data?.accessList && mounted) {
           setAccessList(result.data.accessList);
         }
       } catch (e) {}
     })();
     return () => { mounted = false; };
-  }, [(document as any).id]);
+  }, [docId]);
 
   const [tags, setTags] = useState<string[]>([]);
   useEffect(() => {
-    if (Array.isArray((document as any).tags)) { setTags((document as any).tags); return; }
+    if (Array.isArray(docTags)) { setTags(docTags); return; }
     try {
       const raw = localStorage.getItem("notus.tags");
       const parsed = raw ? JSON.parse(raw) : {};
-      const existing = parsed?.[String((document as any).id)] || [];
+      const existing = parsed?.[String(docId)] || [];
       if (Array.isArray(existing)) setTags(existing);
     } catch (_) {}
-  }, [(document as any).id, (document as any).tags]);
+  }, [docId, docTags]);
+  
   useEffect(() => {
     try {
       const raw = localStorage.getItem("notus.tags");
       const parsed = raw ? JSON.parse(raw) : {};
-      parsed[String((document as any).id)] = tags;
+      parsed[String(docId)] = tags;
       localStorage.setItem("notus.tags", JSON.stringify(parsed));
     } catch (_) {}
-  }, [tags, (document as any).id]);
+  }, [tags, docId]);
 
   const persistTags = (nextTags: string[]) => {
     if (!currentUserId) return;
     const fd = new FormData();
-    fd.append("documentId", String((document as any).id));
+    fd.append("documentId", String(docId));
     fd.append("userId", String(currentUserId));
-    fd.append("title", (document as any).title || "Untitled");
-    fd.append("content", (document as any).content || "");
+    fd.append("title", docTitle || "Untitled");
+    fd.append("content", docContent || "");
     fd.append("tags", JSON.stringify(nextTags));
     startTransition(() => { updateFormAction(fd); });
   };
@@ -255,22 +265,22 @@ export default function DocumentCard({
 
   const handleDelete = (formData: FormData) => {
     if (!currentUserId) return;
-    formData.append("documentId", String((document as any).id));
+    formData.append("documentId", String(docId));
     formData.append("userId", String(currentUserId));
     startTransition(() => { formAction(formData); });
     setShowDeleteConfirm(false);
-    if (onDelete) { onDelete((document as any).id); }
+    if (onDelete) { onDelete(docId); }
   };
 
   const applyFavoriteChange = async (next: boolean) => {
     if (!currentUserId) { setShowLoginModal(true); return; }
     try {
       const fd = new FormData();
-      fd.append("documentId", String((document as any).id));
+      fd.append("documentId", String(docId));
       fd.append("value", next ? "1" : "");
       startTransition(() => { favFormAction(fd); });
       setIsFavorite(next);
-      try { onFavoriteChange && onFavoriteChange((document as any).id, next); } catch (_) {}
+      try { onFavoriteChange && onFavoriteChange(docId, next); } catch (_) {}
     } catch (_) {}
   };
 
@@ -286,14 +296,14 @@ export default function DocumentCard({
     longPressActivatedRef.current = false;
     longPressTimerRef.current = setTimeout(() => {
       longPressActivatedRef.current = true;
-      onEnterSelectMode((document as any).id);
-      onToggleSelect((document as any).id, true);
+      onEnterSelectMode(docId);
+      onToggleSelect(docId, true);
     }, 500);
   };
   const handleLongPress = () => {
     if (selectMode || longPressActivatedRef.current) return;
-    onEnterSelectMode((document as any).id);
-    onToggleSelect((document as any).id, !selected);
+    onEnterSelectMode(docId);
+    onToggleSelect(docId, !selected);
   };
 
   const previewRef = useRef<HTMLDivElement>(null);
@@ -308,7 +318,7 @@ export default function DocumentCard({
     } catch (e) { setComputedStyle((s) => s); }
   }, [previewHtml, previewText]);
 
-  const documentUrl = isLocal ? `/documents/local/${encodeURIComponent(String((document as any).id))}` : `/documents/${(document as any).id}`;
+  const documentUrl = isLocal ? `/documents/local/${encodeURIComponent(String(docId))}` : `/documents/${docId}`;
   const handleCardNavigation = async (e: React.MouseEvent) => {
     if (showLoginModal) { e.preventDefault(); e.stopPropagation(); return; }
     if (longPressActivatedRef.current) {
@@ -317,7 +327,7 @@ export default function DocumentCard({
       longPressActivatedRef.current = false;
       return;
     }
-    if (selectMode) { e.preventDefault(); e.stopPropagation(); onToggleSelect((document as any).id, !selected); return; }
+    if (selectMode) { e.preventDefault(); e.stopPropagation(); onToggleSelect(docId, !selected); return; }
     e.preventDefault();
     try {
       const controller = new AbortController();
@@ -371,7 +381,7 @@ export default function DocumentCard({
         )}
       </header>
       <section className="space-y-2">
-        <h3 className="text-lg font-semibold text-card-foreground group-hover:text-primary transition-colors duration-200">{(document as any).title}</h3>
+        <h3 className="text-lg font-semibold text-card-foreground group-hover:text-primary transition-colors duration-200">{docTitle}</h3>
         <div ref={previewRef} className="text-sm text-muted-foreground line-clamp-1 leading-relaxed">
           {contentIsHtml ? (
             previewHtml ? (
@@ -405,7 +415,7 @@ export default function DocumentCard({
           </div>
         )}
         {selectMode && (
-          <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleSelect((document as any).id, !selected); }} className={cn("h-5 w-5 border-2 rounded transition-all duration-200 cursor-pointer flex items-center justify-center animate-fade-in", selected ? "border-primary bg-primary" : "border-input bg-background")} role="checkbox" aria-checked={selected} aria-label="Select this document">
+          <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleSelect(docId, !selected); }} className={cn("h-5 w-5 border-2 rounded transition-all duration-200 cursor-pointer flex items-center justify-center animate-fade-in", selected ? "border-primary bg-primary" : "border-input bg-background")} role="checkbox" aria-checked={selected} aria-label="Select this document">
             {selected && (<Icon name="check" className="w-4 h-4 text-primary-foreground" />)}
           </div>
         )}

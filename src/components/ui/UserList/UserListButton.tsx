@@ -1,5 +1,6 @@
 import React, { useRef, useState } from "react";
 import Icon from "@/components/Icon";
+import Image from "next/image"; // Added import
 import UserList from "./UserList";
 import { cn } from "@/lib/utils";
 
@@ -79,9 +80,12 @@ export default function UserListButton({
         )}
       >
         {hasAvatar ? (
-          <img
+          <Image
             src={user.avatarUrl}
             alt={user.name}
+            width={40}
+            height={40}
+            unoptimized
             className="w-full h-full rounded-full object-cover"
             onError={() => setErrored((e) => ({ ...e, [user.id]: true }))}
           />

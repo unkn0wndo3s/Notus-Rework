@@ -12,7 +12,7 @@ export async function getTags() {
     if (!session?.user?.id) {
       throw new Error("Unauthorized");
     }
-    const userId = parseInt(session.user.id);
+    const userId = Number.parseInt(session.user.id);
 
     const documents = await prisma.document.findMany({
       where: { user_id: userId },

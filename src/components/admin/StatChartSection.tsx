@@ -7,10 +7,14 @@ import StatsChart from "./StatsChart";
 import { cn } from "@/lib/utils";
 import { getAdminStatsAction } from "@/actions/adminActions";
 
+
+type StatPeriod = 'day' | 'week' | 'month' | 'year';
+type StatType = 'users' | 'documents' | 'shares';
+
 interface StatChartSectionProps {
-  type: 'users' | 'documents' | 'shares';
+  type: StatType;
   title: string;
-  initialPeriod?: 'day' | 'week' | 'month' | 'year';
+  initialPeriod?: StatPeriod;
   className?: string;
 }
 
@@ -20,7 +24,7 @@ export default function StatChartSection({
   initialPeriod = 'week',
   className 
 }: Readonly<StatChartSectionProps>) {
-  const [period, setPeriod] = useState<'day' | 'week' | 'month' | 'year'>(initialPeriod);
+  const [period, setPeriod] = useState<StatPeriod>(initialPeriod);
   const [chartData, setChartData] = useState<Array<{ date: string; count: number }>>([]);
   const [loading, setLoading] = useState(false);
 
@@ -57,7 +61,7 @@ export default function StatChartSection({
   // Reusable function to process period data
   const processPeriodData = (
     data: Array<{ date: string; count: number }>,
-    periodType: 'day' | 'week' | 'month' | 'year'
+    periodType: StatPeriod
   ): Array<{ name: string; value: number; date: string }> => {
     // Create a map of existing data with dates from the API
     const dataMap = new Map<string, number>();
@@ -67,13 +71,42 @@ export default function StatChartSection({
       });
     }
 
-    // For week, generate all 4 weeks and fill with 0
+    // Helper for week processing
     if (periodType === 'week') {
+      return processWeekData(dataMap);
+    }
+
+    // Define configuration based on period type
+    const config = getPeriodConfig(periodType);
+    if (!config) return [];
+
+    const { count, dateFormat, dateLabel, dateModifier } = config;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const periods: Array<{ name: string; value: number; date: string }> = [];
+
+    // Generate all periods
+    for (let i = count - 1; i >= 0; i--) {
+        const date = new Date(today);
+        dateModifier(date, i);
+        
+        const dateStr = dateFormat(date);
+        periods.push({
+          name: dateLabel(date),
+          value: dataMap.get(dateStr) || 0,
+          date: dateStr,
+        });
+    }
+
+    return periods;
+  };
+
+  const processWeekData = (dataMap: Map<string, number>) => {
       const periods: Array<{ name: string; value: number; date: string }> = [];
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
-      // Calculate Monday of the current week (compatible with PostgreSQL DATE_TRUNC('week'))
+      // Calculate Monday of the current week
       const dayOfWeek = today.getDay();
       const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
       const currentWeekMonday = new Date(today);
@@ -94,7 +127,6 @@ export default function StatChartSection({
         const weekEnd = new Date(weekMonday);
         weekEnd.setDate(weekMonday.getDate() + 6);
         
-        // Date format to match PostgreSQL (YYYY-MM-DD)
         const dateStr = weekMonday.toISOString().split('T')[0];
         
         // Search in dataMap with the exact date
@@ -117,80 +149,50 @@ export default function StatChartSection({
           date: dateStr,
         });
       }
-      
       return periods;
+  };
+
+  const getPeriodConfig = (pType: StatPeriod) => {
+    switch (pType) {
+        case 'day':
+          return {
+            count: 7,
+            dateFormat: (d: Date) => d.toISOString().split("T")[0],
+            dateLabel: (d: Date) => `${d.getDate()}/${d.getMonth() + 1}`,
+            dateModifier: (d: Date, i: number) => {
+                d.setDate(d.getDate() - i);
+                d.setHours(0, 0, 0, 0);
+            }
+          };
+        case 'month':
+          return {
+            count: 12,
+            dateFormat: (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`,
+            dateLabel: (d: Date) => {
+                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                return `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+            },
+            dateModifier: (d: Date, i: number) => {
+                d.setMonth(d.getMonth() - i);
+                d.setDate(1);
+                d.setHours(0, 0, 0, 0);
+            }
+          };
+        case 'year':
+          return {
+            count: 10,
+            dateFormat: (d: Date) => `${d.getFullYear()}-01-01`,
+            dateLabel: (d: Date) => String(d.getFullYear()),
+            dateModifier: (d: Date, i: number) => {
+                d.setFullYear(d.getFullYear() - i);
+                d.setMonth(0);
+                d.setDate(1);
+                d.setHours(0, 0, 0, 0);
+            }
+          };
+        default:
+          return null;
     }
-
-    // For day, month, and year, generate all periods and fill with 0
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const periods: Array<{ name: string; value: number; date: string }> = [];
-    let count: number;
-    let dateFormat: (date: Date) => string;
-    let dateLabel: (date: Date) => string;
-
-    switch (periodType) {
-      case 'day':
-        count = 7;
-        dateFormat = (date: Date) => {
-          return date.toISOString().split("T")[0];
-        };
-        dateLabel = (date: Date) => {
-          const day = date.getDate();
-          const month = date.getMonth() + 1;
-          return `${day}/${month}`;
-        };
-        break;
-      case 'month':
-        count = 12;
-        dateFormat = (date: Date) => {
-          return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`;
-        };
-        dateLabel = (date: Date) => {
-          const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-          return `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
-        };
-        break;
-      case 'year':
-        count = 10;
-        dateFormat = (date: Date) => {
-          return `${date.getFullYear()}-01-01`;
-        };
-        dateLabel = (date: Date) => {
-          return String(date.getFullYear());
-        };
-        break;
-      default:
-        return [];
-    }
-
-    // Generate all periods
-    for (let i = count - 1; i >= 0; i--) {
-      const date = new Date(today);
-      
-      if (periodType === 'day') {
-        date.setDate(date.getDate() - i);
-        date.setHours(0, 0, 0, 0);
-      } else if (periodType === 'month') {
-        date.setMonth(date.getMonth() - i);
-        date.setDate(1);
-        date.setHours(0, 0, 0, 0);
-      } else if (periodType === 'year') {
-        date.setFullYear(date.getFullYear() - i);
-        date.setMonth(0);
-        date.setDate(1);
-        date.setHours(0, 0, 0, 0);
-      }
-      
-      const dateStr = dateFormat(date);
-      periods.push({
-        name: dateLabel(date),
-        value: dataMap.get(dateStr) || 0,
-        date: dateStr,
-      });
-    }
-
-    return periods;
   };
 
   const periodData = processPeriodData(chartData, period);
@@ -213,9 +215,10 @@ export default function StatChartSection({
       <Card.Header>
         <div className="flex items-center justify-between">
           <Card.Title className="text-foreground text-2xl font-semibold">
+
             {title}
           </Card.Title>
-          <Select value={period} onValueChange={(value) => setPeriod(value as 'day' | 'week' | 'month' | 'year')}>
+          <Select value={period} onValueChange={(value) => setPeriod(value as StatPeriod)}>
             <SelectTrigger className="w-[220px]">
               <SelectValue />
             </SelectTrigger>
@@ -229,22 +232,30 @@ export default function StatChartSection({
         </div>
       </Card.Header>
       <Card.Content>
-        {loading ? (
-          <div className="flex items-center justify-center h-[300px]">
-            <p className="text-muted-foreground">Loading...</p>
-          </div>
-        ) : periodData.length > 0 ? (
-          <StatsChart
-            data={periodData}
-            type="line"
-            dataKey="value"
-            title={`Number of ${typeLabel} created per ${periodLabel}`}
-          />
-        ) : (
-          <div className="flex items-center justify-center h-[300px]">
-            <p className="text-muted-foreground">No data available</p>
-          </div>
-        )}
+        {(() => {
+          if (loading) {
+            return (
+              <div className="flex items-center justify-center h-[300px]">
+                <p className="text-muted-foreground">Loading...</p>
+              </div>
+            );
+          }
+          if (periodData.length > 0) {
+            return (
+              <StatsChart
+                data={periodData}
+                type="line"
+                dataKey="value"
+                title={`Number of ${typeLabel} created per ${periodLabel}`}
+              />
+            );
+          }
+          return (
+            <div className="flex items-center justify-center h-[300px]">
+              <p className="text-muted-foreground">No data available</p>
+            </div>
+          );
+        })()}
       </Card.Content>
     </Card>
   );

@@ -343,17 +343,19 @@ export default function SupportPage() {
                 <CardTitle>My support requests</CardTitle>
               </CardHeader>
               <CardContent>
-                {isLoadingRequests ? (
+                {isLoadingRequests && (
                   <div className="flex items-center justify-center py-8">
                     <Icon name="spinner" className="w-6 h-6 animate-spin text-muted-foreground" />
                     <span className="ml-2 text-muted-foreground">Loading...</span>
                   </div>
-                ) : requests.length === 0 ? (
+                )}
+                {!isLoadingRequests && requests.length === 0 && (
                   <div className="text-center py-8 text-muted-foreground">
                     <Icon name="inbox" className="w-12 h-12 mx-auto mb-3 opacity-50" />
                     <p>No support requests yet.</p>
                   </div>
-                ) : (
+                )}
+                {!isLoadingRequests && requests.length > 0 && (
                   <div className="space-y-4">
                     {requests.map((req) => (
                       <RequestHistoryCard

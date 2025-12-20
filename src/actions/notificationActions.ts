@@ -1,17 +1,9 @@
 "use server";
 
-import { NotificationService } from "@/lib/services/NotificationService";
-import { authOptions } from "../../lib/auth";
-import { revalidatePath } from "next/cache";
-
-const notifSvc = new NotificationService();
-
-/**
- * Helper to ensure the user is authenticated and return their ID.
- */
 import { getServerSession } from "next-auth";
-
-// ...
+import { authOptions } from "@/lib/auth";
+import { revalidatePath } from "next/cache";
+import { prisma } from "@/lib/prisma";
 
 async function getAuthenticatedUserId() {
   const session = await getServerSession(authOptions);
@@ -32,10 +24,17 @@ export async function getNotifications(userId: number) {
         return { success: false, error: "Access denied" };
     }
 
-    await notifSvc.initializeTables();
-    const result = await notifSvc.getNotificationsForUser(userId);
+    if (!process.env.DATABASE_URL) {
+         return { success: true, notifications: [] };
+    }
+
+    const notifications = await prisma.notification.findMany({
+        where: { id_receiver: userId },
+        orderBy: { send_date: "desc" },
+        take: 50 // Limit to recent 50
+    });
     
-    return result;
+    return { success: true, notifications };
   } catch (error) {
     console.error("❌ Error retrieving notifications:", error);
     return { success: false, error: "Failed to retrieve notifications" };
@@ -49,22 +48,26 @@ export async function markAsRead(notificationId: number) {
   try {
     const currentUserId = await getAuthenticatedUserId();
 
-    // Verify ownership (the service/repo doesn't check ownership internally for update)
-    const { pool } = await import("@/lib/repositories/BaseRepository");
-    const checkRes = await pool.query<{ id_receiver: number }>(
-      `SELECT id_receiver FROM notifications WHERE id = $1`,
-      [notificationId]
-    );
+    if (!process.env.DATABASE_URL) return { success: true };
 
-    if (!checkRes.rows || checkRes.rows.length === 0 || checkRes.rows[0].id_receiver !== currentUserId) {
+    // Verify ownership
+    const notif = await prisma.notification.findUnique({
+        where: { id: notificationId },
+        select: { id_receiver: true }
+    });
+
+    if (!notif || notif.id_receiver !== currentUserId) {
       return { success: false, error: "Access denied" };
     }
 
-    const result = await notifSvc.markNotificationAsRead(notificationId);
+    await prisma.notification.update({
+        where: { id: notificationId },
+        data: { read_date: new Date() }
+    });
     
-    revalidatePath("/notifications"); // Or wherever notifications are displayed
+    revalidatePath("/notifications");
 
-    return result;
+    return { success: true };
   } catch (error) {
     console.error("❌ Error marking notification as read:", error);
     return { success: false, error: "Failed to mark as read" };
@@ -77,11 +80,20 @@ export async function markAsRead(notificationId: number) {
 export async function markAllAsRead() {
     try {
         const currentUserId = await getAuthenticatedUserId();
-        const result = await notifSvc.markAllAsRead(currentUserId);
+
+        if (!process.env.DATABASE_URL) return { success: true };
+
+        await prisma.notification.updateMany({
+            where: { 
+                id_receiver: currentUserId,
+                read_date: null
+            },
+            data: { read_date: new Date() }
+        });
         
         revalidatePath("/notifications");
         
-        return result;
+        return { success: true };
     } catch (error) {
         console.error("❌ Error marking all notifications as read:", error);
         return { success: false, error: "Failed to mark all as read" };
@@ -95,22 +107,24 @@ export async function deleteNotification(notificationId: number) {
   try {
     const currentUserId = await getAuthenticatedUserId();
 
-    // Verify ownership
-    const { pool } = await import("@/lib/repositories/BaseRepository");
-    const checkRes = await pool.query<{ id_receiver: number }>(
-      `SELECT id_receiver FROM notifications WHERE id = $1`,
-      [notificationId]
-    );
+    if (!process.env.DATABASE_URL) return { success: true };
 
-    if (!checkRes.rows || checkRes.rows.length === 0 || checkRes.rows[0].id_receiver !== currentUserId) {
+    const notif = await prisma.notification.findUnique({
+        where: { id: notificationId },
+        select: { id_receiver: true }
+    });
+
+    if (!notif || notif.id_receiver !== currentUserId) {
       return { success: false, error: "Access denied" };
     }
 
-    const result = await notifSvc.deleteNotification(notificationId);
+    await prisma.notification.delete({
+        where: { id: notificationId }
+    });
     
     revalidatePath("/notifications");
 
-    return result;
+    return { success: true };
   } catch (error) {
     console.error("❌ Error deleting notification:", error);
     return { success: false, error: "Failed to delete notification" };
@@ -123,9 +137,17 @@ export async function deleteNotification(notificationId: number) {
 export async function getUnreadCount() {
   try {
     const currentUserId = await getAuthenticatedUserId();
-    const result = await notifSvc.getUnreadCount(currentUserId);
+
+    if (!process.env.DATABASE_URL) return { success: true, count: 0 };
+
+    const count = await prisma.notification.count({
+        where: { 
+            id_receiver: currentUserId,
+            read_date: null
+        }
+    });
     
-    return result;
+    return { success: true, count };
   } catch (error) {
     console.error("❌ Error getting unread count:", error);
     return { success: false, error: "Failed to get unread count" };

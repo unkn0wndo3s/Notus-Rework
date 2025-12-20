@@ -1,16 +1,22 @@
 "use client";
-import { startTransition, useActionState } from "react";
+import { startTransition, useActionState, useState, useEffect, useCallback, useRef } from "react";
 import { Button, Modal } from "@/components/ui";
 import MenuItem from "@/components/ui/overlay/overlay-menu-item";
 import { Input } from "@/components/ui/input";
-import { updateDocumentAction } from "@/actions/documentActions";
+import {
+  updateDocumentAction,
+  addShareAction,
+  deleteDocumentAction,
+  createDocumentAction,
+  getDocumentByIdAction,
+  fetchDocumentAccessListAction
+} from "@/actions/documentActions";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useLocalSession } from "@/hooks/useLocalSession";
@@ -20,7 +26,6 @@ import TagsManager from "@/components/documents/TagsManager";
 import CommentsSidebar from "@/components/documents/CommentsSidebar";
 import HistorySidebar from "@/components/documents/HistorySidebar";
 import SynthesisSidebar from "@/components/documents/SynthesisSidebar";
-import { addShareAction, deleteDocumentAction, createDocumentAction, getDocumentByIdAction, fetchDocumentAccessListAction } from "@/actions/documentActions";
 import UserListButton from "@/components/ui/UserList/UserListButton";
 import { useGuardedNavigate } from "@/hooks/useGuardedNavigate";
 import { useCollaborativeTitle } from "@/lib/paper.js/useCollaborativeTitle";
@@ -160,6 +165,7 @@ export default function EditDocumentPageClient(props: Readonly<EditDocumentPageC
         setUsers([]);
       }
     } catch (e) {
+      console.error("Error loading access list:", e);
       setUsers([]);
     }
   };
@@ -354,7 +360,7 @@ export default function EditDocumentPageClient(props: Readonly<EditDocumentPageC
               tags: Array.isArray(c.tags) ? c.tags : [],
               created_at: new Date(c.created_at || c.updated_at),
               updated_at: new Date(c.updated_at),
-              user_id: Number(c.user_id ?? NaN),
+              user_id: Number(c.user_id ?? Number.NaN),
             });
             setTitle(c.title);
             setContent(normalizeContent(c.content));
@@ -378,46 +384,38 @@ export default function EditDocumentPageClient(props: Readonly<EditDocumentPageC
       }
 
       const actionResult = await getDocumentByIdAction(Number(props.params.id));
-      const result = actionResult.success && actionResult.document ? {
-        success: true,
-        ...actionResult.document,
-        owner: actionResult.document.user_id 
-      } : {
-        success: false,
-        error: actionResult.error
-      };
-
-      if (result.success && result.title !== undefined) {
-        const normalizedContent = normalizeContent(result.content);
+      if (actionResult.success && actionResult.document) {
+        const { document: doc } = actionResult;
+        const normalizedContent = normalizeContent(doc.content);
         const docObj = {
           id: Number(props.params.id),
-          title: result.title,
+          title: doc.title,
           content: JSON.stringify(normalizedContent),
-          tags: Array.isArray(result.tags) ? result.tags : [],
-          created_at: new Date(result.created_at || result.updated_at),
-          updated_at: new Date(result.updated_at),
-          user_id: Number(result.user_id ?? result.owner ?? NaN),
+          tags: Array.isArray(doc.tags) ? doc.tags : [],
+          created_at: new Date(doc.created_at || doc.updated_at),
+          updated_at: new Date(doc.updated_at),
+          user_id: Number(doc.user_id ?? Number.NaN),
         };
         setDocument(docObj);
-        setTitle(result.title);
+        setTitle(doc.title);
         setContent(normalizedContent);
-        setTags(Array.isArray(result.tags) ? result.tags : []);
+        setTags(Array.isArray(doc.tags) ? doc.tags : []);
 
         // Initialize refs with the loaded content
         const contentString = JSON.stringify(normalizedContent);
         lastSavedContentRef.current = contentString;
-        lastSavedTitleRef.current = result.title;
-        lastSavedTagsRef.current = Array.isArray(result.tags) ? result.tags : [];
+        lastSavedTitleRef.current = doc.title;
+        lastSavedTagsRef.current = Array.isArray(doc.tags) ? doc.tags : [];
         setSaveStatus('synchronized');
 
         try {
           const cachePayload = {
             id: Number(props.params.id),
-            title: result.title,
+            title: doc.title,
             content: normalizedContent,
-            tags: Array.isArray(result.tags) ? result.tags : [],
-            updated_at: result.updated_at,
-            user_id: Number(result.user_id ?? result.owner ?? NaN),
+            tags: Array.isArray(doc.tags) ? doc.tags : [],
+            updated_at: doc.updated_at,
+            user_id: Number(doc.user_id ?? Number.NaN),
             cachedAt: Date.now(),
           };
           if (typeof window !== "undefined") {
@@ -428,7 +426,7 @@ export default function EditDocumentPageClient(props: Readonly<EditDocumentPageC
         } catch { }
       } else {
         try {
-          if (typeof window !== "undefined") {
+          if (typeof globalThis.window !== "undefined") {
             const cached = localStorage.getItem(`notus:doc:${props.params.id}`);
             if (cached) {
               const c = JSON.parse(cached);
@@ -439,7 +437,7 @@ export default function EditDocumentPageClient(props: Readonly<EditDocumentPageC
                 tags: Array.isArray(c.tags) ? c.tags : [],
                 created_at: new Date(c.created_at || c.updated_at),
                 updated_at: new Date(c.updated_at),
-                user_id: Number(c.user_id ?? NaN),
+                user_id: Number(c.user_id ?? Number.NaN),
               });
               setTitle(c.title);
               setContent(normalizeContent(c.content));
@@ -456,8 +454,12 @@ export default function EditDocumentPageClient(props: Readonly<EditDocumentPageC
               return;
             }
           }
-        } catch { }
-        setError(result.error || "Error loading document");
+        } catch (err) {
+          console.error("Error loading from local storage cache:", err);
+        }
+        
+        // Final fallback if cache also fails
+        setError(actionResult.error || "Error loading document");
       }
     } catch (err) {
       try {
@@ -472,7 +474,7 @@ export default function EditDocumentPageClient(props: Readonly<EditDocumentPageC
               tags: Array.isArray(c.tags) ? c.tags : [],
               created_at: new Date(c.created_at || c.updated_at),
               updated_at: new Date(c.updated_at),
-              user_id: Number(c.user_id ?? NaN),
+              user_id: Number(c.user_id ?? Number.NaN),
             });
             setTitle(c.title);
             setContent(normalizeContent(c.content));
@@ -556,11 +558,13 @@ export default function EditDocumentPageClient(props: Readonly<EditDocumentPageC
     }
 
     return () => {
-      if (typeof window !== "undefined") {
-        window.removeEventListener("beforeunload", handleBeforeUnload);
+      if (typeof globalThis.window !== "undefined") {
+        globalThis.window.removeEventListener("beforeunload", handleBeforeUnload);
         try {
           localStorage.removeItem(key);
-        } catch { }
+        } catch (ignored) {
+          // Ignore
+        }
       }
     };
   }, [props.params.id]);
@@ -833,12 +837,9 @@ export default function EditDocumentPageClient(props: Readonly<EditDocumentPageC
       try {
         // Fetch current state from database using server action
         const actionResult = await getDocumentByIdAction(Number(document.id));
-        const result = actionResult.success && actionResult.document ? {
-           success: true,
-           ...actionResult.document
-        } : { success: false, error: actionResult.error };
-
-        if (result.success) {
+        
+        if (actionResult.success && actionResult.document) {
+          const { document: result } = actionResult;
           const remoteContent = normalizeContent(result.content);
           const remoteText = remoteContent.text || "";
           const storedBaseline = localStorage.getItem(`notus:offline-baseline:${document.id}`) || "";
@@ -917,7 +918,7 @@ export default function EditDocumentPageClient(props: Readonly<EditDocumentPageC
             console.log('✅ Offline modifications saved successfully');
           }
         } else {
-          console.log('❌ Failed to fetch remote content:', result.error);
+          console.log('❌ Failed to fetch remote content:', actionResult.error);
         }
       } catch (err) {
         console.error('❌ Error resolving conflicts:', err);
@@ -1056,14 +1057,7 @@ export default function EditDocumentPageClient(props: Readonly<EditDocumentPageC
   }, [document, userEmail, userId, isOffline, checkConnectivity]);
 
   // -------- Share functionality --------
-  const handleShareButtonClick = async () => {
-    const ok = await checkConnectivity();
-    if (!ok) return;
-    // If not owner, still open a modal but we'll show a denied message
-    setShareError(null);
-    setShareSuccess(null);
-    setIsShareModalOpen(true);
-  };
+  // handleShareButtonClick removed as it was unused and implemented inline
 
   const handleShareSubmit = async () => {
     // Prevent non-owners from submitting share

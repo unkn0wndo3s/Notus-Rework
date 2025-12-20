@@ -1,36 +1,160 @@
 "use server";
 
-import { StatsRepository } from "@/lib/repositories/StatsRepository";
-import { AdminService } from "@/lib/modules/admin/AdminService";
-import { authOptions } from "../../lib/auth";
 import { getServerSession } from "next-auth";
-import { RequestRepository } from "@/lib/repositories/RequestRepository";
+import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { EmailService } from "@/lib/services/EmailService";
 
-const statsRepository = new StatsRepository();
-const adminService = new AdminService();
-const requestRepository = new RequestRepository();
+const emailService = new EmailService();
 
 async function checkAdminAccess() {
   const session = await getServerSession(authOptions);
   
-  if (!session?.user?.email) {
-    return false;
-  }
+  if (!session?.user?.id) return false;
 
-  // Check if admin (using the session property or re-verifying from DB if needed)
-  if (session.user.isAdmin) {
-    return true;
-  }
+  // Check if admin (using database to be sure)
+  const user = await prisma.user.findUnique({
+      where: { id: Number(session.user.id) },
+      select: { is_admin: true }
+  });
 
-  // Optional: Double check against DB using AdminService if session claim is not enough
-  const userId = Number(session.user.id);
-  if (!Number.isNaN(userId)) {
-     return await adminService.isUserAdmin(userId);
-  }
-
-  return false;
+  return user?.is_admin === true;
 }
+
+// --- Stats Helpers ---
+
+async function getUsersGroupedByPeriod(period: 'day' | 'week' | 'month' | 'year'): Promise<Array<{ date: string; count: number }>> {
+    let dateFormat: string;
+    let interval: string;
+    let groupBy: string;
+    
+    // Postgres Syntax
+    switch (period) {
+      case 'day':
+        dateFormat = "TO_CHAR(DATE_TRUNC('day', created_at), 'YYYY-MM-DD')";
+        interval = "7 days";
+        groupBy = "DATE_TRUNC('day', created_at)";
+        break;
+      case 'week':
+        dateFormat = "TO_CHAR(DATE_TRUNC('week', created_at), 'YYYY-MM-DD')";
+        interval = "4 weeks";
+        groupBy = "DATE_TRUNC('week', created_at)";
+        break;
+      case 'month':
+        dateFormat = "TO_CHAR(DATE_TRUNC('month', created_at), 'YYYY-MM-DD')";
+        interval = "12 months";
+        groupBy = "DATE_TRUNC('month', created_at)";
+        break;
+      case 'year':
+        dateFormat = "TO_CHAR(DATE_TRUNC('year', created_at), 'YYYY-MM-DD')";
+        interval = "10 years";
+        groupBy = "DATE_TRUNC('year', created_at)";
+        break;
+    }
+
+    try {
+        const result: any[] = await prisma.$queryRawUnsafe(`
+            SELECT ${dateFormat} as date, COUNT(*) as count
+            FROM users
+            WHERE created_at >= NOW() - INTERVAL '${interval}'
+            GROUP BY ${groupBy}
+            ORDER BY date ASC
+        `);
+        return result.map(r => ({ date: r.date, count: Number(r.count) }));
+    } catch (e) {
+        console.warn("Stats error:", e);
+        return [];
+    }
+}
+
+async function getDocumentsGroupedByPeriod(period: 'day' | 'week' | 'month' | 'year'): Promise<Array<{ date: string; count: number }>> {
+    // Same logic as users, but table documents
+    let dateFormat: string;
+    let interval: string;
+    let groupBy: string;
+    
+    switch (period) {
+      case 'day':
+        dateFormat = "TO_CHAR(DATE_TRUNC('day', created_at), 'YYYY-MM-DD')";
+        interval = "7 days";
+        groupBy = "DATE_TRUNC('day', created_at)";
+        break;
+      case 'week':
+        dateFormat = "TO_CHAR(DATE_TRUNC('week', created_at), 'YYYY-MM-DD')";
+        interval = "4 weeks";
+        groupBy = "DATE_TRUNC('week', created_at)";
+        break;
+      case 'month':
+        dateFormat = "TO_CHAR(DATE_TRUNC('month', created_at), 'YYYY-MM-DD')";
+        interval = "12 months";
+        groupBy = "DATE_TRUNC('month', created_at)";
+        break;
+      case 'year':
+        dateFormat = "TO_CHAR(DATE_TRUNC('year', created_at), 'YYYY-MM-DD')";
+        interval = "10 years";
+        groupBy = "DATE_TRUNC('year', created_at)";
+        break;
+    }
+
+    try {
+        const result: any[] = await prisma.$queryRawUnsafe(`
+            SELECT ${dateFormat} as date, COUNT(*) as count
+            FROM documents
+            WHERE created_at >= NOW() - INTERVAL '${interval}'
+            GROUP BY ${groupBy}
+            ORDER BY date ASC
+        `);
+        return result.map(r => ({ date: r.date, count: Number(r.count) }));
+    } catch (e) {
+        return [];
+    }
+}
+
+async function getSharesGroupedByPeriod(period: 'day' | 'week' | 'month' | 'year'): Promise<Array<{ date: string; count: number }>> {
+    // Logic involving join and COALESCE
+    let dateFormat: string;
+    let interval: string;
+    let groupBy: string;
+    
+    switch (period) {
+      case 'day':
+        dateFormat = "TO_CHAR(DATE_TRUNC('day', COALESCE(s.share_at, d.created_at)), 'YYYY-MM-DD')";
+        interval = "7 days";
+        groupBy = "DATE_TRUNC('day', COALESCE(s.share_at, d.created_at))";
+        break;
+      case 'week':
+        dateFormat = "TO_CHAR(DATE_TRUNC('week', COALESCE(s.share_at, d.created_at)), 'YYYY-MM-DD')";
+        interval = "4 weeks";
+        groupBy = "DATE_TRUNC('week', COALESCE(s.share_at, d.created_at))";
+        break;
+      case 'month':
+        dateFormat = "TO_CHAR(DATE_TRUNC('month', COALESCE(s.share_at, d.created_at)), 'YYYY-MM-DD')";
+        interval = "12 months";
+        groupBy = "DATE_TRUNC('month', COALESCE(s.share_at, d.created_at))";
+        break;
+      case 'year':
+        dateFormat = "TO_CHAR(DATE_TRUNC('year', COALESCE(s.share_at, d.created_at)), 'YYYY-MM-DD')";
+        interval = "10 years";
+        groupBy = "DATE_TRUNC('year', COALESCE(s.share_at, d.created_at))";
+        break;
+    }
+
+    try {
+        const result: any[] = await prisma.$queryRawUnsafe(`
+            SELECT ${dateFormat} as date, COUNT(*) as count
+            FROM shares s
+            JOIN documents d ON s.id_doc = d.id
+            WHERE COALESCE(s.share_at, d.created_at) >= NOW() - INTERVAL '${interval}'
+            GROUP BY ${groupBy}
+            ORDER BY date ASC
+        `);
+        return result.map(r => ({ date: r.date, count: Number(r.count) }));
+    } catch (e) {
+        return [];
+    }
+}
+
+// --- Actions ---
 
 export async function getAdminStatsAction(type?: 'users' | 'documents' | 'shares', period: 'day' | 'week' | 'month' | 'year' = 'week') {
   try {
@@ -39,47 +163,26 @@ export async function getAdminStatsAction(type?: 'users' | 'documents' | 'shares
       return { success: false, error: "Access denied" };
     }
 
-    // Check if database is configured
     if (!process.env.DATABASE_URL) {
-      if (type) {
-         return {
-           success: true,
-           data: [],
-           period,
-           type: type
-         };
-      }
-      return {
-        success: true,
-        stats: {
-          users: { total: 1, verified: 1, banned: 0, admins: 1, last7Days: 0, last30Days: 0 },
-          documents: { total: 0, last7Days: 0, last30Days: 0 },
-          shares: { total: 0, last7Days: 0, last30Days: 0 },
-        }
-      };
+      // Simulation fallback if needed, but assuming DB is present based on prisma usage
+      return { success: true, stats: {} };
     }
 
-    // If a specific type is requested, return only grouped data for that type
+    // Specific type grouping
     if (type && ['users', 'documents', 'shares'].includes(type)) {
       let groupedData: Array<{ date: string; count: number }> = [];
-      
-      if (type === 'users') {
-        groupedData = await statsRepository.getUsersGroupedByPeriod(period);
-      } else if (type === 'documents') {
-        groupedData = await statsRepository.getDocumentsGroupedByPeriod(period);
-      } else if (type === 'shares') {
-        groupedData = await statsRepository.getSharesGroupedByPeriod(period);
-      }
+      if (type === 'users') groupedData = await getUsersGroupedByPeriod(period);
+      else if (type === 'documents') groupedData = await getDocumentsGroupedByPeriod(period);
+      else if (type === 'shares') groupedData = await getSharesGroupedByPeriod(period);
 
-      return {
-        success: true,
-        data: groupedData,
-        period,
-        type,
-      };
+      return { success: true, data: groupedData, period, type };
     }
 
-    // Otherwise, return all base statistics
+    // General Stats
+    // Using javascript Date calculation for "since" counts
+    const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
     const [
       totalUsers,
       totalDocuments,
@@ -94,18 +197,20 @@ export async function getAdminStatsAction(type?: 'users' | 'documents' | 'shares
       bannedUsers,
       adminUsers,
     ] = await Promise.all([
-      statsRepository.getTotalUsers(),
-      statsRepository.getTotalDocuments(),
-      statsRepository.getTotalShares(),
-      statsRepository.getUsersCreatedSince(7),
-      statsRepository.getUsersCreatedSince(30),
-      statsRepository.getDocumentsCreatedSince(7),
-      statsRepository.getDocumentsCreatedSince(30),
-      statsRepository.getSharesCreatedSince(7),
-      statsRepository.getSharesCreatedSince(30),
-      statsRepository.getVerifiedUsers(),
-      statsRepository.getBannedUsers(),
-      statsRepository.getAdminUsers(),
+      prisma.user.count(),
+      prisma.document.count(),
+      prisma.share.count(),
+      prisma.user.count({ where: { created_at: { gte: sevenDaysAgo } } }),
+      prisma.user.count({ where: { created_at: { gte: thirtyDaysAgo } } }),
+      prisma.document.count({ where: { created_at: { gte: sevenDaysAgo } } }),
+      prisma.document.count({ where: { created_at: { gte: thirtyDaysAgo } } }),
+      prisma.share.count({ where: { share_at: { gte: sevenDaysAgo } } }), 
+      // Note: simple share_at check. To replicate COALESCE logic in Prisma count is hard.
+      // We accept slight inaccuracy if share_at is null for old shares, OR we strictly use share_at if schema defaults it to now().
+      prisma.share.count({ where: { share_at: { gte: thirtyDaysAgo } } }),
+      prisma.user.count({ where: { email_verified: true } }),
+      prisma.user.count({ where: { is_banned: true } }),
+      prisma.user.count({ where: { is_admin: true } }),
     ]);
 
     return {
@@ -140,11 +245,17 @@ export async function getAdminStatsAction(type?: 'users' | 'documents' | 'shares
 export async function getAdminUsersAction() {
   try {
     const isAdmin = await checkAdminAccess();
-    if (!isAdmin) {
-      return { success: false, error: "Access denied" };
-    }
+    if (!isAdmin) return { success: false, error: "Access denied" };
 
-    return await adminService.getAllUsers();
+    if (!process.env.DATABASE_URL) return { success: true, users: [] };
+
+    const users = await prisma.user.findMany({
+        orderBy: { created_at: "desc" }
+    });
+    
+    // Convert Dates to be safe for server components serialization if needed, 
+    // but Server Actions return JSON, so Dates are serialized as ISO strings.
+    return { success: true, users };
   } catch (error) {
     console.error("❌ Error retrieving users:", error);
     return { success: false, error: "Error retrieving users" };
@@ -154,42 +265,72 @@ export async function getAdminUsersAction() {
 export async function updateAdminUserAction(userId: number, action: 'toggle_ban' | 'toggle_admin') {
   try {
     const isAdmin = await checkAdminAccess();
-    if (!isAdmin) {
-      return { success: false, error: "Access denied" };
-    }
+    if (!isAdmin) return { success: false, error: "Access denied" };
 
-    if (Number.isNaN(userId)) {
-      return { success: false, error: "Invalid user ID" };
-    }
+    if (!process.env.DATABASE_URL) return { success: true, message: "Simulated" };
 
+    if (isNaN(userId)) return { success: false, error: "Invalid ID" };
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) return { success: false, error: "User not found" };
+
+    let updated;
     if (action === 'toggle_ban') {
-      return await adminService.toggleUserBan(userId);
+        const newStatus = !user.is_banned;
+        updated = await prisma.user.update({
+            where: { id: userId },
+            data: { is_banned: newStatus }
+        });
+        
+        // Notification
+        if (newStatus) {
+            await emailService.sendBanNotificationEmail(user.email, user.first_name || "User");
+        } else {
+            await emailService.sendUnbanNotificationEmail(user.email, user.first_name || "User");
+        }
     } else if (action === 'toggle_admin') {
-      return await adminService.toggleUserAdmin(userId);
+        updated = await prisma.user.update({
+            where: { id: userId },
+            data: { is_admin: !user.is_admin }
+        });
     }
 
-    return { success: false, error: "Invalid action" };
+    return { success: true, message: "Updated" };
   } catch (error) {
     console.error("❌ Error updating user:", error);
     return { success: false, error: "Error updating user" };
   }
 }
 
-// --- Requests Actions ---
-
 export async function getAdminRequestsAction(limit: number = 100, offset: number = 0) {
   try {
     const isAdmin = await checkAdminAccess();
-    if (!isAdmin) {
-      return { success: false, error: "Access denied" };
-    }
+    if (!isAdmin) return { success: false, error: "Access denied" };
 
-    if (!process.env.DATABASE_URL) {
-      return { success: true, requests: [] };
-    }
+    if (!process.env.DATABASE_URL) return { success: true, requests: [] };
 
-    await requestRepository.initializeTables();
-    return await requestRepository.getAllRequests(limit, offset);
+    const requests = await prisma.userRequest.findMany({
+        take: limit,
+        skip: offset,
+        orderBy: { created_at: "desc" },
+        include: {
+            user: { select: { email: true, first_name: true, last_name: true } },
+            validator: { select: { email: true, first_name: true, last_name: true } }
+        }
+    });
+
+    // Map to legacy format expected by frontend
+    const mapped = requests.map(r => ({
+        ...r,
+        user_email: r.user.email,
+        user_name: `${r.user.first_name||''} ${r.user.last_name||''}`.trim(),
+        validator_email: r.validator?.email || "",
+        validator_name: r.validator ? `${r.validator.first_name||''} ${r.validator.last_name||''}`.trim() : "",
+        user: undefined,
+        validator: undefined
+    }));
+
+    return { success: true, requests: mapped };
   } catch (error) {
     console.error("❌ Error retrieving requests:", error);
     return { success: false, error: "Error retrieving requests" };
@@ -198,29 +339,25 @@ export async function getAdminRequestsAction(limit: number = 100, offset: number
 
 export async function handleAdminRequestAction(requestId: number, action: 'validate' | 'reject' | 'resolve' | 'delete', data?: any) {
   try {
-    const isAdmin = await checkAdminAccess();
-    if (!isAdmin) {
-      return { success: false, error: "Access denied" };
-    }
-
-    if (!process.env.DATABASE_URL) {
-       return { success: true, message: "Action simulated" };
-    }
-
-    await requestRepository.initializeTables();
-
-    // Get current user ID for validation
     const session = await getServerSession(authOptions);
-    const userId = session?.user?.id ? Number(session.user.id) : null;
+    const currentUserId = session?.user?.id ? Number(session.user.id) : null;
+    
+    // Admin check based on current user loaded from DB to be safe or session claim
+    // For now assuming checkAdminAccess handles it
+    const isAdmin = await checkAdminAccess();
+    if (!isAdmin) return { success: false, error: "Access denied" };
+
+    if (!process.env.DATABASE_URL) return { success: true };
 
     if (action === 'delete') {
-      return await requestRepository.deleteRequest(requestId);
+        await prisma.userRequest.delete({ where: { id: requestId } });
+        return { success: true };
     }
-    
+
     const updateData: any = {};
     if (action === 'validate') {
       updateData.validated = true;
-      updateData.validated_by = userId;
+      updateData.validated_by = currentUserId;
       updateData.validated_at = new Date();
       updateData.status = 'in_progress';
     } else if (action === 'reject') {
@@ -230,28 +367,27 @@ export async function handleAdminRequestAction(requestId: number, action: 'valid
       updateData.status = 'resolved';
     }
 
-    return await requestRepository.updateRequest(requestId, updateData);
+    await prisma.userRequest.update({
+        where: { id: requestId },
+        data: updateData
+    });
+
+    return { success: true };
   } catch (error) {
     console.error("❌ Error handling request:", error);
     return { success: false, error: "Error handling request" };
   }
 }
 
-// --- Settings Actions ---
-
 export async function getAdminSettingsAction() {
   try {
     const isAdmin = await checkAdminAccess();
-    if (!isAdmin) {
-      return { success: false, error: "Access denied" };
-    }
+    if (!isAdmin) return { success: false, error: "Access denied" };
 
-    if (!process.env.DATABASE_URL) {
-      return { success: true, settings: {} };
-    }
+    if (!process.env.DATABASE_URL) return { success: true, settings: {} };
 
-    const settings = await (prisma as any).appSetting.findMany({
-      orderBy: { key: "asc" },
+    const settings = await prisma.appSetting.findMany({
+        orderBy: { key: "asc" }
     });
 
     const settingsMap: Record<string, string> = {};
@@ -275,19 +411,12 @@ export async function getAdminSettingsAction() {
 export async function updateAdminSettingsAction(key: string, value: string, description?: string) {
   try {
     const isAdmin = await checkAdminAccess();
-    if (!isAdmin) {
-      return { success: false, error: "Access denied" };
-    }
+    if (!isAdmin) return { success: false, error: "Access denied" };
+    if (!key) return { success: false, error: "Invalid key" };
 
-    if (!key || typeof key !== 'string') {
-      return { success: false, error: "Invalid key" };
-    }
+    if (!process.env.DATABASE_URL) return { success: true };
 
-    if (!process.env.DATABASE_URL) {
-       return { success: true, message: "Settings updated (simulated)" };
-    }
-
-    const setting = await (prisma as any).appSetting.upsert({
+    const setting = await prisma.appSetting.upsert({
       where: { key },
       update: {
         value,
@@ -314,54 +443,31 @@ export async function promoteSelfAction(): Promise<{ success: boolean; error?: s
       return { success: false, error: "Unauthorized" };
     }
 
-    // In a real app, this should probably be restricted or removed.
-    // Assuming this is for dev/demo purposes where any logged in user can become admin.
-    // We reuse adminService logic if possible, but adminService might not have a "promoteByEmail"
-    // So we use prisma directly or repo. 
-    // Since we don't have UserRepository instantiated here easily without circular deps or new imports,
-    // let's use prisma directly for this specific dev tool usage, or instantiate UserRepository inside.
-    const user = await (prisma as any).user.findUnique({ where: { email: session.user.email } });
-    
-    if (!user) {
-        return { success: false, error: "User not found" };
-    }
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    if (!user) return { success: false, error: "User not found" };
 
-    await (prisma as any).user.update({
+    await prisma.user.update({
         where: { id: user.id },
         data: { is_admin: true }
     });
 
     return { success: true };
   } catch (error) {
-    console.error("Error promoting self:", error);
     return { success: false, error: "Internal server error" };
   }
 }
 
 export async function updateRequestStatusAction(requestId: number, status: string, message?: string) {
-  try {
-    const isAdmin = await checkAdminAccess();
-    if (!isAdmin) {
-      return { success: false, error: "Access denied" };
+    try {
+        const isAdmin = await checkAdminAccess();
+        if (!isAdmin) return { success: false, error: "Access denied" };
+
+        await prisma.userRequest.update({
+            where: { id: requestId },
+            data: { status }
+        });
+        return { success: true };
+    } catch(e) {
+        return { success: false, error: "Error" };
     }
-
-    if (!process.env.DATABASE_URL) {
-       return { success: true, message: "Action simulated" };
-    }
-
-    await requestRepository.initializeTables();
-
-    // Validation logic for status could go here
-    const updateData: any = { status };
-    
-    // If we want to save the message, we assume there's a field for it or it's handled via notifications
-    // The previous implementation sent 'message' in body, but RequestRepository.updateRequest might not handle it 
-    // if it's not a column. The prompt didn't specify message persistence in DB, likely just for notification.
-    // For now we just update status. 
-    
-    return await requestRepository.updateRequest(requestId, updateData);
-  } catch (error) {
-    console.error("❌ Error updating request status:", error);
-    return { success: false, error: "Error updating request status" };
-  }
 }

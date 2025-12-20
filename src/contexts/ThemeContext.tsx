@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from "react";
 import { DEFAULT_COLOR } from "@/lib/colorPalette";
 
 interface ThemeContextType {
@@ -18,7 +18,7 @@ export function ThemeProvider({ children }: Readonly<{ children: ReactNode }>) {
 
   useEffect(() => {
     // Check system preference on load
-    const isSystemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const isSystemDark = globalThis.window.matchMedia("(prefers-color-scheme: dark)").matches;
     const hasManualOverride = localStorage.getItem("theme");
     
     if (hasManualOverride) {
@@ -40,7 +40,7 @@ export function ThemeProvider({ children }: Readonly<{ children: ReactNode }>) {
     }
 
     // Listen to system preference changes only if no manual override
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const mediaQuery = globalThis.window.matchMedia("(prefers-color-scheme: dark)");
     const handleChange = (e: MediaQueryListEvent) => {
       if (!localStorage.getItem("theme")) {
         if (e.matches) {
@@ -79,28 +79,34 @@ export function ThemeProvider({ children }: Readonly<{ children: ReactNode }>) {
     }
   }, []);
 
-  const updatePrimaryColor = (hexColor: string) => {
+  const updatePrimaryColor = useCallback((hexColor: string) => {
     setPrimaryColor(hexColor);
     localStorage.setItem("primaryColor", hexColor);
     applyPrimaryColor(hexColor);
-  };
+  }, []);
 
-  const toggleTheme = () => {
-    const newIsDark = !isDark;
-    setIsDark(newIsDark);
-    
-    // Save manual preference
-    localStorage.setItem("theme", newIsDark ? "dark" : "light");
-    
-    if (newIsDark) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  };
+  const toggleTheme = useCallback(() => {
+    setIsDark((prev) => {
+      const newIsDark = !prev;
+      localStorage.setItem("theme", newIsDark ? "dark" : "light");
+      if (newIsDark) {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+      return newIsDark;
+    });
+  }, []);
+
+  const value = useMemo(() => ({
+    isDark,
+    toggleTheme,
+    primaryColor,
+    setPrimaryColor: updatePrimaryColor,
+  }), [isDark, toggleTheme, primaryColor, updatePrimaryColor]);
 
   return (
-    <ThemeContext.Provider value={{ isDark, toggleTheme, primaryColor, setPrimaryColor: updatePrimaryColor }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );

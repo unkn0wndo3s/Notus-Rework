@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useActionState, startTransition } from "react";
+import { useState, useEffect, useActionState, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useSearch } from "@/contexts/SearchContext";
 import { useSelection } from "@/contexts/SelectionContext";
-import { deleteMultipleDocumentsAction } from "@/lib/actions";
+import { deleteMultipleDocumentsAction } from "@/actions/documentActions";
 import { addDocumentsToFolder as addDocumentsToFolderAction } from "@/actions/folderActions";
 import DocumentCard from "@/components/documents/DocumentCard";
 import SelectionBar from "@/components/documents/SelectionBar";
@@ -57,8 +56,14 @@ export function SearchableDocumentsList({
     };
     loadLocalDocs();
     const onStorage = (e: StorageEvent) => { if (e.key === LOCAL_DOCS_KEY) { loadLocalDocs(); } };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    if (typeof globalThis.window !== "undefined") {
+      globalThis.window.addEventListener("storage", onStorage);
+    }
+    return () => {
+      if (typeof globalThis.window !== "undefined") {
+        globalThis.window.removeEventListener("storage", onStorage);
+      }
+    };
   }, []);
 
   useEffect(() => { setRuntimeDocuments(serverDocuments); }, [serverDocuments]);
@@ -208,7 +213,7 @@ export function SearchableDocumentsList({
           onBulkDelete={handleBulkDelete}
           onAddToFolder={currentUserId && !onRemoveFromFolder ? async (folderId: number, documentIds: string[]) => {
             try {
-              const docIds = documentIds.map(id => Number(id)).filter(id => !isNaN(id));
+              const docIds = documentIds.map(id => Number(id)).filter(id => !Number.isNaN(id));
               const result = await addDocumentsToFolderAction(folderId, docIds);
               if (result.success) {
                 setSelectMode(false);

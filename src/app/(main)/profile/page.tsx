@@ -1,11 +1,10 @@
 import { auth } from "@/../auth";
 import NavBar from "@/components/navigation/NavBar";
-import ContentWrapper from "@/components/common/ContentWrapper";
 import Image  from "next/image";
-import { Card, Button, BackHeader } from "@/components/ui";
+import { Card, BackHeader } from "@/components/ui";
 import DocumentCard from "@/components/documents/DocumentCard";
-import { getUserDocumentsAction, getUserProfileAction } from "@/lib/actions";
-import Link from "next/link";
+import { getUserDocumentsAction } from "@/actions/documentActions";
+import { getUserProfileAction } from "@/actions/userActions";
 import ProfileEditButton from "./ProfileEditButton";
 import Icon from "@/components/Icon";
 
@@ -116,7 +115,7 @@ export default async function ProfilePage() {
             </h2>
 
             {documentsResult.success &&
-              documentsResult.documents.length === 0 && (
+              (documentsResult.documents || []).length === 0 && (
                 <Card className="p-6">
                   <Card.Title>No notes</Card.Title>
                   <Card.Description>
@@ -125,9 +124,9 @@ export default async function ProfilePage() {
                 </Card>
               )}
 
-            {documentsResult.success && documentsResult.documents.length > 0 && (
+            {documentsResult.success && (documentsResult.documents || []).length > 0 && (
               <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(300px,1fr))]">
-                {documentsResult.documents
+                {(documentsResult.documents || [])
                   .sort((a: any, b: any) => {
                     const dateA = new Date(a.updated_at || a.created_at);
                     const dateB = new Date(b.updated_at || b.created_at);
@@ -151,7 +150,7 @@ export default async function ProfilePage() {
   );
 }
 
-function CalendarIcon(props: { className?: string }) {
+function CalendarIcon(props: Readonly<{ className?: string }>) {
   return <Icon name="calendar" className={props.className} />;
 }
 
@@ -159,7 +158,8 @@ function getInitials(name: string | null): string {
   if (!name) return "?";
   const parts = String(name).trim().split(/\s+/);
   const first = parts[0]?.[0] || "";
-  const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
-  return (first + last).toUpperCase() || "?";
+  const last = parts.length > 1 ? parts.at(-1)?.[0] : "";
+  return (first + (last || "")).toUpperCase() || "?";
 }
+
 
